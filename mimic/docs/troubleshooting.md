@@ -5,6 +5,11 @@
 In case of problems, see the below. If all else fails, copy the error you
 receive and send a detailed description to us at [mimic@autodesk.com](mimic@autodesk.com).
 
+- If you're running Windows and downloaded a release in the form of a zipped
+  directory, confirm that the files contained therein are not "blocked". To do
+  so, right click a file, select Properties, and look for such a tag. If it
+  exists, download the zipped release again and, before unzipping it, unblock it.
+
 - Confirm that the Mimic shelf button is executing the following:
 
 ```
