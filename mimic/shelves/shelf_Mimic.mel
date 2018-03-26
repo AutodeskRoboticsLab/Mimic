@@ -24,11 +24,11 @@ global proc shelf_Mimic () {
         -flipY 0
         -useAlpha 1
         -font "plainLabelFont" 
-        -imageOverlayLabel "mimic" 
+        -imageOverlayLabel "Mimic" 
         -overlayLabelColor 0.865193 0.865193 0.865193 
         -overlayLabelBackColor 0 0 0 0.5 
-        -image "/Users/evansparkyatherton/Library/Preferences/Autodesk/maya/modules/mimic/icons/mimic_logo_square_tesselated_light_shelfIcon.png" 
-        -image1 "/Users/evansparkyatherton/Library/Preferences/Autodesk/maya/modules/mimic/icons/mimic_logo_square_tesselated_light_shelfIcon.png" 
+        -image "mimic_logo_square_tesselated_light_shelfIcon.png" 
+        -image1 "mimic_logo_square_tesselated_light_shelfIcon.png" 
         -style "iconOnly" 
         -marginWidth 1
         -marginHeight 1
