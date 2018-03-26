@@ -75,13 +75,16 @@ def get_rigs_dict():
     for sub_dir_name in rigs_sub_dirs:
         sub_dir = '{}/{}'.format(rigs_dir, sub_dir_name)
         # Get content of the subdirectory
-        sub_dir_contents = os.listdir(sub_dir)
-        rigs_files = [f for f in sub_dir_contents if f.endswith(extension)]
-        for rig_file in rigs_files:
-            # Get entry for rigs dictionary
-            name = '{} {}'.format(sub_dir_name, rig_file.split('.')[0])
-            path = '{}/{}'.format(sub_dir, rig_file)
-            rigs[name] = path
+        try:
+            sub_dir_contents = os.listdir(sub_dir)
+            rigs_files = [f for f in sub_dir_contents if f.endswith(extension)]
+            for rig_file in rigs_files:
+                # Get entry for rigs dictionary
+                name = '{} {}'.format(sub_dir_name, rig_file.split('.')[0])
+                path = '{}/{}'.format(sub_dir, rig_file)
+                rigs[name] = path
+        except OSError:  # got a file
+            pass  # skip
     return rigs
 
 
