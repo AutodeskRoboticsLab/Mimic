@@ -4,7 +4,7 @@
 
 ### What is Mimic?
 
-[Mimic](https://www.mimicformaya.com/) is a free and open-source plugin for
+Mimic is a free and open-source plugin for
 [Autodesk Maya](https://www.autodesk.com/products/maya/overview) that enables
 simulation, programming, and control of 6-axis, Industrial Robots. It provides
 a robust and intuitive, animation-based toolset, allowing creators to
@@ -12,21 +12,24 @@ prototype, validate, and drive automated systems, without writing any code.
 Written in Python 2.7.
 
 
-### Getting started
+### Installation
 
-Download the latest [release](https://git.autodesk.com/RobotOverlords/Mimic/releases)
-and copy the contents of it to one of the following directories, depending on your
-operating system. 
+Download this release and copy the contents of it to one of the following
+directories, depending on your operating system. When you're done, open Maya,
+click on the Mimic shelf button, and click on the Mimic icon; that's it!
 
-    macOS   ~/Library/Preferences/Autodesk/maya/modules
-    Windows ~/Documents/maya/modules
+```
+macOS   ~/Library/Preferences/Autodesk/maya/modules
+Windows ~/Documents/maya/modules
+```
 
-When you're done, open Maya, click on the Mimic shelf button, and click on the
-Mimic icon; that's it!
+\* _If the directory_`/modules` _doesn't exist, create it._
+\*\* _If you're using Maya 2017 update 3 or earlier, you must
+[manually load the Mimic shelf](https://youtu.be/bc3SqEXcE5Q?t=1m46s)._
 
-You can find tutorials, videos, and other media in our
-[wiki](https://git.autodesk.com/RobotOverlords/Mimic/wiki) and textual
-documentation in [docs](mimic/docs).
+You can find tutorials, videos, and other media at
+[mimicformaya](https://www.mimicformaya.com/) and textual documentation in
+[docs](mimic/docs).
 
 
 ### Supported robots
