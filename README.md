@@ -4,7 +4,7 @@
 
 ### What is Mimic?
 
-Mimic is a free and open-source plugin for
+[Mimic](https://www.mimicformaya.com/) is a free and open-source plugin for
 [Autodesk Maya](https://www.autodesk.com/products/maya/overview) that enables
 simulation, programming, and control of 6-axis, Industrial Robots. It provides
 a robust and intuitive, animation-based toolset, allowing creators to
@@ -67,7 +67,7 @@ Help us out and contribute to this repository!
 You may submit an issue or open a pull request for any bugs or improvements to
 this software. See [devnotes](mimic/docs/devnotes.md) for programming guidelines.
 
-Join the our [slack channel](https://slack.com/)!
+Join the our [slack channel](https://www.mimicformaya.com/#community-section)!
 You may also contact us at [mimic@autodesk.com](mimic@autodesk.com).
 
 *Mimic was originally conceived and created by Evan Atherton at the Applied
