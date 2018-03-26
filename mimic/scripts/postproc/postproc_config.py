@@ -5,7 +5,7 @@ This module contains basic configuration parameters for postproc.
 """
 
 # Default parameters
-DEFAULT_POST_PROCESSOR = ''
+DEFAULT_POST_PROCESSOR = ''  # E.G. 'KUKA EntertainTech'
 DEFAULT_TEMPLATE_NAME = 'template'
 DEFAULT_OUTPUT_NAME = 'output'
 

@@ -10,7 +10,7 @@ MIMIC_VERSION_MAJOR = 1  # Must coincide with version in mimic.mod
 MIMIC_VERSION_MINOR = 0  # Must coincide with version in mimic.mod
 
 # Robots
-DEFAULT_ROBOT = ''
+DEFAULT_ROBOT = ''  # E.G 'KUKA KR60-3'
 
 # Plugin is dependent on the following scripts
 REQUIRED_PLUGINS = [
