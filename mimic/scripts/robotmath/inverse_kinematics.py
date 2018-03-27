@@ -5,8 +5,7 @@ Inverse kinematics solver
 
 import math
 
-
-LARGE_NUMBER = 9e9 
+LARGE_NUMBER = 9e9
 
 
 def solver(robot_definition, pivot_point, tcp_rotation):
@@ -15,13 +14,13 @@ def solver(robot_definition, pivot_point, tcp_rotation):
     Implementation based on 'An Analytical Solution of the Inverse Kinematics
     Problem of Industrial Serial Manipulators with an Orth-parallel Basis and
     a Spherical Wrist' by Brandstotter, Angerer, Hofbaur, 2014. Find reference
-    provided at: mimic/docs/references/IKSphericalWrist.pdf
+    provided at: references/IKSphericalWrist.pdf.
     :param robot_definition: List of seven essential geometrical parameters.
     :param pivot_point: Intersection (pivot) point of axes 4, 5, 6.
     :param tcp_rotation: Rotation matrix (3x3) for TCP.
     :return:
     """
-    
+
     a1 = robot_definition[0]
     a2 = robot_definition[1]
     b = robot_definition[2]
@@ -29,7 +28,7 @@ def solver(robot_definition, pivot_point, tcp_rotation):
     c2 = robot_definition[4]
     c3 = robot_definition[5]
     c4 = robot_definition[6]
-    
+
     # Initialize arrays
     theta1_sol = [0 for i in range(2)]
     theta2_sol = [0 for i in range(4)]
@@ -63,12 +62,14 @@ def solver(robot_definition, pivot_point, tcp_rotation):
         theta2_2 = LARGE_NUMBER
 
     try:
-        theta2_3 = math.acos((s2_2 + math.pow(c2, 2) - k_2) / (2 * s2 * c2)) - math.atan2((nx1 + 2 * a1), (pivot_point[2] - c1))
+        theta2_3 = math.acos((s2_2 + math.pow(c2, 2) - k_2) / (2 * s2 * c2)) - math.atan2((nx1 + 2 * a1),
+                                                                                          (pivot_point[2] - c1))
     except ValueError:  # math domain error
         theta2_3 = LARGE_NUMBER
 
     try:
-        theta2_4 = -(math.acos((s2_2 + math.pow(c2, 2) - k_2) / (2 * s2 * c2)) + math.atan2((nx1 + 2 * a1), (pivot_point[2] - c1)))
+        theta2_4 = -(
+        math.acos((s2_2 + math.pow(c2, 2) - k_2) / (2 * s2 * c2)) + math.atan2((nx1 + 2 * a1), (pivot_point[2] - c1)))
     except ValueError:  # math domain error
         theta2_4 = LARGE_NUMBER
 
@@ -117,25 +118,33 @@ def solver(robot_definition, pivot_point, tcp_rotation):
 
     # Theta 4
     try:
-        theta4_1 = math.atan2((tcp_rotation[1][2] * cos11 - tcp_rotation[0][2] * sin11), tcp_rotation[0][2] * cos231 * cos11 + tcp_rotation[1][2] * cos231 * sin11 - tcp_rotation[2][2] * sin231)
+        theta4_1 = math.atan2((tcp_rotation[1][2] * cos11 - tcp_rotation[0][2] * sin11),
+                              tcp_rotation[0][2] * cos231 * cos11 + tcp_rotation[1][2] * cos231 * sin11 -
+                              tcp_rotation[2][2] * sin231)
         theta4_5 = theta4_1 + math.pi
     except ValueError:  # math domain error
         theta4_1 = LARGE_NUMBER
         theta4_5 = LARGE_NUMBER
     try:
-        theta4_2 = math.atan2((tcp_rotation[1][2] * cos12 - tcp_rotation[0][2] * sin12), tcp_rotation[0][2] * cos232 * cos12 + tcp_rotation[1][2] * cos232 * sin12 - tcp_rotation[2][2] * sin232)
+        theta4_2 = math.atan2((tcp_rotation[1][2] * cos12 - tcp_rotation[0][2] * sin12),
+                              tcp_rotation[0][2] * cos232 * cos12 + tcp_rotation[1][2] * cos232 * sin12 -
+                              tcp_rotation[2][2] * sin232)
         theta4_6 = theta4_2 + math.pi
     except ValueError:  # math domain error
         theta4_2 = LARGE_NUMBER
         theta4_6 = LARGE_NUMBER
     try:
-        theta4_3 = math.atan2((tcp_rotation[1][2] * cos13 - tcp_rotation[0][2] * sin13), tcp_rotation[0][2] * cos233 * cos13 + tcp_rotation[1][2] * cos233 * sin13 - tcp_rotation[2][2] * sin233)
+        theta4_3 = math.atan2((tcp_rotation[1][2] * cos13 - tcp_rotation[0][2] * sin13),
+                              tcp_rotation[0][2] * cos233 * cos13 + tcp_rotation[1][2] * cos233 * sin13 -
+                              tcp_rotation[2][2] * sin233)
         theta4_7 = theta4_3 + math.pi
     except ValueError:  # math domain error
         theta4_3 = LARGE_NUMBER
         theta4_7 = LARGE_NUMBER
     try:
-        theta4_4 = math.atan2((tcp_rotation[1][2] * cos14 - tcp_rotation[0][2] * sin14), tcp_rotation[0][2] * cos234 * cos14 + tcp_rotation[1][2] * cos234 * sin14 - tcp_rotation[2][2] * sin234)
+        theta4_4 = math.atan2((tcp_rotation[1][2] * cos14 - tcp_rotation[0][2] * sin14),
+                              tcp_rotation[0][2] * cos234 * cos14 + tcp_rotation[1][2] * cos234 * sin14 -
+                              tcp_rotation[2][2] * sin234)
         theta4_8 = theta4_4 + math.pi
     except ValueError:  # math domain error
         theta4_4 = LARGE_NUMBER
@@ -169,25 +178,33 @@ def solver(robot_definition, pivot_point, tcp_rotation):
 
     # Theta 6
     try:
-        theta6_1 = math.atan2((tcp_rotation[0][1] * sin231 * cos11 + tcp_rotation[1][1] * sin231 * sin11 + tcp_rotation[2][1] * cos231), (-tcp_rotation[0][0] * sin231 * cos11 - tcp_rotation[1][0] * sin231 * sin11 - tcp_rotation[2][0] * cos231))
+        theta6_1 = math.atan2(
+            (tcp_rotation[0][1] * sin231 * cos11 + tcp_rotation[1][1] * sin231 * sin11 + tcp_rotation[2][1] * cos231),
+            (-tcp_rotation[0][0] * sin231 * cos11 - tcp_rotation[1][0] * sin231 * sin11 - tcp_rotation[2][0] * cos231))
         theta6_5 = theta6_1 - math.pi
     except ValueError:  # math domain error
         theta6_1 = LARGE_NUMBER
         theta6_5 = LARGE_NUMBER
     try:
-        theta6_2 = math.atan2((tcp_rotation[0][1] * sin232 * cos12 + tcp_rotation[1][1] * sin232 * sin12 + tcp_rotation[2][1] * cos232), (-tcp_rotation[0][0] * sin232 * cos12 - tcp_rotation[1][0] * sin232 * sin12 - tcp_rotation[2][0] * cos232))
+        theta6_2 = math.atan2(
+            (tcp_rotation[0][1] * sin232 * cos12 + tcp_rotation[1][1] * sin232 * sin12 + tcp_rotation[2][1] * cos232),
+            (-tcp_rotation[0][0] * sin232 * cos12 - tcp_rotation[1][0] * sin232 * sin12 - tcp_rotation[2][0] * cos232))
         theta6_6 = theta6_2 - math.pi
     except ValueError:  # math domain error
         theta6_2 = LARGE_NUMBER
         theta6_6 = LARGE_NUMBER
     try:
-        theta6_3 = math.atan2((tcp_rotation[0][1] * sin233 * cos13 + tcp_rotation[1][1] * sin233 * sin13 + tcp_rotation[2][1] * cos233), (-tcp_rotation[0][0] * sin233 * cos13 - tcp_rotation[1][0] * sin233 * sin13 - tcp_rotation[2][0] * cos233))
+        theta6_3 = math.atan2(
+            (tcp_rotation[0][1] * sin233 * cos13 + tcp_rotation[1][1] * sin233 * sin13 + tcp_rotation[2][1] * cos233),
+            (-tcp_rotation[0][0] * sin233 * cos13 - tcp_rotation[1][0] * sin233 * sin13 - tcp_rotation[2][0] * cos233))
         theta6_7 = theta6_3 - math.pi
     except ValueError:  # math domain error
         theta6_3 = LARGE_NUMBER
         theta6_7 = LARGE_NUMBER
     try:
-        theta6_4 = math.atan2((tcp_rotation[0][1] * sin234 * cos14 + tcp_rotation[1][1] * sin234 * sin14 + tcp_rotation[2][1] * cos234), (-tcp_rotation[0][0] * sin234 * cos14 - tcp_rotation[1][0] * sin234 * sin14 - tcp_rotation[2][0] * cos234))
+        theta6_4 = math.atan2(
+            (tcp_rotation[0][1] * sin234 * cos14 + tcp_rotation[1][1] * sin234 * sin14 + tcp_rotation[2][1] * cos234),
+            (-tcp_rotation[0][0] * sin234 * cos14 - tcp_rotation[1][0] * sin234 * sin14 - tcp_rotation[2][0] * cos234))
         theta6_8 = theta6_4 - math.pi
     except ValueError:  # math domain error
         theta6_4 = LARGE_NUMBER
@@ -241,7 +258,7 @@ def solver(robot_definition, pivot_point, tcp_rotation):
         theta5_sol,
         theta6_sol
     ]
-    
+
     return all_solutions
 
 

@@ -109,7 +109,7 @@ def check_robot_selection(number_of_robots=None):
 def clear_limits_ui(*args):
     """
     Clears the axis limit fields in the Mimic UI
-    :param *args: Requried for Maya to pass command from the UI
+    :param args: Required for Maya to pass command from the UI
     :return:
     """
     for i in range(6):
@@ -122,7 +122,7 @@ def clear_limits_ui(*args):
 def clear_fk_pose_ui(*args):
     """
     Clears the FK pose fields in the Mimic UI
-    :param *args: Requried for Maya to pass command from the UI
+    :param args: Required for Maya to pass command from the UI
     :return:
     """
     for i in range(6):
@@ -133,7 +133,7 @@ def set_program_dir(*args):
     """
     Creates a file dialog box that allows the user to select a directory to
     save program files.
-    :param *args: Requried for Maya to pass command from the UI.
+    :param args: Required for Maya to pass command from the UI.
     :return:
     """
 
@@ -158,10 +158,6 @@ def _get_closest_ik_keyframe(robot, current_frame):
     :return closest_ik_key: int; 
     :return count_direction: int; 
     """
-    # initialize variables
-    closest_ik_key = None
-    count_direction = None
-
     # Get a list of all keyframes on robots IK attribute.
     ik_keys = pm.keyframe('{}|robot_GRP|target_CTRL'.format(robot),
                           attribute='ik',
@@ -173,9 +169,8 @@ def _get_closest_ik_keyframe(robot, current_frame):
     # Note: we only need to check on controller as they are al keyframed
     # together
     ik_keys_filtered = [key for key in ik_keys if pm.keyframe('{}|robot_GRP|FK_CTRLS|a1FK_CTRL.rotateY'.format(robot),
-                           query=True,
-                           time=key)]
-
+                                                              query=True,
+                                                              time=key)]
 
     # If there are no IK attribute keyframes on the current robot,
     # return an empty array.
@@ -185,7 +180,6 @@ def _get_closest_ik_keyframe(robot, current_frame):
     # Find the IK attribute keyframe that's closest to current time,
     # above or below the current frame.
     closest_ik_key = min(ik_keys_filtered, key=lambda x: abs(x - current_frame))
-
 
     # Figure out which side of the current keyframe the closest frame is to
     # use as a for loop range step size. Represented by +1 or -1
@@ -206,7 +200,6 @@ def _accumulate_rotation(a_in, a_0):
     :param a_0: float; previous evaluation of axis rotation
     :return a_out: float
     """
-
     # If the input value and previous value differ by a large amount, we assume
     # the evaluation has been flipped, so we manually flip it back. Otherwise,
     # we output the input value unchanged
@@ -356,7 +349,7 @@ def add_mimic_script_node(*args):
     """
     Adds a script node to the scene that executes when the scene is open and
     adds a reconcile_rotation script job to the scene
-    :param *args: Requried for Maya to pass command from the UI.
+    :param args: Required for Maya to pass command from the UI.
     :return:
     """
     if pm.objExists('mimicScriptNode'):
@@ -388,14 +381,14 @@ def add_hud_script_node(*args):
     Adds a script node to the scene that executes when the scene is closed that
     runs close_hud(). This ensures that the HUD closes when the scene is
     closed.
-    :param *args: Requried for Maya to pass command from the UI.
+    :param args: Required for Maya to pass command from the UI.
     :return:
     """
     if pm.objExists('mimicHudScriptNode'):
         print('Script Node Already Exists')
         return
 
-        # Define the command to be executed when the scriptNode is triggered
+    # Define the command to be executed when the scriptNode is triggered
     script_str = 'import pymel.core as pm; ' \
                  'import mimic_utils; ' \
                  'mimic_utils.close_hud()'
@@ -641,7 +634,7 @@ def find_ik_solutions(robot):
 def find_fk_config(robot):
     """
     Description!
-    :param robot:
+    :param robot: string; name of a selected robot being operated on
     :return:
     """
     a1 = pm.getAttr('{}|robot_GRP|robot_GEOM|Base|axis1.' \
@@ -805,9 +798,9 @@ def invert_axis(axis_number, robots=[]):
 
 def zero_target(*args):
     """
-	If in IK mode - Zeros tool controller
-	If in FK mode - zeros all axes    
-	:param args:
+    If in IK mode - Zeros tool controller
+    If in FK mode - Aeros all axes
+    :param args:
     :return:
     """
     robots = get_robot_roots()
@@ -1073,7 +1066,7 @@ def attach_tool_model(*args):
     """
     Attaches model to the selected robot by placing it the the robots forward
     kinematic hierarchy
-    :param *args:
+    :param args:
     :return:
     """
     sel = pm.ls(selection=True, type='transform')
@@ -1182,7 +1175,6 @@ def detach_tool_model(*args):
     :param args:
     :return
     """
-
     selection = pm.ls(selection=True)
 
     tools = 0  # Keep track of whether or not we have any tools
@@ -1210,7 +1202,7 @@ def detach_tool_model(*args):
 def get_axis_limits(*args):
     """
     Gets the current axis limits and updates UI with corresponding values
-    :param *args:
+    :param args:
     :return:
     """
     robot = get_robot_roots()
@@ -1241,7 +1233,6 @@ def set_axis_limit(axis_number, min_max):
     robot
     :param axis_number:
     :param min_max:
-    :param args:
     :return:
     """
     # axis_number = int
@@ -1264,6 +1255,11 @@ def set_axis_limit(axis_number, min_max):
 
 
 def get_velocity_limits(robot):
+    """
+
+    :param robot: string; name of a selected robot being operated on
+    :return:
+    """
     velocity_limits = []
 
     # HARD CODED - Number of robot axes; should include external axes
@@ -1324,7 +1320,6 @@ def select_fk_axis_handle(axis_number):
     """
     Selects FK Axis Control
     :param axis_number:
-    :param args:
     :return:
     """
     robots = get_robot_roots()
@@ -1345,7 +1340,6 @@ def set_axis(axis_number):
     """
     Description!
     :param axis_number:
-    :param args:
     :return:
     """
     # axis_number = int
@@ -1393,7 +1387,7 @@ def _snap_IK_target_to_FK(robot):
     """
     Snaps the IK control handle to the end of the FK heirarchy
     Used for IK/FK switching and keyframing
-    :param robot:
+    :param robot: string; name of a selected robot being operated on
     :return:
     """
     # Snap IK Ctrl to FK location
@@ -1416,19 +1410,19 @@ def _snap_IK_target_to_FK(robot):
         ctrl_ik = '{}|robot_GRP|target_CTRL'.format(robot)
         ctrl_fk = '{}|robot_GRP|robot_GEOM|Base|axis1|axis2|axis3|' \
                   'axis4|axis5|axis6|tcp_GRP|tcp_HDL' \
-                  .format(robot)
+            .format(robot)
 
         try:
             pm.snapTransforms(s=ctrl_fk, d=ctrl_ik)
         except:
             pm.warning('Coundn\'t snap {} target_CTRL handle to FK' \
-                       .format(robot))    
+                       .format(robot))
 
 
 def switch_to_ik(robot):
     """
     Switches all robots in scene to IK mode
-    :param robot:
+    :param robot: string; name of a selected robot being operated on
     :return:
     """
 
@@ -1474,7 +1468,7 @@ def switch_to_ik(robot):
 def switch_to_fk(robot):
     """
     Switches all robots in the scene to IK mode.
-    :param robot:
+    :param robot: string; name of a selected robot being operated on
     :return:
     """
     try:
@@ -1700,7 +1694,6 @@ def key_fk(*args):
                 pm.setKeyframe('{}|robot_GRP|tool_CTRL'.format(robot),
                                attribute='v')
 
-
             # Key tool controllers
             if pm.checkBox('cb_keyToolCtrl', query=True, value=True):
                 if pm.objExists('{}|robot_GRP|tool_CTRL'.format(robot)):
@@ -1856,7 +1849,6 @@ def key_ik_fk(*args):
 def _filter_hotkey_set_name(hotkey_set_name):
     """
     Description!
-    :param args:
     :return:
     """
 
@@ -1871,7 +1863,6 @@ def _filter_hotkey_set_name(hotkey_set_name):
 def _create_hotkey_set():
     """
     Description!
-    :param args:
     :return:
     """
     message_str = 'You must use a custom hotkey profile.\n\n' \
@@ -1901,7 +1892,6 @@ def _create_hotkey_set():
 def assign_hotkey(cmd_name, annotation_str, command_str):
     """
     Description!
-    :param args:
     :return:
     """
     if cmd_name == 'mimic_toggleIkFkMode':
@@ -2128,7 +2118,7 @@ def save_pose_to_shelf(*args):
         for each in keyable:
             find_val = pm.getAttr(target_ctrl + "." + each)
             save_to_shelf = (startLineCode + "'" + (
-            target_ctrl_str + "." + each) + "', " + " %f" + endLineCode) % find_val
+                target_ctrl_str + "." + each) + "', " + " %f" + endLineCode) % find_val
             store_cmds += save_to_shelf
 
             # FK MODE
@@ -2144,7 +2134,7 @@ def save_pose_to_shelf(*args):
         for each in config_attrs:
             find_val = pm.getAttr(target_ctrl + "." + each)
             save_to_shelf = (startLineCode + "'" + (
-            target_ctrl_str + "." + each) + "', " + " %f" + endLineCode) % find_val
+                target_ctrl_str + "." + each) + "', " + " %f" + endLineCode) % find_val
             store_cmds += save_to_shelf
 
         fk_ctrl = "{}|robot_GRP|FK_CTRLS|".format(robot)
@@ -2216,7 +2206,6 @@ def get_maya_framerate():
 def _get_animation_parameters():
     """
     Description!
-    :param args:
     :return:
     """
 
@@ -2237,8 +2226,8 @@ def _get_animation_parameters():
 
 def _check_command_parameters(robot):
     """
-    Description!
-    :param args:
+
+    :param robot: string; name of a selected robot being operated on
     :return:
     """
     animation_params = _get_animation_parameters()
@@ -2263,7 +2252,7 @@ def _check_command_parameters(robot):
 def _get_commands_from_animation(robot, time_interval_value, time_interval_units):
     """
     Get key-framed commands from the animation slider.
-    :param robot:
+    :param robot: string; name of a selected robot being operated on
     :param time_interval_value:
     :param time_interval_units:
     :return:
@@ -2412,7 +2401,7 @@ def _get_program_settings():
     :return program_settings: dictionary
     """
     program_settings = {}
-    
+
     # Sample Time
     time_unit_radio_button = pm.radioButtonGrp('time_unit_radio_group',
                                                query=True,
@@ -2422,7 +2411,7 @@ def _get_program_settings():
     else:
         time_unit = 'frames'
 
-    try: 
+    try:
         time_between_samples = float(pm.textField('t_timeBetweenSamples',
                                                   query=True,
                                                   text=True))
@@ -2444,13 +2433,12 @@ def _get_program_settings():
         else:
             pm.warning('Time interval must be a float; ' \
                        'using default: 1 frame')
-            time_between_samples = 1                
+            time_between_samples = 1
 
-    # Set the UI back to the default unit if necessary
+            # Set the UI back to the default unit if necessary
     pm.textField('t_timeBetweenSamples',
                  edit=True,
                  text=str(time_between_samples))
-
 
     # Ignore warnings
     ignore_warnings = pm.checkBox('cb_ignoreWarnings',
@@ -2477,7 +2465,6 @@ def _get_program_settings():
     sample_rate = pm.radioCollection('sample_rate_radio_collection',
                                      q=True,
                                      sl=True)
-
 
     # Check if the file should be overwritten if it already exists.
     overwrite_option = pm.checkBox('cb_overwriteFile',

@@ -70,7 +70,6 @@ At time of writing, the following features are available using the Mimic UI:
             |-- Ignore warnings
             |-- Check Program
             |-- Save Program
-        |-- Output
     |-- Setup
         |-- Add Robot
             |-- ABB IRB-120
@@ -123,6 +122,7 @@ At time of writing, the following features are available using the Mimic UI:
             |-- Key IK/FK
         |-- UI
             |-- Shader Range
+    |-- Output Window
 ```
 
 

@@ -12,21 +12,25 @@ prototype, validate, and drive automated systems, without writing any code.
 Written in Python 2.7.
 
 
-### Getting started
+### Installation
 
-Download the latest [release](https://git.autodesk.com/RobotOverlords/Mimic/releases)
-and copy the contents of it to one of the following directories, depending on your
-operating system. 
+Download this release and copy the contents of it to one of the following
+directories, depending on your operating system. When you're done, open Maya,
+click on the Mimic shelf button, and click on the Mimic icon; that's it!
 
-    macOS   ~/Library/Preferences/Autodesk/maya/modules
-    Windows ~/Documents/maya/modules
+```
+macOS   ~/Library/Preferences/Autodesk/maya/modules
+Windows ~/Documents/maya/modules
+```
 
-When you're done, open Maya, click on the Mimic shelf button, and click on the
-Mimic icon; that's it!
+\* _If the directory_`/modules` _doesn't exist, create it._
 
-You can find tutorials, videos, and other media in our
-[wiki](https://git.autodesk.com/RobotOverlords/Mimic/wiki) and textual
-documentation in [docs](mimic/docs).
+\*\* _If you're using Maya 2017 update 3 or earlier, you must
+[manually load the Mimic shelf](https://youtu.be/bc3SqEXcE5Q?t=1m46s)._
+
+You can find tutorials, videos, and other media at
+[mimicformaya](https://www.mimicformaya.com/) and textual documentation in
+[docs](mimic/docs).
 
 
 ### Supported robots
@@ -64,7 +68,7 @@ Help us out and contribute to this repository!
 You may submit an issue or open a pull request for any bugs or improvements to
 this software. See [devnotes](mimic/docs/devnotes.md) for programming guidelines.
 
-Join the our [slack channel](https://slack.com/)!
+Join the our [slack channel](https://www.mimicformaya.com/#community-section)!
 You may also contact us at [mimic@autodesk.com](mimic@autodesk.com).
 
 *Mimic was originally conceived and created by Evan Atherton at the Applied

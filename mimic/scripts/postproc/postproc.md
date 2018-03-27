@@ -41,6 +41,7 @@ should try to maintain organization).
         |-- __init__.py
         |-- <type of processor>
             |-- __init__.py
+            |-- <type of processor>.md
             |-- <type of processor>.py
             |-- <type of processor>_config.py
             |-- template.<output file extension>
@@ -54,7 +55,8 @@ For the purpose of style, the parameter `type of processor` should always be
 lowercase. The parameters `type of robot` and `type of processor` are free to
 use their own, appropriate naming convention.
 
-The *postproc* directory also contains the modules:
+The *postproc* directory also contains the files:
+- *postproc.md*, which is a readme for this package
 - *postproc.py*, which contains PostProcessor object, datatypes, functions
 - *postproc_config.py*, which contains configuration parameters
 - *postproc_setup.py*, which contains configuration functions
