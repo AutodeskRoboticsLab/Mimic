@@ -1,7 +1,7 @@
 #!usr/bin/env python
 
 """
-Robot kinematics
+Dependency Graph plug-in and the heart of Mimic's robot rig. It performs the Inverse Kinematic solve, along with handling IK-FK switching
 """
 
 import sys
@@ -640,11 +640,16 @@ class robotIKS(OpenMaya.MPxNode):
 #========================================================#
 
 def nodeCreator():
-    ''' Creates an instance of our node class and delivers it to Maya as a pointer. '''
+    '''
+    Creates an instance of our node class and delivers it to Maya as a pointer.
+    '''
+
     return  robotIKS() 
 
 def nodeInitializer():
-    ''' Defines the input and output attributes as static variables in our plug-in class. '''
+    '''
+    Defines the input and output attributes as static variables in our plug-in class.
+    '''
     
     # The following function set will allow us to create our attributes.
     numericAttributeFn  = OpenMaya.MFnNumericAttribute()
@@ -1426,7 +1431,9 @@ def nodeInitializer():
     robotIKS.attributeAffects( robotIKS.targetMatAttr, robotIKS.theta      )    
            
 def initializePlugin( mobject ):
-    ''' Initialize the plug-in '''
+    '''
+    Initialize the plug-in
+    '''
     mplugin = OpenMaya.MFnPlugin( mobject )
     try:
         mplugin.registerNode( kPluginNodeName, kPluginNodeId, nodeCreator,
@@ -1436,7 +1443,9 @@ def initializePlugin( mobject ):
         raise
     
 def uninitializePlugin( mobject ):
-    ''' Uninitializes the plug-in '''
+    '''
+    Uninitializes the plug-in
+    '''
     mplugin = OpenMaya.MFnPlugin( mobject )
     try:
         mplugin.deregisterNode( kPluginNodeId )

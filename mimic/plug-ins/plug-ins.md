@@ -13,7 +13,7 @@ You can confirm that the plugin has loaded properly, in Maya, check *Windows > S
 
 *robotAccumRot* is a Dependency Graph plug-in that enables the IK solver to evaluate axis angles beyond +/- 180 degrees
 
-*robotIK* is a Dependency Graph plug-in and the heart of Mimics robot rig. It performs the Inverse Kinematic solve, along with handling IK-FK switching, and more.
+*robotIK* is a Dependency Graph plug-in and the heart of Mimic's robot rig. It performs the Inverse Kinematic solve, along with handling IK-FK switching, and more.
 
 *robotLimitRot* is a Dependency Graph plug-in that allows the physical rotational limits of the robot rig to be taken into account when performing an Inverse Kinematic solve.
 

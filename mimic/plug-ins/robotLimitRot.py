@@ -1,7 +1,8 @@
 #!usr/bin/env python
 
 """
-temp docstring
+Dependency Graph plug-in that allows the physical rotational limits of the
+robot rig to be taken into account when performing an Inverse Kinematic solve.
 """
 
 import sys
@@ -67,6 +68,9 @@ class robotLimitRotation(OpenMaya.MPxNode):
         #===================================#
         #     Limit Rotation Solve Code     #                 
         #===================================#
+        # If the input is greater than the robot's upper rotation limit, or
+        # less than the robot's lower rotation limit, we flip the axis rotation
+        # by 360 degrees to achieve a value that fits within the robots limits
         if ik:
             if J_in > upperLimit:
                 J_out = J_in - 360
@@ -98,11 +102,16 @@ class robotLimitRotation(OpenMaya.MPxNode):
 #========================================================#
 
 def nodeCreator():
-    ''' Creates an instance of our node class and delivers it to Maya as a pointer. '''
+    '''
+    Creates an instance of our node class and delivers it to Maya as a pointer.
+    '''
+
     return  robotLimitRotation() 
 
 def nodeInitializer():
-    ''' Defines the input and output attributes as static variables in our plug-in class. '''
+    '''
+    Defines the input and output attributes as static variables in our plug-in class.
+    '''
     
     # The following function set will allow us to create our attributes.
     angleAttributeFn   = OpenMaya.MFnUnitAttribute()
@@ -171,7 +180,10 @@ def nodeInitializer():
 
            
 def initializePlugin( mobject ):
-    ''' Initialize the plug-in '''
+    '''
+    Initialize the plug-in
+    '''
+
     mplugin = OpenMaya.MFnPlugin( mobject )
     try:
         mplugin.registerNode( kPluginNodeName, kPluginNodeId, nodeCreator,
@@ -181,7 +193,10 @@ def initializePlugin( mobject ):
         raise
     
 def uninitializePlugin( mobject ):
-    ''' Uninitializes the plug-in '''
+    '''
+    Uninitializes the plug-in
+    '''
+
     mplugin = OpenMaya.MFnPlugin( mobject )
     try:
         mplugin.deregisterNode( kPluginNodeId )

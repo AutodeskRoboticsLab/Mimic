@@ -1,7 +1,12 @@
 #!usr/bin/env python
 
 """
-temp docstring
+Dependency Graph plug-in that enables the IK solver to evaluate axis angles
+beyond +/- 180 degrees
+
+This function creates a cycle in the Dependency Graph, which is not best
+practice; however, it is the best way to ensure accurate rotation in robot
+axis beyond the limits of the Inverse Kinematic solver
 """
 
 import sys
@@ -22,9 +27,7 @@ kPluginNodeName = 'robotAccumulateRotation'    # The name of the node.
 kPluginNodeClassify = 'utility/general'     # Where this node will be found in the Maya UI.
 kPluginNodeId = OpenMaya.MTypeId( 0x87002 ) # A unique ID associated to this node type.    
 
-#==========================================#
-#                Plug-in                   #
-#==========================================#
+# This class name must match kPluginNodeName above
 class robotAccumRotation(OpenMaya.MPxNode):    
     # Static variables which will later be replaced by the node's attributes.
     # Inputs
@@ -35,15 +38,12 @@ class robotAccumRotation(OpenMaya.MPxNode):
 
     # Outputs 
     JoutAttr = OpenMaya.MAngle()
-
-
     
     def __init__(self):
         OpenMaya.MPxNode.__init__(self)
     
     
-    ##################################################
-        
+    # Main compute method
     def compute(self, pPlug, pDataBlock):
                    
         ## Obtain the data handles for each attribute
@@ -64,48 +64,58 @@ class robotAccumRotation(OpenMaya.MPxNode):
         Jflip = JflipDataHandle.asBool() 
         ik    = ikDataHandle.asBool()
 
-        #========================================#
-        #     Accumulate Rotation Solve Code     #                 
-        #========================================#
+        # Accumulate Rotation Solve Code 
+        # If we're in IK mode, check to see if the current rotation value and 
+        # the previous value differ by a large amount (e.g. 300 degrees)
         if ik:
             try:
                 if abs(J_in - J_0) > 300: 
+                    # If so, we assume that the inverse kinematic solver has
+                    # flipped, so we manually flip the value back
+                    # E.G. if J_0 = 179 and J_in = -179, we assume the output,
+                    # J_out, should actually be +181
                     J_out = J_in - (abs(J_in)/J_in) * 360
                 else:
                     J_out = J_in
             except:
                 J_out = J_in
                 
+            # If the flipAxis boolean on the robot rig is set to True, we 
+            # invert the output by +/- 360 degrees. So +235 becomes -125    
             if Jflip:
                 try:
                     J_out = J_out - (abs(J_out)/J_out) * 360
                 except:
                     pass
+        # If ik is flase, we are in forward kinematic mode; in which case, we
+        # pass the input straight through
         else:
             J_out = J_in
            
-                 
-
-        
+         
         # Set the Output Values
         Jout = JoutDataHandle.setMAngle( OpenMaya.MAngle( J_out , 2 ) )
 
             
-        # Mark the output data handle as being clean; it need not be computed given its input.
+        # Mark the output data handle as being clean; it need not be computed
+        # given its input.
         JoutDataHandle.setClean()
 
              
 
-#========================================================#
-#                 Plug-in initialization.                #
-#========================================================#
-
+# Plug-in initialization:
 def nodeCreator():
-    ''' Creates an instance of our node class and delivers it to Maya as a pointer. '''
+    '''
+    Creates an instance of our node class and delivers it to Maya as a
+    pointer. 
+    '''
     return  robotAccumRotation() 
 
 def nodeInitializer():
-    ''' Defines the input and output attributes as static variables in our plug-in class. '''
+    '''
+    Defines the input and output attributes as static variables in our
+    plug-in class.
+    '''
     
     # The following function set will allow us to create our attributes.
     angleAttributeFn   = OpenMaya.MFnUnitAttribute()
@@ -150,8 +160,6 @@ def nodeInitializer():
     angleAttributeFn.hidden   = False 
     robotAccumRotation.addAttribute( robotAccumRotation.JoutAttr ) 
 
-
-
     
     #===================================#
     #    NODE ATTRIBUTE DEPENDENCIES    #
@@ -161,11 +169,11 @@ def nodeInitializer():
     robotAccumRotation.attributeAffects( robotAccumRotation.JflipAttr, robotAccumRotation.JoutAttr )
     robotAccumRotation.attributeAffects( robotAccumRotation.ikAttr, robotAccumRotation.JoutAttr )
      
-
-
            
 def initializePlugin( mobject ):
-    ''' Initialize the plug-in '''
+    '''
+    Initialize the plug-in
+    '''
     mplugin = OpenMaya.MFnPlugin( mobject )
     try:
         mplugin.registerNode( kPluginNodeName, kPluginNodeId, nodeCreator,
@@ -175,7 +183,10 @@ def initializePlugin( mobject ):
         raise
     
 def uninitializePlugin( mobject ):
-    ''' Uninitializes the plug-in '''
+    '''
+    Uninitializes the plug-in
+    '''
+
     mplugin = OpenMaya.MFnPlugin( mobject )
     try:
         mplugin.deregisterNode( kPluginNodeId )
