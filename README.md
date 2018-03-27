@@ -1,4 +1,4 @@
-![mimic_logo](mimic/logos/mimic_logo_black_transparent_thick_large.png)
+![mimic_logo](mimic/logos/mimic_logo_web.gif)
 
 #
 
