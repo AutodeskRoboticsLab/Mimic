@@ -36,6 +36,7 @@ You can find tutorials, videos, and other media on our
 ### Currently supported robots
 
 *Let us know if what you need isn't listed and we'll try to help!*
+(contact info provided below)
 
 Mimic currently supports the following Robots (see [rigs](mimic/rigs)):
 

@@ -128,14 +128,10 @@ AnalogInput = namedtuple(
 class PostProcessor(object):
     """
     Generic, superclass post-processor. This object is designed to provide
-    generic functionality to all processor objects but should be altered at
-    in subclass implementations.
-
-    Note that this class contains protected functions that initialize (_init),
-    process (_process), and get (_get) parameters. Only a few public functions
-    are presented for the purpose of clarity. Once it has been configured, the
-    function of the PostProcessor is to provide strong types, structures, and
-    templates for minimally structured input.
+    generic functionality to all processor objects (but should be altered
+    in subclass implementations) and to interface the rest of Mimic.
+    Note that this class contains protected functions that initialize,
+    process, and get/set parameters and only a few unique public functions
     """
 
     def __init__(self,
@@ -144,7 +140,10 @@ class PostProcessor(object):
                  output_file_extension,
                  def_program_template):
         """
-        Initialize generic processor.
+        Initialize generic processor. This function sets PostProcessor types
+        and a few default parameters. Subclasses should implement the following
+        in their own initialization functions:
+            super(*subclass, self).__init__(*args)
         :param type_robot: Type of robot supported by this processor
         :param type_processor: Type of this processor
         :param output_file_extension: Type of the output file
@@ -158,7 +157,8 @@ class PostProcessor(object):
     def _get_program_template_path(self):
         """
         Constructs and returns the expected template path. The type of robot,
-        processor, and extension must coincide with those in the actual path.
+        processor, and extension must coincide with those in the actual path
+        to the subclass PostProcessor.
         :return:
         """
         mimic_dir = general_utils.get_mimic_dir()  # dependent on Maya
@@ -171,8 +171,8 @@ class PostProcessor(object):
 
     def _get_program_template(self):
         """
-        Initialize program template. If there isn't one available, the provided
-        default program template will be used instead.
+        Initialize program template. If there isn't one available in the Mimic
+        directory, the provided default program template will be used instead.
         :return:
         """
         # TODO: Should this be type-case independent?
@@ -221,7 +221,9 @@ class PostProcessor(object):
 
     def _process_command(self, command, opts):
         """
-        Process a single command and user options.
+        Process a single command and user options.  This function should
+        consider any options, format input commands, and fill a template.
+        Subclass implementation may be static.
         :param command: Command tuple
         :param opts: UserOptions tuple
         :return:
@@ -230,7 +232,9 @@ class PostProcessor(object):
 
     def _process_program(self, processed_commands, opts):  # Implement in base class!
         """
-        Process a list of instructions and fill a program template.
+        Process a list of instructions and user options. This function should
+        consider any options, format input instructions, and fill a program
+        template. Subclass implementation may be static.
         :param processed_commands: List of processed commands.
         :return:
         """
@@ -238,7 +242,8 @@ class PostProcessor(object):
 
     def process(self, commands, opts):
         """
-        Process a list of commands and user options.
+        Process a list of commands and user options. This function should
+        consider any options, format input commands, and fill a program template.
         :param commands: List of Command tuple
         :param opts: UserOptions tuple
         :return:
@@ -269,7 +274,9 @@ class PostProcessor(object):
 
     def get_formatted_commands(self, params):
         """
-        Using raw commands, get formatted commands.
+        From raw input commands, get formatted commands. This function should
+        convert minimally formatted input parameters (provided by Mimic) into
+        formatted datatypes specific to the subclass.
         :param params:
         :return:
         """
