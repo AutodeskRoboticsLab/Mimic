@@ -24,6 +24,7 @@ Windows ~/Documents/maya/modules
 ```
 
 \* _If the directory_`/modules` _doesn't exist, create it._
+
 \*\* _If you're using Maya 2017 update 3 or earlier, you must
 [manually load the Mimic shelf](https://youtu.be/bc3SqEXcE5Q?t=1m46s)._
 
