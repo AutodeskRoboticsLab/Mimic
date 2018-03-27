@@ -10,13 +10,13 @@ At time of writing, the following features are available using the Mimic UI:
     |-- Animate
         |-- IK/FK Switching
             |-- IK Controls
-                |-- Configure A1
-                |-- Configure A2
-                |-- Configure A3
-                |-- Configure A4
-                |-- Configure A5
-                |-- Configure A6
+                |-- Configuration Bool 1
+                |-- Configuration Bool 2
+                |-- Configuration Bool 3
+                |-- Invert A4
+                |-- Invert A6
                 |-- Key tool controller
+                |-- Set IK Keyframe
             |-- FK Controls
                 |-- Configure A1
                 |-- Configure A2
@@ -27,10 +27,10 @@ At time of writing, the following features are available using the Mimic UI:
                 |-- Get Pose
                 |-- Set Pose
                 |-- Clear
-            |-- Set IK Keyframe
+                |-- Set FK Keyframe
         |-- Keyframing Tools
             |-- Delete IK/FK Keyframe
-            |-- Select Keyable Robots
+            |-- Select Keyframe Hierarchy
         |-- General
             |-- Save Pose
             |-- Zero Tool (TCS)
@@ -59,7 +59,7 @@ At time of writing, the following features are available using the Mimic UI:
                 |-- IO options
                     |-- Ignore IOs
                     |-- Set IOs first
-                |-- Include in outut
+                |-- Include in output
                     |-- Axes
                     |-- Pose
                     |-- External Axes
@@ -72,7 +72,6 @@ At time of writing, the following features are available using the Mimic UI:
             |-- Save Program
     |-- Setup
         |-- Add Robot
-            |-- ABB IRB-120
             |-- ABB IRB-6700
             |-- KUKA AGILUS-R900
             |-- KUKA KR5-R1400
