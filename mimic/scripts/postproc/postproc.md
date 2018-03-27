@@ -6,6 +6,10 @@ This section refers to the Python package *mimic/scripts/postproc*. It contains
 several Post Processor modules for interpreting and formatting commands created
 in Mimic and, from them, producing usable robot code. 
 
+*By modifying Post Processor templates, you can begin to customize Mimic to suit
+your projects needs. Look for a file called `template.*` in your chosen processor's
+directory!*
+
 If you add a new Post Processor to this package make sure to:
 - List it as supported in the main README.
 - Document it using a markdown (`.md`), docstrings, and inline comments.

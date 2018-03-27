@@ -22,6 +22,8 @@ The contents of this directory are as follows:
 
 ### Notes
 
+- Changes to these files *require* a restart of Autodesk Maya to work.
+
 - You can confirm that the plugin has loaded properly, in Maya, check
   *Windows > Settings > Plug-in Manager*
   

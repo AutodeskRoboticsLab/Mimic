@@ -2,7 +2,10 @@
 
 ### Rigs
 
-Add your rigs to this directory using the following structure:
+*Acquire your rigs from the latest release of Mimic.*
+
+If you decide to build your own rigs, add them to this directory using the
+following structure:
 
 ```
 |-- mimic

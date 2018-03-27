@@ -95,20 +95,26 @@ def get_robot_roots(all_robots=0, sel=[]):
 
 
 def check_robot_selection(number_of_robots=None):
+    """
+    Confirm that robots have been selected; if a number of robots is provided,
+    confirm that the number of robots selected matches it.
+    :param number_of_robots:
+    :return:
+    """
+    # Check if any robots are selected
     robots = get_robot_roots()
     if not robots:
-        return None
-
+        return False
+    # Check against number of robots
     if number_of_robots:
         if len(robots) > number_of_robots:
-            return None
-
+            return False
     return True
 
 
 def clear_limits_ui(*args):
     """
-    Clears the axis limit fields in the Mimic UI
+    Clears the axis limit fields in the Mimic UI.
     :param args: Required for Maya to pass command from the UI
     :return:
     """
@@ -121,7 +127,7 @@ def clear_limits_ui(*args):
 
 def clear_fk_pose_ui(*args):
     """
-    Clears the FK pose fields in the Mimic UI
+    Clears the FK pose fields in the Mimic UI.
     :param args: Required for Maya to pass command from the UI
     :return:
     """
@@ -153,7 +159,7 @@ def _get_closest_ik_keyframe(robot, current_frame):
     to the frame that is being evaluated. We only consider there to ba an
     a true IK keyframe if there is a keyframe set for ~both~ the tool_CTRLS
     ik attribute, as well as the FK_CTRLS rotate attributes
-    :param robot: string; name of a selected robot being operated on
+    :param robot: name string of the selected robot
     :param current_frame: int; frame that is currently being evaluated
     :return closest_ik_key: int; 
     :return count_direction: int; 
@@ -215,7 +221,7 @@ def _get_reconciled_rotation_value(robot, axis, rotation_axis, current_frame):
     """
     Determines the proper rotation value of an axis at the desired frame by
     comparing the evaluation to the closest keyframed value.
-    :param robot: string; name of a selected robot being operated on
+    :param robot: name string of the selected robot
     :param axis: int; number of the axis being evaluated
     :param rotation_axis: string; axis that specified axis rotates about
     :param current_frame: int; frame that is currently being evaluated
@@ -379,8 +385,7 @@ def add_mimic_script_node(*args):
 def add_hud_script_node(*args):
     """
     Adds a script node to the scene that executes when the scene is closed that
-    runs close_hud(). This ensures that the HUD closes when the scene is
-    closed.
+    runs close_hud(). This ensures that the HUD closes when the scene is closed.
     :param args: Required for Maya to pass command from the UI.
     :return:
     """
@@ -404,13 +409,12 @@ def add_hud_script_node(*args):
 def find_ik_solutions(robot):
     """
     Fids all possible IK configuration solutions for the input robot, given the
-    current position of the tool center point, local base frame, and target 
-    frame.
+    current position of the tool center point, local base frame, and target frame.
 
     This function is used to determine which IK configuration is necessary to
     match a given FK pose. To do this, we only need to inspect and compare
     axes 1, 2, and 5.
-    :param robot: string; name of a selected robot being operated on
+    :param robot: name string of the selected robot
     :return ik_sols: list of possible axis configurations
     """
 
@@ -633,29 +637,42 @@ def find_ik_solutions(robot):
 
 def find_fk_config(robot):
     """
-    Description!
-    :param robot: string; name of a selected robot being operated on
+    Get the six axes from the selected robot.
+    :param robot: name string of the selected robot
     :return:
     """
-    a1 = pm.getAttr('{}|robot_GRP|robot_GEOM|Base|axis1.' \
-                    'rotateY'.format(robot))
-    a2 = pm.getAttr('{}|robot_GRP|robot_GEOM|Base|axis1|axis2.' \
-                    'rotateX'.format(robot))
-    a3 = pm.getAttr('{}|robot_GRP|robot_GEOM|Base|axis1|axis2|axis3.' \
-                    'rotateX'.format(robot))
-    a4 = pm.getAttr('{}|robot_GRP|robot_GEOM|Base|axis1|axis2|axis3|' \
-                    'axis4.' \
-                    'rotateZ'.format(robot))
-    a5 = pm.getAttr('{}|robot_GRP|robot_GEOM|Base|axis1|axis2|axis3|' \
-                    'axis4|axis5.' \
-                    'rotateX'.format(robot))
-    a6 = pm.getAttr('{}|robot_GRP|robot_GEOM|Base|axis1|axis2|axis3|' \
-                    'axis4|axis5|axis6.' \
-                    'rotateZ'.format(robot))
-
+    a1 = pm.getAttr('{}|robot_GRP|robot_GEOM|Base|'
+                    'axis1.rotateY'.format(robot))
+    a2 = pm.getAttr('{}|robot_GRP|robot_GEOM|Base|'
+                    'axis1|axis2.rotateX'.format(robot))
+    a3 = pm.getAttr('{}|robot_GRP|robot_GEOM|Base|'
+                    'axis1|axis2|axis3.rotateX'.format(robot))
+    a4 = pm.getAttr('{}|robot_GRP|robot_GEOM|Base|'
+                    'axis1|axis2|axis3|axis4.rotateZ'.format(robot))
+    a5 = pm.getAttr('{}|robot_GRP|robot_GEOM|Base|'
+                    'axis1|axis2|axis3|axis4|axis5.rotateX'.format(robot))
+    a6 = pm.getAttr('{}|robot_GRP|robot_GEOM|Base|'
+                    'axis1|axis2|axis3|axis4|axis5|axis6.rotateZ'.format(robot))
     fk_config = [a1, a2, a3, a4, a5, a6]
-
     return fk_config
+
+
+__FK_CONFIGS = [[1, 1, 1],
+                [1, 1, 0],
+                [1, 0, 1],
+                [1, 0, 0],
+                [0, 1, 1],
+                [0, 1, 0],
+                [0, 0, 1],
+                [0, 0, 0],
+                [1, 1, 1],
+                [1, 1, 0],
+                [1, 0, 1],
+                [1, 0, 0],
+                [0, 1, 1],
+                [0, 1, 0],
+                [0, 0, 1],
+                [0, 0, 0]]
 
 
 def find_closest_config(fk_configuration, ik_solutions):
@@ -668,49 +685,19 @@ def find_closest_config(fk_configuration, ik_solutions):
      axis configurations
     :return:
     """
-
     C = [zip(fk_configuration, row) for row in ik_solutions]
-
     D = [[] for i in range(len(ik_solutions))]
-
     # Find the difference between the initial configuration and each possible
     # configuration. The row with the smallest difference represents the
-    # closest solution to to the initital configuration
+    # closest solution to to the initial configuration
     for i, row in enumerate(C):
         D[i] = [abs(a - b) for a, b in row]
         D[i] = sum(D[i])
 
-    sol_idx = D.index(min(D))
-
-    return sol_idx
-
-
-def get_ik_config(idx):
-    """
-    Finds the three inverse kinemtic solution booleans based on the input index
-    :param idx:
-    :return:
-    """
-    fk_configs = [[1, 1, 1],
-                  [1, 1, 0],
-                  [1, 0, 1],
-                  [1, 0, 0],
-                  [0, 1, 1],
-                  [0, 1, 0],
-                  [0, 0, 1],
-                  [0, 0, 0],
-                  [1, 1, 1],
-                  [1, 1, 0],
-                  [1, 0, 1],
-                  [1, 0, 0],
-                  [0, 1, 1],
-                  [0, 1, 0],
-                  [0, 0, 1],
-                  [0, 0, 0]]
-
-    config = fk_configs[idx]
-
-    return config
+    solution_index = D.index(min(D))
+    # Get three booleans corresponding with a valid IK configuration using index
+    config = __FK_CONFIGS[solution_index]
+    return solution_index
 
 
 def flip_robot_base(*args):
@@ -770,9 +757,9 @@ def flip_robot_wrist(*args):
 
 def invert_axis(axis_number, robots=[]):
     """
-    Description!
-    :param axis_number:
-    :param args:
+    Invert a robot's axis.
+    :param axis_number: Index of axis to invert (1 indexed)
+    :param robots: name strings of the selected robots
     :return:
     """
     if not robots:
@@ -798,8 +785,8 @@ def invert_axis(axis_number, robots=[]):
 
 def zero_target(*args):
     """
-    If in IK mode - Zeros tool controller
-    If in FK mode - Aeros all axes
+    Set translation and rotation of a robot object in channel box to zero, 0.
+    If in IK mode effect tool controller. If in FK mode effect all axes.
     :param args:
     :return:
     """
@@ -843,7 +830,8 @@ def zero_target(*args):
 
 def zero_base_world(*args):
     """
-    Zeroes base of robot in world space (square controller)
+    Set translation and rotation of robot base in world space (square controller)
+    in channel box to zero, 0.
     :param args:
     :return:
     """
@@ -864,7 +852,8 @@ def zero_base_world(*args):
 
 def zero_base_local(*args):
     """
-    Zeroes base of robot in local space (circular controller)
+    Set translation and rotation of robot base in local space (circular controller)
+    in channel box to zero, 0.
     :param args:
     :return:
     """
@@ -885,7 +874,9 @@ def zero_base_local(*args):
 
 def zero_all(*args):
     """
-    Zeroes target and local & world base controllers
+    Set translation and rotation of robot object, robot base in world space
+    (square controller), local space (circular controller) in channel box to
+    zero, 0.
     :param args:
     :return:
     """
@@ -894,10 +885,11 @@ def zero_all(*args):
     zero_base_local()
 
 
-def get_axis_val(axis_number, round_val=1):
+def get_axis_val(axis_number, round_val=True):
     """
-    Description!
-    :param args:
+    Get the rotation value (degrees) of an axis.
+    :param axis_number: Index of axis to effect (1 indexed)
+    :param round_val: Round the output value.
     :return:
     """
     axis_val = []
@@ -917,7 +909,7 @@ def get_axis_val(axis_number, round_val=1):
 
 def axis_val_hud(*args):
     """
-    Description!
+    Toggle the presence of a heads-up-display (HUD) for viewing axes in Maya.
     :param args:
     :return:
     """
@@ -925,23 +917,22 @@ def axis_val_hud(*args):
 
     if not robots:
         print 'No Robots in Scene'
-
         if pm.headsUpDisplay('a1_hud', exists=True):
             for i in range(6):
                 pm.headsUpDisplay('a{}_hud'.format(i + 1), remove=True)
         return
 
+    # Check if the HUD exists already
     if pm.headsUpDisplay('a1_hud', exists=True):
+        # If so, remove it
         for i in range(6):
             pm.headsUpDisplay('a{}_hud'.format(i + 1), remove=True)
-
         # Turn Limit Meter off
         for robot in robots:
             pm.setAttr('{}|robot_GRP|limitMeter_CTRL.v'.format(robot), 0)
             pm.setAttr('{}|robot_GRP|limitMeter_GRP.v'.format(robot), 0)
-
         return
-    else:
+    else: # If not, create it
         for i in range(6):
             pm.headsUpDisplay('a{}_hud'.format(i + 1),
                               section=5,
@@ -952,7 +943,6 @@ def axis_val_hud(*args):
                               dataWidth=30,
                               command=pm.Callback(get_axis_val, i + 1),
                               event='timeChanged')
-
         # Turn Limit Meter on
         for robot in robots:
             pm.setAttr('{}|robot_GRP|limitMeter_CTRL.v'.format(robot), 1)
@@ -961,7 +951,8 @@ def axis_val_hud(*args):
 
 def close_hud():
     """
-    Description!
+    Close the heads-up-display (HUD) in Maya; runs in a script node that executes
+    when the Maya scene is closed.
     :return:
     """
     if pm.headsUpDisplay('a1_hud', exists=True):
@@ -1132,7 +1123,9 @@ def attach_tool_model(*args):
 
 def detach_tool_controller(*args):
     """
-    Description!
+    Detaches tool controller to robot, removes parent constraint with
+    target_CTRL, and then parents previous tool controller to the world (i.e.
+    the root node in the Maya scene).
     :param args:
     :return
     """
@@ -1171,7 +1164,8 @@ def detach_tool_controller(*args):
 
 def detach_tool_model(*args):
     """
-    Description!
+    Detaches model to the selected robot by placing it the the robots forward
+    kinematic hierarchy.
     :param args:
     :return
     """
@@ -1201,7 +1195,7 @@ def detach_tool_model(*args):
 
 def get_axis_limits(*args):
     """
-    Gets the current axis limits and updates UI with corresponding values
+    Gets the current axis limits and updates UI with those values.
     :param args:
     :return:
     """
@@ -1229,14 +1223,11 @@ def get_axis_limits(*args):
 
 def set_axis_limit(axis_number, min_max):
     """
-    Gets user-input value from UI and sets corresponding axis limits on the
-    robot
-    :param axis_number:
-    :param min_max:
+    Gets user-input value from UI and sets corresponding axis limits on the robot
+    :param axis_number: Index of axis to effect (1 indexed)
+    :param min_max: string, either 'Min' or 'Max'
     :return:
     """
-    # axis_number = int
-    # min_max = str (either 'Min' or 'Max')
     robots = get_robot_roots()
     if not robots:
         pm.warning('Nothing Selected; Select a valid robot')
@@ -1256,8 +1247,8 @@ def set_axis_limit(axis_number, min_max):
 
 def get_velocity_limits(robot):
     """
-
-    :param robot: string; name of a selected robot being operated on
+    Gets the current velocity limits and updates UI with those values.
+    :param robot: name string of the selected robot
     :return:
     """
     velocity_limits = []
@@ -1295,7 +1286,7 @@ def set_axis_limits(*args):
 
 def get_fk_pose(*args):
     """
-    Description!
+    Get the Forward Kinematic pose for a selected robot in the Maya scene.
     :param args:
     :return:
     """
@@ -1338,18 +1329,17 @@ def select_fk_axis_handle(axis_number):
 
 def set_axis(axis_number):
     """
-    Description!
-    :param axis_number:
+    Set the rotation value (degrees) of a selected robot and axis using
+    Mimic UI fields.
+    :param axis_number: Index of axis to effect (1 indexed)
     :return:
     """
-    # axis_number = int
-    # rotation_axis = str e.g. 'X'
     robots = get_robot_roots()
     if not robots:
         pm.warning('Nothing Selected; Select a valid robot')
         return
 
-        # These are specific to how the robots are rigged in relation to Maya's
+    # These are specific to how the robots are rigged in relation to Maya's
     # coordinate system
     rotation_axes = ['Y', 'X', 'X', 'Z', 'X', 'Z']
 
@@ -1369,7 +1359,7 @@ def set_axis(axis_number):
 
 def set_fk_pose(*args):
     """
-    Description!
+    Set the Forward Kinematic pose of a selected robot.
     :param args:
     :return:
     """
@@ -1386,8 +1376,8 @@ def set_fk_pose(*args):
 def _snap_IK_target_to_FK(robot):
     """
     Snaps the IK control handle to the end of the FK heirarchy
-    Used for IK/FK switching and keyframing
-    :param robot: string; name of a selected robot being operated on
+    Used for IK/FK switching and keyframing.
+    :param robot: name string of the selected robot
     :return:
     """
     # Snap IK Ctrl to FK location
@@ -1422,7 +1412,7 @@ def _snap_IK_target_to_FK(robot):
 def switch_to_ik(robot):
     """
     Switches all robots in scene to IK mode
-    :param robot: string; name of a selected robot being operated on
+    :param robot: name string of the selected robot
     :return:
     """
 
@@ -1447,8 +1437,7 @@ def switch_to_ik(robot):
 
         # Only use a1, a2, and a5 to determing closest config.
         fk_config_trunc = [fk_config[i] for i in [0, 1, 4]]
-        ik_config_idx = find_closest_config(fk_config_trunc, ik_sols)
-        ik_config = get_ik_config(ik_config_idx)
+        ik_config = find_closest_config(fk_config_trunc, ik_sols)
 
         # Match IK config to FK pose
         pm.setAttr('{}|robot_GRP|target_CTRL.ikSolution1' \
@@ -1468,7 +1457,7 @@ def switch_to_ik(robot):
 def switch_to_fk(robot):
     """
     Switches all robots in the scene to IK mode.
-    :param robot: string; name of a selected robot being operated on
+    :param robot: name string of the selected robot
     :return:
     """
     try:
@@ -1566,7 +1555,7 @@ def toggle_ik_fk(*args):
 
 def key_ik(*args):
     """
-    Description!
+    Keyframe the robot's Inverse Kinematic pose.
     :param args:
     :return:
     """
@@ -1639,7 +1628,7 @@ def key_ik(*args):
 
 def key_fk(*args):
     """
-    Description!
+    Keyframe the robot's Forward Kinematic pose.
     :param args:
     :return:
     """
@@ -1712,6 +1701,11 @@ def key_fk(*args):
 
 
 def select_keyable_robot_objects(*args):
+    """
+    Select all keyable robot objects in the Maya scene.
+    :param args:
+    :return:
+    """
     if not check_robot_selection():
         pm.warning('No robot\'s selected; ' \
                    'select at least one robot')
@@ -1739,6 +1733,11 @@ def select_keyable_robot_objects(*args):
 
 
 def delete_ik_fk_keys(*args):
+    """
+    Delete an Inverse Kinematic or Forward Kinematic keyframe.
+    :param args:
+    :return:
+    """
     if not check_robot_selection():
         pm.warning('No robots selected; ' \
                    'Select at least one robot.')
@@ -1809,7 +1808,7 @@ def delete_ik_fk_keys(*args):
 
 def toggle_ik_fk_ui(*args):
     """
-    Description!
+    Toggle control mode of Inverse Kinematics or Forward Kinematics in the Mimic UI.
     :param args:
     :return:
     """
@@ -1828,7 +1827,8 @@ def toggle_ik_fk_ui(*args):
 
 def key_ik_fk(*args):
     """
-    Description!
+    Key the Inverse Kinematic or Forward Kinematic pose of a robot in the Maya
+    scene, depending on control mode selected in the Mimic UI.
     :param args:
     :return:
     """
@@ -1848,21 +1848,20 @@ def key_ik_fk(*args):
 
 def _filter_hotkey_set_name(hotkey_set_name):
     """
-    Description!
+    Force input hotkey-set name to exclude special characters.
+    :param hotkey_set_name: Named of hotkey-set for use in Maya.
     :return:
     """
-
     # Replace spaces with underscores
     hotkey_set_name = hotkey_set_name.replace(' ', '_')
     # Remove special characters
     hotkey_set_name = ''.join(re.findall(r"[_a-zA-Z0-9]+", hotkey_set_name))
-
     return hotkey_set_name
 
 
 def _create_hotkey_set():
     """
-    Description!
+    Create a hotkey-set associated with Mimic.
     :return:
     """
     message_str = 'You must use a custom hotkey profile.\n\n' \
@@ -1889,14 +1888,18 @@ def _create_hotkey_set():
         return True
 
 
-def assign_hotkey(cmd_name, annotation_str, command_str):
+def assign_hotkey(command_name, annotation_str, command_string):
     """
-    Description!
+    Assigns hotkeys using a user's character input and a command.
+    :param command_name: Name of the Mimic command for hotkey (acquired from Mimic)
+    :param annotation_str: Comment or description of hotkey
+    :param command_string: String-form of the actual command to execute
     :return:
     """
-    if cmd_name == 'mimic_toggleIkFkMode':
+
+    if command_name == 'mimic_toggleIkFkMode':
         key_str = pm.textField('t_toggleIkFk', query=True, text=True)
-    elif cmd_name == 'mimic_keyIkFk':
+    elif command_name == 'mimic_keyIkFk':
         key_str = pm.textField('t_keyIkFk', query=True, text=True)
 
     if len(key_str) > 1:
@@ -1920,16 +1923,16 @@ def assign_hotkey(cmd_name, annotation_str, command_str):
                 return
 
     if key_str:
-        if pm.runTimeCommand(cmd_name, exists=True):
+        if pm.runTimeCommand(command_name, exists=True):
             pass
         else:
-            pm.runTimeCommand(cmd_name,
+            pm.runTimeCommand(command_name,
                               category='Custom Scripts',
                               annotation=annotation_str,
-                              command=command_str,
+                              command=command_string,
                               commandLanguage='python')
 
-        hotkey_name = cmd_name + 'Hotkey'
+        hotkey_name = command_name + 'Hotkey'
 
         if pm.hotkey(key_str, query=True):
             if pm.hotkey(key_str, query=True, name=True) == hotkey_name:
@@ -1945,13 +1948,13 @@ def assign_hotkey(cmd_name, annotation_str, command_str):
                            .format(key_str))
         else:
             pm.nameCommand(hotkey_name,
-                           command=cmd_name,
+                           command=command_name,
                            annotation=annotation_str)
 
             pm.hotkey(keyShortcut=key_str,
                       name=hotkey_name)
 
-            print '{} hotkey set to \'{}\' key'.format(cmd_name, key_str)
+            print '{} hotkey set to \'{}\' key'.format(command_name, key_str)
     else:
         pm.warning('No key string input; ' \
                    'input a key string in Mimic UI')
@@ -1959,14 +1962,15 @@ def assign_hotkey(cmd_name, annotation_str, command_str):
     pm.setFocus('prefs_tab_layout')
 
 
-def remove_hotkey(cmd_name):
+def remove_hotkey(command_name):
     """
-    Description!
+    Removes hotkey from the user hotkey-set.
+    :param command_name: Name of the Mimic command for hotkey (acquired from Mimic)
     :return:
     """
-    if cmd_name == 'mimic_toggleIkFkMode':
+    if command_name == 'mimic_toggleIkFkMode':
         key_str = pm.textField('t_toggleIkFk', query=True, text=True)
-    elif cmd_name == 'mimic_keyIkFk':
+    elif command_name == 'mimic_keyIkFk':
         key_str = pm.textField('t_keyIkFk', query=True, text=True)
 
     if len(key_str) > 1:
@@ -1975,14 +1979,14 @@ def remove_hotkey(cmd_name):
 
     # Check if key_str is assigned as a hotkey to cmd_name runtimeCommand
     if key_str:
-        if pm.hotkey(key_str, query=True, name=True) == cmd_name + 'Hotkey':
-            pm.runTimeCommand(cmd_name, edit=True, delete=True)
+        if pm.hotkey(key_str, query=True, name=True) == command_name + 'Hotkey':
+            pm.runTimeCommand(command_name, edit=True, delete=True)
             pm.hotkey(keyShortcut=key_str, name=None)
-            print 'Hotkey {} removed from \'{}\' key'.format(cmd_name, key_str)
+            print 'Hotkey {} removed from \'{}\' key'.format(command_name, key_str)
         else:
             pm.warning('\'{}\' key is not assigned to the {} function in ' \
                        'the current Hotkey Set; no hotkey was removed' \
-                       .format(key_str, cmd_name))
+                       .format(key_str, command_name))
     else:
         pm.warning('No key input; ' \
                    'input the key you\'d like to remove in Mimic UI')
@@ -1990,8 +1994,9 @@ def remove_hotkey(cmd_name):
 
 def find_hotkey(hotkey_name):
     """
-    Description!
-    :param args:
+    If a hotkey is assigned, this function finds and adds it to the Mimic UI
+    at runtime.
+    :param hotkey_name:
     :return:
     """
     # Check if the user is in Maya's locked default hotkey set.
@@ -2016,7 +2021,7 @@ def find_hotkey(hotkey_name):
 
 def set_shader_range(*args):
     """
-    Description!
+    Sets the range of angles within which the limit-shader will show up.
     :param args:
     :return:
     """
@@ -2063,6 +2068,11 @@ def import_robot(rigs_dir):
 
 
 def save_pose_to_shelf(*args):
+    """
+    Save a robot pose as a button on the Mimic shelf. Saves both IK and FK poses.
+    :param args:
+    :return:
+    """
     target_shelf = mel.eval('tabLayout -q -selectTab $gShelfTopLevel;')
     store_cmds = 'import pymel.core as pm \n' \
                  'import mimic_utils \n' \
@@ -2157,29 +2167,33 @@ def save_pose_to_shelf(*args):
     # Condition statement that checks if our button gets clicked.  If this condition is met, then run the following commands
     if prompt_dialog == "Save":
         # This variable stores the Name we add to our Prompt Dialog
-        prompt_dialog_name = pm.promptDialog(q=True, text=True)
+        prompt_dialog_name = pm.promptDialog(query=True, text=True)
         # This line creates our Shelf Button that uses MEL as the source type for the commands stored in "store_cmds", and adds the Shelf Button under our custom tab named "Body Poses"
         pm.shelfButton(l=prompt_dialog_name, annotation=prompt_dialog_name, imageOverlayLabel=prompt_dialog_name,
                        i='commandButton.png', command=store_cmds, p=target_shelf, sourceType="python")
 
 
-def assign_saved_pose(attrs, tab):
+def assign_saved_pose(attributes, tab):
+    """
+    Takes a saved pose from a shelf button (created with 'save_pose_to_shelf')
+    and assigns that pose to the selected robot.
+    :param attributes: Robot attributes saved in pose button.
+    :param tab: IK or FK mode, derived from tab being controlled by user
+    :return:
+    """
     if not check_robot_selection(1):
         pm.warning('Must have single robot selected')
         return
-
-    pm.tabLayout('switcher_tab_layout', e=True, sti=tab)
-
+    pm.tabLayout('switcher_tab_layout', edit=True, sti=tab)
     robot = get_robot_roots()[0]
-
-    for attr in attrs:
+    for attr in attributes:
         pm.setAttr(attr[0].format(robot), attr[1])
     return
 
 
 def get_maya_framerate():
     """
-    Description!
+    Get the animation framerate setting used in the Maya scene.
     :return:
     """
     if pm.currentUnit(time=True, query=True) == 'game':
@@ -2205,10 +2219,10 @@ def get_maya_framerate():
 
 def _get_animation_parameters():
     """
-    Description!
+    Get the animation parameters start frame, end frame, framerate, and total time
+    in seconds from Maya.
     :return:
     """
-
     start_frame = pm.intField("i_programStartFrame", query=True, value=True)
     end_frame = pm.intField("i_programEndFrame", query=True, value=True)
     framerate = get_maya_framerate()
@@ -2226,10 +2240,11 @@ def _get_animation_parameters():
 
 def _check_command_parameters(robot):
     """
-
-    :param robot: string; name of a selected robot being operated on
+    Checks that the user input for animation paramters is valid.
+    :param robot: name string of the selected robot
     :return:
     """
+    # TODO: Consider renaming
     animation_params = _get_animation_parameters()
     start_frame = animation_params['Start Frame']
     end_frame = animation_params['End Frame']
@@ -2252,9 +2267,9 @@ def _check_command_parameters(robot):
 def _get_commands_from_animation(robot, time_interval_value, time_interval_units):
     """
     Get key-framed commands from the animation slider.
-    :param robot: string; name of a selected robot being operated on
-    :param time_interval_value:
-    :param time_interval_units:
+    :param robot: name string of the selected robot
+    :param time_interval_value: Sample rate
+    :param time_interval_units: Sample rate units
     :return:
     """
     # Get relevant animation parameters.
@@ -2320,9 +2335,12 @@ def _get_commands_from_animation(robot, time_interval_value, time_interval_units
     return commands, step_sec
 
 
-def _check_exceeded_velocity_limits(robot, commands, time_interval_val=.012):
+def _check_exceeded_velocity_limits(robot, commands, time_interval_val=0.012):
     """
-    Description!
+    Check a list of commands for velocity errors.
+    :param robot: name string of the selected robot
+    :param commands: A list of list of robot axes
+    :param time_interval_val: Time between commands
     :return:
     """
     velocity_limits = get_velocity_limits(robot)
@@ -2367,6 +2385,7 @@ def _format_exceeded_velocity_limits(exceeded_limits):
     """
     Construct string to return printable statement of all exceeded velocities
     for each axis; ex. range [0, 1, 2, 3] will be formatted '0-3'.
+    :param exceeded_limits: List of input exceeded limits.
     :return:
     """
     invoke_warning = False
@@ -2538,7 +2557,8 @@ def _get_user_opts():
 
 def check_program(*args):
     """
-    Description!
+    Checks robot, command parameters, performs the velocity check on a list of
+    commands to be used for use as robot control code.
     :param args:
     :return:
     """
@@ -2592,7 +2612,8 @@ def check_program(*args):
 
 def save_program(*args):
     """
-    Description!
+    Acquires a list of commands from Mimic and issues it to a post processor;
+    saves output as usable robot control code in user-defined directory.
     :param args:
     :return:
     """

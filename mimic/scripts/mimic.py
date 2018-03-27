@@ -65,7 +65,7 @@ def check_required_directories():
 
 def run():
     """
-    Instantiates the Mimic UI
+    Creates the Mimic UI.
     :return:
     """
     # Confirm that Mimic is all there

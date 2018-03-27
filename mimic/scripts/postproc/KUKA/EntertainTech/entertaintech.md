@@ -3,15 +3,16 @@
 ### SimpleEntertainTechProcessor
 
 The SimpleEntertainTechProcessor is a Post Processor for Mimic designed to program KUKA
-robots using the EntertainTech programming language and EMILY output file extension. No
-installation options are required for use of this package. This processor IS time-based.
+robots using the EntertainTech programming language and EMILY output file extension. The
+KUKA.EntertainTech installation option is required for use of this package. This processor
+IS time-based.
 
 ```
 Name: SimpleEntertainTechProcessor
 Robot type: KUKA
 Processor language: EntertainTech
 Output file extension: EMILY
-Required installation options: None
+Required installation options: KUKA.EntertainTech
 Time-based: True
 ```
 
