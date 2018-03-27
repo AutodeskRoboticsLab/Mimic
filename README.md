@@ -16,7 +16,7 @@ Written in Python 2.7.
 
 Download this release and copy the contents of it to one of the following
 directories, depending on your operating system. When you're done, open Maya,
-click on the Mimic shelf button, and click on the Mimic icon; that's it!
+click on the Mimic shelf tab, and click on the Mimic icon; that's it!
 
 ```
 macOS   ~/Library/Preferences/Autodesk/maya/modules
@@ -28,16 +28,16 @@ Windows ~/Documents/maya/modules
 \*\* _If you're using Maya 2017 update 3 or earlier, you must
 [manually load the Mimic shelf](https://youtu.be/bc3SqEXcE5Q?t=1m46s)._
 
-You can find tutorials, videos, and other media at
-[mimicformaya](https://www.mimicformaya.com/) and textual documentation in
+You can find tutorials, videos, and other media on our
+[website](https://www.mimicformaya.com/) and textual documentation in
 [docs](mimic/docs).
 
 
-### Supported robots
+### Currently supported robots
 
 *Let us know if what you need isn't listed and we'll try to help!*
 
-Mimic supports the following Robots (see [rigs](mimic/rigs)):
+Mimic currently supports the following Robots (see [rigs](mimic/rigs)):
 
 ```
 ABB
@@ -49,7 +49,8 @@ KUKA
 |-- KR60-3
 ```
 
-Mimic supports the following Post Processors (see [postproc](mimic/scripts/postproc)):
+Mimic currently supports the following Post Processors
+(see [postproc](mimic/scripts/postproc)):
 
 ```
 ABB
@@ -69,9 +70,9 @@ You may submit an issue or open a pull request for any bugs or improvements to
 this software. See [devnotes](mimic/docs/devnotes.md) for programming guidelines.
 
 Join the our [slack channel](https://www.mimicformaya.com/#community-section)!
-You may also contact us at [mimic@autodesk.com](mimic@autodesk.com).
+You may also contact us at [mimic@autodesk.com](mailto:mimic@autodesk.com).
 
-*Mimic was originally conceived and created by Evan Atherton at the Applied
+*Mimic was originally conceived of and created by Evan Atherton at the Applied
 Research Lab, Autodesk 2018.* It is now developed and contributed to by a
 community of animators, designers, engineers, architects, programmers, and more.
 See [AUTHORS](AUTHORS.md) for details.
@@ -94,7 +95,7 @@ See [LICENSE](LICENSE.md) for details.
   operating systems but *most* of the Mimic backend is.
 - Do not modify names or hierarchies internal to robot assets!
 - Use Maya's default units: Centimeters, Degrees
-- Use Maya's default coordinate system: Up axis - Y 
+- Use Maya's default coordinate system: Y-Up
 - Note that this repository does not include robot rigs or Maya scenes, though
   your application will require them.
 
