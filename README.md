@@ -1,6 +1,5 @@
 ![mimic_logo](mimic/logos/mimic_logo_black_transparent_thick_large.png)
 
-
 #
 
 ### What is Mimic?
@@ -75,9 +74,9 @@ this software. See [devnotes](mimic/docs/devnotes.md) for programming guidelines
 Join the our [slack channel](https://www.mimicformaya.com/#community-section)!
 You may also contact us at [mimic@autodesk.com](mailto:mimic@autodesk.com).
 
-*Mimic was originally conceived of and created by Evan Atherton at the Applied
-Research Lab, Autodesk 2018.* It is now developed and contributed to by a
-community of animators, designers, engineers, architects, programmers, and more.
+*Mimic was born at the Applied Research Lab, Autodesk 2018.* It is now developed
+and contributed to by a community of animators, designers, engineers, architects,
+programmers, and more.
 See [AUTHORS](AUTHORS.md) for details.
 
 
@@ -91,16 +90,15 @@ See [LICENSE](LICENSE.md) for details.
 
 - Be careful out there! Mimic is not a safety certified monitoring tool.
   Users of this software are responsible for safe robot programming and operation.
-  Developers of this software are not responsible for any result of its use.
 - Developed to work with Autodesk Maya 2016, Autodesk Maya 2017, and Autodesk
   Maya 2018; Mimic may or may not be compatible with other versions.
 - Developed to work with macOS and Windows; Maya is not compatible with other
   operating systems but *most* of the Mimic backend is.
-- Do not modify names or hierarchies internal to robot assets!
+- Do not modify names or hierarchies within robot rigs!
 - Use Maya's default units: Centimeters, Degrees
 - Use Maya's default coordinate system where the Y-axis points *up*.
 - Note this repository does not include robot rigs; download the latest release
-  to access rigs.
+  to access the latest rigs.
 
 
 #
