@@ -7,6 +7,8 @@ import math
 
 LARGE_NUMBER = 9e9
 
+# To-do: Implement appraximation if no valid configuration exists for the given
+# target pose (represented by ValueError math domain error)
 
 def solver(robot_definition, pivot_point, tcp_rotation):
     """

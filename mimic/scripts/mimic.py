@@ -24,7 +24,9 @@ reload(mimic_ui)
 
 def load_mimic_plugins(plugin_file_names):
     """
-    Loads python plugins into Maya from a directory.
+    Loads required python plugins into Maya from a directory.
+    These are Dependency Graph and Command plugins that should be loaded into
+    Maya's plugin manager
     :param plugin_file_names: List of required plug-ins 
     :return:
     """
