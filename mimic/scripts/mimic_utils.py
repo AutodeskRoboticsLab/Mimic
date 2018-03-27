@@ -697,7 +697,7 @@ def find_closest_config(fk_configuration, ik_solutions):
     solution_index = D.index(min(D))
     # Get three booleans corresponding with a valid IK configuration using index
     config = __FK_CONFIGS[solution_index]
-    return solution_index
+    return config
 
 
 def flip_robot_base(*args):

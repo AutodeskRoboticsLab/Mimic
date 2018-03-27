@@ -74,7 +74,7 @@ this software. See [devnotes](mimic/docs/devnotes.md) for programming guidelines
 Join the our [slack channel](https://www.mimicformaya.com/#community-section)!
 You may also contact us at [mimic@autodesk.com](mailto:mimic@autodesk.com).
 
-*Mimic was born at the Applied Research Lab, Autodesk 2018.* It is now developed
+*Mimic was born at the Autodesk Robotics Lab 2018.* It is now developed
 and contributed to by a community of animators, designers, engineers, architects,
 programmers, and more.
 See [AUTHORS](AUTHORS.md) for details.
