@@ -2,6 +2,23 @@
 
 """
 Snap Transforms Command Plug-in
+
+------------------------------------------
+Red9 Studio Pack : Maya Pipeline Solutions
+email: rednineinfo@gmail.com
+------------------------------------------
+
+This has been wrapped in a MPxCommand primarily so that the undo is
+registered/managed and added to the undoStack. This does however also
+open the plugin up for use with any mel commands.
+
+Command = SnapTransforms(flags)
+
+flags:  -s / -source
+        -d / -destination
+
+Copyright (c) 2013, Mark Jackson
+All rights reserved.
 """
 
 import maya.OpenMayaMPx as OpenMayaMPx
@@ -9,7 +26,7 @@ import maya.OpenMaya as OpenMaya
 import sys
 
 
-class snapTransforms( OpenMayaMPx.MPxCommand ):
+class snapTransforms(OpenMayaMPx.MPxCommand):
                      
     kPluginCmdName       = "snapTransforms"
     kSourceFlag          = "-s"
