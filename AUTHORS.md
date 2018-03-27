@@ -17,7 +17,7 @@ open-source, MIT licensed project. For a complete list of contributors, see
 
 ### Contributors
 
-- [Heather Kerrick](https://github.com/hmkerrick)
+- [Heather Kerrick](https://github.com/hmkerrick), software tester
 
 
 #
