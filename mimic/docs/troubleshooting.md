@@ -18,8 +18,9 @@ reload(mimic)
 mimic.run()
 ```
 
-- Confirm that the plugin has loaded properly, in Maya, check *Windows > Settings > Plug-in Manager*
-  for the `REQUIRED_PLUGINS` listed in *mimic_config.py*:
+- Confirm that the plugin has loaded properly, in Maya, check
+*Windows > Settings > Plug-in Manager* for the `REQUIRED_PLUGINS` listed in
+*mimic_config.py*:
 
 ```
 REQUIRED_PLUGINS = [
@@ -42,12 +43,12 @@ REQUIRED_PLUGINS = [
 - Confirm that the version of Mimic in *mimic.mod* and *mimic_config.py* coincide:
 
 ```
-+ mimic 1.2 ../modules/mimic
++ mimic 1.0 ../modules/mimic
 ``` 
 
 ```
 MIMIC_VERSION_MAJOR = 1
-MIMIC_VERSION_MINOR = 2
+MIMIC_VERSION_MINOR = 0
 ```
 
 #
