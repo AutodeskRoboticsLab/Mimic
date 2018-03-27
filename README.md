@@ -6,10 +6,9 @@
 
 [Mimic](https://www.mimicformaya.com/) is a free and open-source plugin for
 [Autodesk Maya](https://www.autodesk.com/products/maya/overview) that enables
-simulation, programming, and control of 6-axis, Industrial Robots. It provides
-a robust and intuitive, animation-based toolset, allowing creators to
-prototype, validate, and drive automated systems, without writing any code.
-Written in Python 2.7.
+simulation, programming, and control of 6-axis, Industrial Robots. Use Mimic
+to generate programs without writing any code, or extend Mimic to suit your
+project's needs. Written in Python 2.7.
 
 
 ### Installation
@@ -96,9 +95,9 @@ See [LICENSE](LICENSE.md) for details.
   operating systems but *most* of the Mimic backend is.
 - Do not modify names or hierarchies internal to robot assets!
 - Use Maya's default units: Centimeters, Degrees
-- Use Maya's default coordinate system: Y-Up
-- Note that this repository does not include robot rigs or Maya scenes, though
-  your application will require them.
+- Use Maya's default coordinate system where the Y-axis points *up*.
+- Note this repository does not include robot rigs; download the latest release
+  to access rigs.
 
 
 #
