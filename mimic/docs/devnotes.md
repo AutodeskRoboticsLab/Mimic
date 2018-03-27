@@ -47,8 +47,8 @@ structure. Note the use of `__init__.py` throughout this repository.
 
 ### Repository guidelines
 
-- This repository is organized with respect what Maya expects to see in its
-  modules directory. Directories within Mimic, such as *scripts* and *icons*
+- This repository is organized with respect to what Maya expects to see in its
+  [modules](http://help.autodesk.com/view/MAYAUL/2018/ENU/?guid=__files_GUID_CB76E356_753B_4837_8C5B_3296C14872CA_htm) directory. Directories within Mimic, such as *scripts* and *icons*
   are named accordingly. Do not change them!
 
 - Do not add IDE and temp files to the global `.gitignore`. Instead, add them
