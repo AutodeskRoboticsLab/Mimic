@@ -1,8 +1,11 @@
 ![mimic_logo](mimic/logos/mimic_logo_black_transparent_thick_large.png)
 
+
 #
 
 ### What is Mimic?
+
+*An open-source Autodesk Maya plugin for controlling Industrial Robots.*
 
 [Mimic](https://www.mimicformaya.com/) is a free and open-source plugin for
 [Autodesk Maya](https://www.autodesk.com/products/maya/overview) that enables
