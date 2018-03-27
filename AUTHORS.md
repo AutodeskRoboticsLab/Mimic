@@ -9,13 +9,13 @@ open-source, MIT licensed project. For a complete list of contributors, see
 [contributors](https://git.autodesk.com/RobotOverlords/Mimic/graphs/contributors).
 
 
-#### Authors
+### Authors
 
 - [Evan Atherton](https://git.autodesk.com/evanatherton), creator, core developer
 - [Nick Cote](https://github.com/revenantspatium), core developer
 
 
-#### Contributors
+### Contributors
 
 - Heather Kerrick
 
