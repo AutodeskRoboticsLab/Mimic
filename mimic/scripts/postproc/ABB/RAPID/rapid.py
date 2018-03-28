@@ -202,10 +202,22 @@ class SimpleRAPIDProcessor(postproc.PostProcessor):
         program_template = self._get_program_template()  # don't overwrite original
         if opts.use_motion_as_variables:
             formatted_commands = ',\n'.join(processed_commands)
-            return program_template.format(formatted_commands)
+            count = len(processed_commands)
+            try:
+                return program_template.format(count, formatted_commands)
+            except IndexError:
+                message = 'To use motion parameters as variables, template requires ' \
+                          '2 placeholders, one for number of motion variables and ' \
+                          'another for the motion variables.'
+                raise IndexError(message)
         else:
             formatted_commands = '\n'.join(processed_commands)
-            return program_template.format(formatted_commands)
+            try:
+                return program_template.format(formatted_commands)
+            except IndexError:
+                message = 'To use motion parameters as commands, template requires ' \
+                          '1 placeholder for the motion variables.'
+                raise IndexError(message)
 
     def _process_command(self, command, opts):
         """

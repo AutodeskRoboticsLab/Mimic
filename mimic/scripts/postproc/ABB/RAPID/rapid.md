@@ -28,6 +28,7 @@ This package contains the following directories and/or files:
     |-- rapid.py
     |-- rapid_config.py
     |-- template.prg
+    |-- template_use_as_vars.prg
 ```
 
 
@@ -82,6 +83,34 @@ MODULE MainModule
         MoveAbsJ [[0, 0, 0, 0, 0, 0], [9E9, 9E9, 9E9, 9E9, 9E9, 9E9]], v100, fine, tool0;
 		! Go to programmed positions
 {}
+		! Go to end position
+		MoveAbsJ [[0, 0, 0, 0, 0, 0], [9E9, 9E9, 9E9, 9E9, 9E9, 9E9]], v100, fine, tool0;
+		Stop;
+	ENDPROC
+ENDMODULE
+```
+
+Alternatively, teh default program template for the user option 'Use as variables'
+is as follows:
+
+```
+MODULE MainModule
+	! Pose variables
+	CONST num NUMPOSES := {};
+	CONST jointtarget poses{{NUMPOSES}} :=
+    [
+{}
+    ];
+	! Main routine
+	PROC main()
+		ConfL\Off;
+		SingArea\Wrist;
+		! Go to start position
+        MoveAbsJ [[0, 0, 0, 0, 0, 0], [9E9, 9E9, 9E9, 9E9, 9E9, 9E9]], v100, fine, tool0;
+		! Go to programmed positions
+		FOR i FROM 1 TO NUMPOSES DO
+			MoveAbsJ poses{{i}}, v100, fine, tool0;
+		ENDFOR
 		! Go to end position
 		MoveAbsJ [[0, 0, 0, 0, 0, 0], [9E9, 9E9, 9E9, 9E9, 9E9, 9E9]], v100, fine, tool0;
 		Stop;
