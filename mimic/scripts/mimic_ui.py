@@ -572,7 +572,7 @@ def _build_proc_options_tab(parent_layout):
                            _enable: False}),
         ('Use as variables', {_name: 'cb_useMotionAsVariables',
                               _value: postproc_config.OPTS_USE_MOTION_AS_VARIABLES,
-                              _enable: False}),
+                              _enable: True}),
     ])
     _build_options_columns('motion_opts',
                            proc_motion_options,

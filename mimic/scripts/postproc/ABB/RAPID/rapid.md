@@ -51,6 +51,7 @@ At time of writing, this Post Processor uses following User Options in Mimic:
 ```
 |-- Motion options
     |-- Nonlinear
+    |-- Use motion as variables
 |-- Include in outut
     |-- Axes
 ```

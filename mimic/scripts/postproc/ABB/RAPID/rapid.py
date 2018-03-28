@@ -61,6 +61,13 @@ __move_structure = namedtuple(
     ]
 )
 
+VARIABLE = 'VARIABLE'
+__variable_structure = namedtuple(
+    VARIABLE, [
+        __params
+    ]
+)
+
 JOINTTARGET = 'JOINTTARGET'
 __jointtarget_structure = namedtuple(
     JOINTTARGET, [
@@ -115,6 +122,7 @@ STRUCTURES = {
     ROBTARGET: __robtarget_structure,
     DIGITAL_OUT: __digital_out_structure,
     MOVE: __move_structure,
+    VARIABLE: __variable_structure
 }
 
 # TEMPLATES
@@ -135,6 +143,9 @@ __robtarget_template = \
 __digital_out_template = \
     '\t\tSetDO {}, {};'
 
+__variable_template = \
+    '\t\t{}'
+
 __move_template = \
     '\t\t{} {}, {}, {}, {}\\WObj:={};'
 
@@ -143,6 +154,7 @@ TEMPLATES = {
     ROBTARGET: __robtarget_template,
     DIGITAL_OUT: __digital_out_template,
     MOVE: __move_template,
+    VARIABLE: __variable_template
 }
 
 # COMMANDS
@@ -188,7 +200,10 @@ class SimpleRAPIDProcessor(postproc.PostProcessor):
         """
         # Get program structure and template
         program_template = self._get_program_template()  # don't overwrite original
-        formatted_commands = '\n'.join(processed_commands)
+        if opts.use_motion_as_variables:
+            formatted_commands = ',\n'.join(processed_commands)
+        else:
+            formatted_commands = '\n'.join(processed_commands)
         return program_template.format(formatted_commands)
 
     def _process_command(self, command, opts):
@@ -288,20 +303,26 @@ def _process_motion_command(command, opts):  # Implement in base class!
         STRUCTURES[target_data_type],
         TEMPLATES[target_data_type])
 
-    # TODO: Implement these parameters properly
-    motion_data = [
-        motion_type,
-        formatted_target_data,
-        rapid_config.DEFAULT_SPEED,
-        rapid_config.DEFAULT_ZONE,
-        rapid_config.DEFAULT_TOOL,
-        rapid_config.DEFAULT_WOBJ]
+    if opts.use_motion_as_variables:
+        formatted_variable = postproc.fill_template(
+            formatted_target_data,
+            STRUCTURES[VARIABLE],
+            TEMPLATES[VARIABLE])
+        return formatted_variable
+    else:
+        motion_data = [
+            motion_type,
+            formatted_target_data,
+            rapid_config.DEFAULT_SPEED,
+            rapid_config.DEFAULT_ZONE,
+            rapid_config.DEFAULT_TOOL,
+            rapid_config.DEFAULT_WOBJ]
 
-    formatted_motion = postproc.fill_template(
-        motion_data,
-        STRUCTURES[MOVE],
-        TEMPLATES[MOVE])
-    return formatted_motion
+        formatted_motion = postproc.fill_template(
+            motion_data,
+            STRUCTURES[MOVE],
+            TEMPLATES[MOVE])
+        return formatted_motion
 
 
 def _process_io_command(command, opts):
