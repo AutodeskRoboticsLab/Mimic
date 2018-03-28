@@ -28,8 +28,9 @@ receive and send a detailed description to us at [mimic@autodesk.com](mailto:mim
     
 - If you cloned the Mimic repository, you probably won't have robot rigs. In the
   directory *mimic/rigs* you must add directories corresponding with robot-type and,
-  in them, named robot rigs with the extension `.ma`. See *mimic/rigs/rigs.md* for
-  more information.
+  in them, named robot rigs with the extension `.ma`. See *mimic/rigs/rigs.md* or
+  more information or download the latest robot rigs from
+  [releases](https://github.com/AutodeskRoboticsLab/Mimic/releases).
 
 - Confirm that the version of Mimic in *mimic.mod* and *mimic_config.py* coincide
   such as in the following.
