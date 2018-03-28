@@ -119,15 +119,16 @@ structure. Note the use of `__init__.py` throughout this repository.
 - Most of Mimic, except for anything UI or Maya dependent, may be written, run,
   and debugged in an external IDE. This will save *hours* of development time as
   compared to developing directly within Maya. To take advantage of this, call
-   `reload(*)` after `import *` so changes you make to your code can be loaded by
+  `reload(*)` after `import *` so changes you make to your code can be loaded by
   Mimic when it reopens without having to reopen Maya all the time.
   
 - To avoid creating PYCs -- compiled Python files -- implement this at the very
   top of your highest level Python script (really helpful for tests):
-  ```
-  import sys
-  sys.dont_write_bytecode = True
-  ```
   
+    ```
+    import sys
+    sys.dont_write_bytecode = True
+    ```
+    
   
 #
