@@ -1,6 +1,6 @@
 MODULE MainModule
 	! Pose variables
-	CONST num NUMPOSES := {};
+	CONST num NUMPOSES := ?;  ! At time of writing, enter manually
 	CONST jointtarget poses{{NUMPOSES}} :=
     [
 {}
