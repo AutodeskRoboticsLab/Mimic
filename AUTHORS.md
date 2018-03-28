@@ -4,9 +4,9 @@
 and contributed to by a community of animators, designers, engineers, architects,
 programmers, and more.
 
-The purpose of this document is to credit the significant contributors of this
-open-source, MIT licensed project. For a complete list of contributors, see
-[contributors](https://github.com/AutodeskRoboticsLab/Mimic/graphs/contributors).
+The purpose of this document is to credit the significant contributors to this
+open-source project. For a complete list, see
+[GitHub Contributors](https://github.com/AutodeskRoboticsLab/Mimic/graphs/contributors).
 
 
 ### Authors
