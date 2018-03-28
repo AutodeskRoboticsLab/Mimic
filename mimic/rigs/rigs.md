@@ -1,9 +1,8 @@
 # Mimic
 
-
 ### Currently supported robots
 
-*Acquire robot rigs from the latest release of Mimic!*
+*Let us know if what you need isn't listed and we'll try to help!*
 
 Mimic currently supports the following robots:
 
@@ -18,8 +17,8 @@ KUKA
 |-- KR60-3
 ```
 
-*Let us know if what you need isn't listed and we'll try to help!*
-(contact info provided below)
+*Get robot rigs from the latest
+[release](https://github.com/AutodeskRoboticsLab/Mimic/releases) of Mimic!*
 
 
 ### Adding robot rigs to Mimic

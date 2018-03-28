@@ -40,7 +40,7 @@ You can find tutorials, videos, and other media on our
 *Let us know if what you need isn't listed and we'll try to help!*
 (contact info provided below)
 
-Mimic currently supports the following Robots (see [rigs](mimic/rigs)):
+Mimic currently supports the following robots (see [rigs](mimic/rigs)):
 
 ```
 ABB
@@ -53,7 +53,7 @@ KUKA
 |-- KR60-3
 ```
 
-Mimic currently supports the following Post Processors
+Mimic currently supports the following post processors
 (see [postproc](mimic/scripts/postproc)):
 
 ```
@@ -64,7 +64,7 @@ KUKA
 |-- KRL
 ```
 
-\* _external installation option required_
+\* *external installation option required*
 
 
 ### Join the community!
