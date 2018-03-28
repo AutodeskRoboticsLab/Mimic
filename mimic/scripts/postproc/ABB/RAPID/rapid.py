@@ -202,9 +202,10 @@ class SimpleRAPIDProcessor(postproc.PostProcessor):
         program_template = self._get_program_template()  # don't overwrite original
         if opts.use_motion_as_variables:
             formatted_commands = ',\n'.join(processed_commands)
+            return program_template.format(formatted_commands)
         else:
             formatted_commands = '\n'.join(processed_commands)
-        return program_template.format(formatted_commands)
+            return program_template.format(formatted_commands)
 
     def _process_command(self, command, opts):
         """
