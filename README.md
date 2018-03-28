@@ -43,6 +43,7 @@ Mimic currently supports the following Robots (see [rigs](mimic/rigs)):
 
 ```
 ABB
+|-- IRB-120
 |-- IRB-6700-205-280
 KUKA
 |-- AGILUS-R900
