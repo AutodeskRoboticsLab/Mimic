@@ -67,6 +67,13 @@ following structure:
   be configured using *mimic_config.py*. Rig names should be simple and descriptive.
 
 
+- To change the color of a robot, use the Hypershade to change the color of 
+  “J#LowerBase_MAT” and “J#UpperBase_MAT” (these should match)
+
+- To change the limit shader color (the color the robot turns when you’re near a limit),
+  change “J#LowerLimit_MAT” and/or “J#UpperLimit_MAT” (you can set upper and lower limits
+  to different colors)
+
 ### Credits
 
 - All ABB robots credited to [ABB](http://new.abb.com/products/robotics).
