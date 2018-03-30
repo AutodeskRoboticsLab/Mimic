@@ -237,7 +237,7 @@ class SimpleRAPIDProcessor(postproc.PostProcessor):
         command_type = postproc.get_structure_type(command)
         if not opts.Ignore_motion and command_type == MOTION_COMMAND:
             return _process_motion_command(command, opts)
-        elif not opts.Ignore_ios and command_type == IO_COMMAND:
+        elif not opts.Ignore_IOs and command_type == IO_COMMAND:
             return _process_io_command(command, opts)
 
     def get_formatted_commands(self, params):
