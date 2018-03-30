@@ -90,7 +90,7 @@ MODULE MainModule
 ENDMODULE
 ```
 
-Alternatively, teh default program template for the user option 'Use as variables'
+Alternatively, the default program template for the user option 'Use as variables'
 is as follows:
 
 ```
@@ -117,6 +117,10 @@ MODULE MainModule
 	ENDPROC
 ENDMODULE
 ```
+
+In the above, note that 2 placeholder parameters are required. Also note that the file
+name `template_use_as_vars` must be specified in the `Template name` textbox in Mimic UI
+to use it; ignore file extension.
 
 
 #
