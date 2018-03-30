@@ -2127,13 +2127,19 @@ def save_pose_to_shelf(*args):
                               c=True,
                               u=True)
 
+        # Remove robotSubtype from list
+        # In future rigs, this shouldn't be keyable
+        if 'robotSubtype' in keyable:
+            keyable.remove('robotSubtype')
+
+        print keyable
         for each in keyable:
             find_val = pm.getAttr(target_ctrl + "." + each)
             save_to_shelf = (startLineCode + "'" + (
-                target_ctrl_str + "." + each) + "', " + " %f" + endLineCode) % find_val
+                target_ctrl_str + "." + each) + "', " + " {}".format(find_val) + endLineCode)
             store_cmds += save_to_shelf
 
-            # FK MODE
+    # FK MODE
     else:
 
         store_cmds += 'tab = 2 \n'
