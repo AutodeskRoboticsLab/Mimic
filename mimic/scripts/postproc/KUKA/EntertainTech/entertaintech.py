@@ -10,6 +10,8 @@ from collections import namedtuple
 import entertaintech_config
 import general_utils
 from postproc import postproc
+from postproc import postproc_options
+
 
 # PARAMS
 __a1 = 'A1'
@@ -97,6 +99,8 @@ class SimpleEntertainTechProcessor(postproc.PostProcessor):
             output_file_extension='emily',
             def_program_template=entertaintech_config.DEFAULT_PROGRAM)
 
+        # Initialize internal parameters
+        self.supported_options = self._set_supported_options()
         self.time_step = entertaintech_config.DEFAULT_TIME_STEP
         self.time_index = entertaintech_config.DEFAULT_START_TIME
 
@@ -110,7 +114,7 @@ class SimpleEntertainTechProcessor(postproc.PostProcessor):
         program_template = self._get_program_template()  # don't overwrite original
         formatted_commands = '\n'.join(processed_commands)
         program = program_template.format(formatted_commands)
-        if opts.include_checksum:
+        if opts.Include_checksum:
             checksum = get_checksum(formatted_commands)
             checksum_string = TEMPLATES[CHECKSUM].format(checksum)
             search_string = '[HEADER]\n'
@@ -127,7 +131,7 @@ class SimpleEntertainTechProcessor(postproc.PostProcessor):
         """
         # Get command type
         command_type = postproc.get_structure_type(command)
-        if not opts.ignore_motion and command_type == RECORDS_COMMAND:
+        if not opts.Ignore_motion and command_type == RECORDS_COMMAND:
             return _process_records_command(command, opts)
 
     def get_formatted_commands(self, params):
@@ -146,6 +150,19 @@ class SimpleEntertainTechProcessor(postproc.PostProcessor):
             commands.append(command)
             self.time_index += self.time_step
         return commands
+
+    def _set_supported_options(self):
+        """
+        Set the supported options for this processor. Only set to True if the
+        optional parameter is acutally supported by this processor!
+        :return:
+        """
+        return postproc_options.configure_user_options(
+            ignore_motion=True,
+            use_nonlinear_motion=True,
+            include_axes=True,
+            include_checksum=True
+        )
 
 
 def _process_records_command(command, opts):

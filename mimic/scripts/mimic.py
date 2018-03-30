@@ -51,6 +51,7 @@ def check_required_directories():
     Confirm that the directories required for Mimic to run do, in fact, exist.
     :return:
     """
+    # Check required directories
     required_directories = [
         'rigs',
         'plug-ins',
@@ -60,7 +61,19 @@ def check_required_directories():
     dir_mimic = general_utils.get_mimic_dir()
     for d in required_directories:
         path = '{}/{}'.format(dir_mimic, d)
-        assert os.path.isdir(path)
+        if d == 'rigs':  # Check for rigs
+            contents_of_rigs = os.listdir(path)
+            if not contents_of_rigs:
+                raise Exception("We noticed that you don't have anything "
+                                "in your rigs directory; download the latest "
+                                "robot rigs from our GitHub repository and "
+                                "them to the rigs directory in Mimic!")
+        try:
+            assert os.path.isdir(path)
+        except AssertionError:
+            raise Exception("You don't have all of the necessary directories "
+                            "for Mimic to run! Download the latest release or "
+                            "track down the location of the directory: " + d)
 
 
 def run():

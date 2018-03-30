@@ -175,7 +175,6 @@ class PostProcessor(object):
         directory, the provided default program template will be used instead.
         :return:
         """
-        # TODO: Should this be type-case independent?
         try:
             # Get template from path
             program_template_path = self._get_program_template_path()
@@ -305,71 +304,3 @@ def get_structure_type(structure):
     :return:
     """
     return type(structure).__name__
-
-
-# USER OPTIONS
-USER_OPTIONS = 'USER_OPTIONS'
-__user_options = namedtuple(
-    USER_OPTIONS, [
-        'ignore_motion',
-        'use_motion_as_variables',
-        'use_linear_motion',
-        'use_nonlinear_motion',
-        'include_axes',
-        'include_pose',
-        'include_external_axes',
-        'include_configuration',
-        'ignore_ios',
-        'process_ios_first',
-        'include_digital_output',
-        'include_checksum'
-    ]
-)
-
-
-def configure_user_options(
-        ignore_motion=postproc_config.OPTS_IGNORE_MOTION_COMMANDS,
-        use_motion_as_variables=postproc_config.OPTS_USE_MOTION_AS_VARIABLES,
-        use_linear_motion=True if postproc_config.OPTS_USE_LINEAR_MOTION
-        else not postproc_config.OPTS_USE_NONLINEAR_MOTION,
-        use_nonlinear_motion=True if postproc_config.OPTS_USE_NONLINEAR_MOTION
-        else not postproc_config.OPTS_USE_LINEAR_MOTION,
-        include_axes=postproc_config.OPTS_INCLUDE_AXES,
-        include_pose=postproc_config.OPTS_INCLUDE_AXES,
-        include_external_axes=postproc_config.OPTS_INCLUDE_EXTERNAL_AXES,
-        include_configuration=postproc_config.OPTS_INCLUDE_CONFIGURATION,
-        ignore_ios=postproc_config.OPTS_IGNORE_IO_COMMANDS,
-        process_ios_first=postproc_config.OPTS_PROCESS_IOS_FIRST,
-        include_digital_output=postproc_config.OPTS_INCLUDE_DIGITAL_OUTPUT,
-        include_checksum=postproc_config.OPTS_INCLUDE_CHECKSUM):
-    """
-    Configure user options. Defaults every parameter to False unless specified
-    by user.
-    :param ignore_motion: Ignore all motion commands.
-    :param use_motion_as_variables: Use motion as variables.
-    :param use_linear_motion: Move linearly.
-    :param use_nonlinear_motion: Move non-linearly.
-    :param include_axes: Include axes in command.
-    :param include_pose: Include pose in command.
-    :param include_external_axes: Include external axes in command.
-    :param include_configuration: Include configuration in command.
-    :param ignore_ios: Ignore all IO commands.
-    :param process_ios_first: Process IOs and append to output before motion.
-    :param include_digital_output: Include digital output in command.
-    :param include_checksum: Include a CRC32 checksum in output.
-    :return:
-    """
-    return __user_options(
-        ignore_motion=ignore_motion,
-        use_motion_as_variables=use_motion_as_variables,
-        use_linear_motion=use_linear_motion,
-        use_nonlinear_motion=use_nonlinear_motion,
-        include_axes=include_axes,
-        include_pose=include_pose,
-        include_external_axes=include_external_axes,
-        include_configuration=include_configuration,
-        ignore_ios=ignore_ios,
-        process_ios_first=process_ios_first,
-        include_digital_output=include_digital_output,
-        include_checksum=include_checksum
-    )

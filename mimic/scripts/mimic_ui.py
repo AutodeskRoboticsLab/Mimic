@@ -18,12 +18,14 @@ import mimic_config
 import mimic_utils
 from postproc import postproc_config
 from postproc import postproc_setup
+from postproc import postproc_options
 
 reload(mimic_utils)
 reload(mimic_config)
 reload(general_utils)
 reload(postproc_setup)
 reload(postproc_config)
+reload(postproc_options)
 
 FONT = 'smallObliqueLabelFont'
 
@@ -495,7 +497,8 @@ def _build_general_settings_tab(parent_layout):
     # Post processor option menu list
     pm.optionMenu('postProcessorList',
                   label='Processor:',
-                  height=18)
+                  height=18,
+                  changeCommand=postproc_options.overwrite_options)
 
     # Get supported post-processors and fill option menu list
     supported_post_processors = postproc_setup.get_processor_names()
@@ -507,121 +510,30 @@ def _build_general_settings_tab(parent_layout):
     return general_settings_tab_layout
 
 
-def _build_options_columns(name, options, parent_layout):
-    pm.rowLayout(name, numberOfColumns=2,
-                 adjustableColumn=2,
-                 columnAttach=(1, 'left', 3),
-                 columnWidth=[(1, 100), (2, 100)],
-                 )
-
-    # Split the options into two
-    pm.columnLayout('{}_opts_col_0'.format(name),
-                    parent=name,
-                    adj=True,
-                    width=100)
-    pm.columnLayout('{}_opts_col_1'.format(name),
-                    parent=name,
-                    adj=True,
-                    width=100)
-
-    num_opts_in_col = len(options) / 2 + len(options) % 2
-    for i, opt in enumerate(options):
-        pm.checkBox(options[opt]['name'],
-                    label=opt,
-                    value=options[opt]['value'],
-                    enable=options[opt]['enable'],
-                    parent='{}_opts_col_{}'.format(name, i / num_opts_in_col))
-
-    pm.setParent(parent_layout)
-
-
+# OPTIONS TAB
 def _build_proc_options_tab(parent_layout):
     # Create column Layout for General settings
-    proc_options_tab_layout = pm.columnLayout('procOptions',
-                                              adj=True,
-                                              width=100)
-
+    proc_options_tab_layout = pm.columnLayout('procOptions', adj=True, width=100)
     pm.separator(height=3, style='none')
 
-    # Postproc options
-    _name = 'name'
-    _value = 'value'
-    _enable = 'enable'
+    # Name this tab? May not be necessary
+    pm.separator(height=3, style='none')
+    pm.text('User options:', align='left')
+    pm.separator(height=3, style='none')
 
-    # Motion options
-    pm.separator(height=3, style='none')
-    pm.text('Motion options:', align='left')
-    pm.separator(height=3, style='none')
-    pm.radioCollection('motion_type_radio_collection')
-    pm.rowLayout(numberOfColumns=1,
-                 adjustableColumn=1,
-                 columnAttach=(1, 'left', 3),
-                 height=20)
-    pm.radioButtonGrp('motion_type_radio_group',
-                      labelArray2=['Linear', 'Nonlinear'],
-                      annotation='Motion type for robot commands',
-                      numberOfRadioButtons=2,
-                      columnWidth2=[100, 100],
-                      select=1 if postproc_config.OPTS_USE_LINEAR_MOTION else 2,
-                      enable1=False,
-                      enable2=True)  # 1-based integer
-    pm.setParent('..')
-    proc_motion_options = OrderedDict([
-        ('Ignore motion', {_name: 'cb_ignoreMotion',
-                           _value: postproc_config.OPTS_IGNORE_MOTION_COMMANDS,
-                           _enable: False}),
-        ('Use as variables', {_name: 'cb_useMotionAsVariables',
-                              _value: postproc_config.OPTS_USE_MOTION_AS_VARIABLES,
-                              _enable: True}),
-    ])
-    _build_options_columns('motion_opts',
-                           proc_motion_options,
-                           proc_options_tab_layout)
+    # Get the options
+    selected_options = postproc_options.DEFAULT_USER_OPTIONS
+    supported_options = postproc_options.get_processor_supported_options()
 
-    # IO Options
-    pm.separator(height=3, style='none')
-    pm.text('IO options:', align='left')
-    pm.separator(height=3, style='none')
-    proc_io_options = OrderedDict([
-        ('Ignore IOs', {_name: 'cb_ignoreIOs',
-                        _value: postproc_config.OPTS_IGNORE_IO_COMMANDS,
-                        _enable: False}),
-        ('Set IOs first', {_name: 'cb_processIOCommandsFirst',
-                           _value: postproc_config.OPTS_PROCESS_IOS_FIRST,
-                           _enable: False}),
-    ])
-    _build_options_columns('io_opts',
-                           proc_io_options,
-                           proc_options_tab_layout)
+    # Create the options dictionary and build the output
+    options_dict = postproc_options.create_options_dict(
+        selected_options, supported_options)
 
-    # Include options
-    proc_include_options = OrderedDict([
-        ('Axes', {_name: 'cb_includeAxes',
-                  _value: postproc_config.OPTS_INCLUDE_AXES,
-                  _enable: False}),
-        ('Pose', {_name: 'cb_includePose',
-                  _value: postproc_config.OPTS_INCLUDE_POSE,
-                  _enable: False}),
-        ('External axes', {_name: 'cb_includeExternalAxes',
-                           _value: postproc_config.OPTS_INCLUDE_EXTERNAL_AXES,
-                           _enable: False}),
-        ('Configuration', {_name: 'cb_includeConfiguration',
-                           _value: postproc_config.OPTS_INCLUDE_CONFIGURATION,
-                           _enable: False}),
-        ('Digital output', {_name: 'cb_includeDigitalOutput',
-                            _value: postproc_config.OPTS_INCLUDE_DIGITAL_OUTPUT,
-                            _enable: False}),
-        ('Checksum', {_name: 'cb_includeChecksum',
-                      _value: postproc_config.OPTS_INCLUDE_CHECKSUM,
-                      _enable: True}),
-    ])
-
-    pm.separator(height=3, style='none')
-    pm.text('Include in output:', align='left')
-    pm.separator(height=3, style='none')
-    _build_options_columns('include_opts',
-                           proc_include_options,
-                           proc_options_tab_layout)
+    # Construct the output columns
+    postproc_options.build_options_columns(
+        'procOptions',
+        options_dict,
+        proc_options_tab_layout)
 
     pm.setParent(parent_layout)
     return proc_options_tab_layout

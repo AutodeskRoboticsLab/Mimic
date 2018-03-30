@@ -20,11 +20,13 @@ import general_utils
 import mimic_config
 from postproc import postproc
 from postproc import postproc_setup
+from postproc import postproc_options
 from robotmath import inverse_kinematics
 
 reload(mimic_config)
 reload(postproc)
 reload(postproc_setup)
+reload(postproc_options)
 reload(general_utils)
 reload(inverse_kinematics)
 
@@ -2502,59 +2504,6 @@ def _get_program_settings():
     return program_settings
 
 
-def _get_user_opts():
-    """
-    Get user options from the Mimic UI.
-    :return:
-    """
-    ignore_motion = pm.checkBox('cb_ignoreMotion',
-                                value=True,
-                                query=True)
-    use_motion_as_variables = pm.checkBox('cb_useMotionAsVariables',
-                                          value=False,
-                                          query=True)
-    motion_type = pm.radioButtonGrp('motion_type_radio_group',
-                                    query=True,
-                                    select=True)
-    use_linear_motion = motion_type == 1
-    use_nonlinear_motion = motion_type == 2
-
-    include_axes = pm.checkBox('cb_includeAxes',
-                               value=True,
-                               query=True)
-    include_pose = pm.checkBox('cb_includeAxes',
-                               value=True,
-                               query=True)
-    include_external_axes = pm.checkBox('cb_includeExternalAxes',
-                                        value=True,
-                                        query=True)
-    include_configuration = pm.checkBox('cb_includeConfiguration',
-                                        value=True,
-                                        query=True)
-    ignore_ios = pm.checkBox('cb_ignoreIOs',
-                             value=True,
-                             query=True)
-    include_digital_output = pm.checkBox('cb_includeDigitalOutput',
-                                         value=True,
-                                         query=True)
-    include_checksum = pm.checkBox('cb_includeChecksum',
-                                   value=True,
-                                   query=True)
-    return postproc.configure_user_options(
-        ignore_motion=ignore_motion,
-        use_motion_as_variables=use_motion_as_variables,
-        use_linear_motion=use_linear_motion,
-        use_nonlinear_motion=use_nonlinear_motion,
-        include_axes=include_axes,
-        include_pose=include_pose,
-        include_external_axes=include_external_axes,
-        include_configuration=include_configuration,
-        ignore_ios=ignore_ios,
-        include_digital_output=include_digital_output,
-        include_checksum=include_checksum,
-    )
-
-
 def check_program(*args):
     """
     Checks robot, command parameters, performs the velocity check on a list of
@@ -2608,6 +2557,8 @@ def check_program(*args):
         pm.scrollField('programOutputScrollField',
                        insertText='No limits exceeded!' + '\n',
                        edit=True)
+
+    # _check_selected_vs_supported_options()
 
 
 def save_program(*args):
@@ -2676,7 +2627,7 @@ def save_program(*args):
         overwrite_option = program_settings['Overwrite Option']
 
         # Define options that will be passed into the processor.
-        user_opts = _get_user_opts()
+        user_options = postproc_options.get_user_selected_options()
 
         # Create processor given above options
         processor = postproc_setup.POST_PROCESSORS[processor_type]()
@@ -2685,7 +2636,7 @@ def save_program(*args):
         commands = processor.get_formatted_commands(raw_commands)
 
         # Process the raw_commands into relevant robot control code
-        filled_template = processor.process(commands, user_opts)
+        filled_template = processor.process(commands, user_options)
 
         # write the processed animation as robot code to a file
         output_path = processor.write(

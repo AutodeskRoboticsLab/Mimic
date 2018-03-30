@@ -15,3 +15,4 @@ DEFAULT_PROGRAM = \
     '  ; Go to end position\n' \
     '  PTP {{A1 0, A2 -90, A3 90, A4 0, A5 90, A6 0}}\n' \
     'END\n'
+

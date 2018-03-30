@@ -8,6 +8,7 @@ from collections import namedtuple
 import general_utils
 import krl_config
 from postproc import postproc
+from postproc import postproc_options
 from robotmath import transforms
 
 # PARAMS
@@ -230,6 +231,9 @@ class SimpleKRLProcessor(postproc.PostProcessor):
             output_file_extension='src',
             def_program_template=krl_config.DEFAULT_PROGRAM)
 
+        # Initialize internal parameters
+        self.supported_options = self._set_supported_options()
+
     def _process_program(self, processed_commands, opts):  # Implement in base class!
         """
         Process a list of instructions and fill a program template.
@@ -249,9 +253,9 @@ class SimpleKRLProcessor(postproc.PostProcessor):
         :return:
         """
         command_type = postproc.get_structure_type(command)
-        if not opts.ignore_motion and command_type == MOTION_COMMAND:
+        if not opts.Ignore_motion and command_type == MOTION_COMMAND:
             return _process_motion_command(command, opts)
-        elif not opts.ignore_ios and command_type == IO_COMMAND:
+        elif not opts.Ignore_ios and command_type == IO_COMMAND:
             return _process_io_command(command, opts)
 
     def get_formatted_commands(self, params):
@@ -270,6 +274,18 @@ class SimpleKRLProcessor(postproc.PostProcessor):
             commands.append(command)
         return commands
 
+    def _set_supported_options(self):
+        """
+        Set the supported options for this processor. Only set to True if the
+        optional parameter is acutally supported by this processor!
+        :return:
+        """
+        return postproc_options.configure_user_options(
+            ignore_motion=True,
+            use_nonlinear_motion=True,
+            include_axes=True
+        )
+
 
 def _process_motion_command(command, opts):  # Implement in base class!
     """
@@ -282,7 +298,7 @@ def _process_motion_command(command, opts):  # Implement in base class!
     motion_data = []  # empty data container
 
     # Interpret linear motion command
-    if opts.use_linear_motion:
+    if opts.Use_linear_motion:
         motion_type = MOVE_LIN
         if command.pose is not None:
             motion_data.extend(_convert_pose(command.pose))
@@ -299,7 +315,7 @@ def _process_motion_command(command, opts):  # Implement in base class!
             raise ValueError('Invalid command')
 
     # Interpret nonlinear motion command
-    elif opts.use_nonlinear_motion:
+    elif opts.Use_nonlinear_motion:
         motion_type = MOVE_PTP
         if command.axes is not None:
             motion_data.extend(command.axes)
@@ -342,7 +358,7 @@ def _process_io_command(command, opts):
     io_data = []  # empty data container
 
     # Interpret digital output command
-    if opts.include_digital_output:
+    if opts.Include_digital_output:
         if command.digital_output is not None:
             io_type = BINARY_OUT
             for io in command.digital_output:

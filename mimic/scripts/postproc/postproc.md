@@ -276,7 +276,9 @@ TEMPLATES = {
 
 ### User options
 
-User options for post processors are defined with a `__user_options` structure.
+See the module *postproc_options.py* for details!
+
+User options for post processors are defined with a `UserOptions` structure.
 The function `configure_user_options(*opts)` contains descriptions of optional
 parameters within the structure (by default, all options are set to False unless
 otherwise indicated by the user). Note that these parameters are not reusable and
@@ -286,22 +288,42 @@ addition to commands, receive as input a completed options structure.
 ```
 # USER OPTIONS
 USER_OPTIONS = 'USER_OPTIONS'
-__user_options = namedtuple(
-    USER_OPTIONS, [
-        'use_motion',
-        'use_linear_motion',
-        'use_nonlinear_motion',
-        'include_axes',
-        'include_pose',
-        'include_external_axes',
-        'include_configuration',
-        'use_ios',
-        'process_ios_first',
-        'include_digital_output',
-        'include_checksum'
-    ]
+_fields = [
+    'Ignore_motion',
+    'Use_motion_as_variables',
+    'Use_linear_motion',
+    'Use_nonlinear_motion',
+    'Include_axes',
+    'Include_pose',
+    'Include_external_axes',
+    'Include_configuration',
+    'Ignore_IOs',
+    'Process_IOs_first',
+    'Include_digital_outputs',
+    'Include_checksum',
+]
+UserOptions = namedtuple(
+    USER_OPTIONS, _fields
 )
 ```
+
+Default user options are defined in *postproc_options.py*.
+At time of writing, the default user options are as follows:
+
+```
+# Default user options
+DEFAULT_USER_OPTIONS = postproc_options.configure_user_options(
+        use_nonlinear_motion=True,
+        include_axes=True
+)
+```
+
+User-selected options are always compared to processor-supported options. This
+means that options are only enabled (and visible) in the Mimic UI if they are
+supported by the selected processor; they cannot be selected and enabled by the
+user if this is the case. Processor-supported options are defined in the processor
+subclass inside the function `processor._set_supported_options()` and may be
+accessed elsewhere via the property `processor.supported_options`. 
 
 
 ### Template files

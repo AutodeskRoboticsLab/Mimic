@@ -8,6 +8,7 @@ from collections import namedtuple
 import general_utils
 import rapid_config
 from postproc import postproc
+from postproc import postproc_options
 from robotmath import transforms
 
 
@@ -192,6 +193,9 @@ class SimpleRAPIDProcessor(postproc.PostProcessor):
             output_file_extension='prg',
             def_program_template=rapid_config.DEFAULT_PROGRAM)
 
+        # Initialize internal parameters
+        self.supported_options = self._set_supported_options()
+
     def _process_program(self, processed_commands, opts):  # Implement in base class!
         """
         Process a list of instructions and fill a program template.
@@ -199,11 +203,13 @@ class SimpleRAPIDProcessor(postproc.PostProcessor):
         :return:
         """
         # Get program structure and template
-        program_template = self._get_program_template()  # don't overwrite original
-        if opts.use_motion_as_variables:
+        if opts.Use_motion_as_variables:
             formatted_commands = ',\n'.join(processed_commands)
             count = len(processed_commands)
             try:
+                program_template = self._get_program_template()  # don't overwrite original
+                if program_template.count('{}') != 2:
+                    raise IndexError
                 return program_template.format(count, formatted_commands)
             except IndexError:
                 message = 'To use motion parameters as variables, template requires ' \
@@ -213,6 +219,7 @@ class SimpleRAPIDProcessor(postproc.PostProcessor):
         else:
             formatted_commands = '\n'.join(processed_commands)
             try:
+                program_template = self._get_program_template()  # don't overwrite original
                 return program_template.format(formatted_commands)
             except IndexError:
                 message = 'To use motion parameters as commands, template requires ' \
@@ -227,9 +234,9 @@ class SimpleRAPIDProcessor(postproc.PostProcessor):
         :return:
         """
         command_type = postproc.get_structure_type(command)
-        if not opts.ignore_motion and command_type == MOTION_COMMAND:
+        if not opts.Ignore_motion and command_type == MOTION_COMMAND:
             return _process_motion_command(command, opts)
-        elif not opts.ignore_ios and command_type == IO_COMMAND:
+        elif not opts.Ignore_ios and command_type == IO_COMMAND:
             return _process_io_command(command, opts)
 
     def get_formatted_commands(self, params):
@@ -248,6 +255,19 @@ class SimpleRAPIDProcessor(postproc.PostProcessor):
             commands.append(command)
         return commands
 
+    def _set_supported_options(self):
+        """
+        Set the supported options for this processor. Only set to True if the
+        optional parameter is acutally supported by this processor!
+        :return:
+        """
+        return postproc_options.configure_user_options(
+            ignore_motion=True,
+            use_motion_as_variables=True,
+            use_nonlinear_motion=True,
+            include_axes=True
+        )
+
 
 def _process_motion_command(command, opts):  # Implement in base class!
     """
@@ -261,7 +281,7 @@ def _process_motion_command(command, opts):  # Implement in base class!
     target_data = []
 
     # Interpret linear motion command
-    if opts.use_linear_motion:
+    if opts.Use_linear_motion:
         if command.pose is not None:
             motion_type = MOVE_L
             target_data_type = ROBTARGET
@@ -280,7 +300,7 @@ def _process_motion_command(command, opts):  # Implement in base class!
             raise ValueError('Invalid command')
 
     # Interpret nonlinear motion command
-    elif opts.use_nonlinear_motion:
+    elif opts.Use_nonlinear_motion:
         if command.axes is not None:
             motion_type = MOVE_ABS_J
             target_data_type = JOINTTARGET
@@ -316,7 +336,7 @@ def _process_motion_command(command, opts):  # Implement in base class!
         STRUCTURES[target_data_type],
         TEMPLATES[target_data_type])
 
-    if opts.use_motion_as_variables:
+    if opts.Use_motion_as_variables:
         formatted_variable = postproc.fill_template(
             formatted_target_data,
             STRUCTURES[VARIABLE],
@@ -348,7 +368,7 @@ def _process_io_command(command, opts):
     io_data = []  # empty data container
 
     # Interpret digital output command
-    if opts.include_digital_output:
+    if opts.Include_digital_output:
         if command.digital_output is not None:
             io_type = DIGITAL_OUT
             for io in command.digital_output:
