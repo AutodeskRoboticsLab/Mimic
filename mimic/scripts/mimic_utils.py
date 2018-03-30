@@ -2488,6 +2488,10 @@ def _get_program_settings():
                                    text=True,
                                    query=True)
 
+    template_filename = pm.textField('t_templateFileName',
+                                   text=True,
+                                   query=True)
+
     # Get the sample rate from the Mimic UI
     sample_rate = pm.radioCollection('sample_rate_radio_collection',
                                      q=True,
@@ -2505,6 +2509,7 @@ def _get_program_settings():
     program_settings['Processor Type'] = processor_type
     program_settings['Output Directory'] = output_directory
     program_settings['Output Filename'] = output_filename
+    program_settings['Template Filename'] = template_filename
     program_settings['Overwrite Option'] = overwrite_option
 
     return program_settings
@@ -2625,10 +2630,6 @@ def save_program(*args):
         # Get the user directory from the Mimic UI.
         output_directory = program_settings['Output Directory']
 
-        # Get the file name from the Mimic UI and prepend the name of the
-        # current robot.
-        output_filename = program_settings['Output Filename']
-
         # Check if the file should be overwritten if it already exists.
         overwrite_option = program_settings['Overwrite Option']
 
@@ -2642,9 +2643,11 @@ def save_program(*args):
         commands = processor.get_formatted_commands(raw_commands)
 
         # Process the raw_commands into relevant robot control code
-        filled_template = processor.process(commands, user_options)
+        template_filename = program_settings['Template Filename']
+        filled_template = processor.process(commands, user_options, template_filename)
 
         # write the processed animation as robot code to a file
+        output_filename = program_settings['Output Filename']
         output_path = processor.write(
             filled_template,
             output_directory=output_directory,

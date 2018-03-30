@@ -152,6 +152,7 @@ class PostProcessor(object):
         self.type_robot = type_robot
         self.type_processor = type_processor
         self.output_file_extension = output_file_extension
+        self.template_filename = postproc_config.DEFAULT_TEMPLATE_NAME
         self.default_program = def_program_template
 
     def _get_program_template_path(self):
@@ -166,7 +167,7 @@ class PostProcessor(object):
         return _template.format(mimic_dir,
                                 self.type_robot,
                                 self.type_processor,
-                                postproc_config.DEFAULT_TEMPLATE_NAME,
+                                self.template_filename,
                                 self.output_file_extension)
 
     def _get_program_template(self):
@@ -200,7 +201,7 @@ class PostProcessor(object):
             raise Exception('File name contains invalid characters')
         if output_directory == '' or output_directory is None:  # directory undefined
             template_path = self._get_program_template_path()
-            template_name = postproc_config.DEFAULT_TEMPLATE_NAME
+            template_name = self.template_filename
             path = template_path.replace(template_name, output_name)
         else:  # use the defined directory
             path = '{}/{}.{}'.format(output_directory, output_name, self.output_file_extension)
@@ -239,7 +240,7 @@ class PostProcessor(object):
         """
         raise NotImplementedError
 
-    def process(self, commands, opts):
+    def process(self, commands, opts, template_filename=None):
         """
         Process a list of commands and user options. This function should
         consider any options, format input commands, and fill a program template.
@@ -247,6 +248,8 @@ class PostProcessor(object):
         :param opts: UserOptions tuple
         :return:
         """
+        if template_filename:
+            self.template_filename = template_filename
         processed_commands = []
         for command in commands:
             processed_command = self._process_command(command, opts)

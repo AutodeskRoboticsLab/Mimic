@@ -423,12 +423,25 @@ def _build_general_settings_tab(parent_layout):
     pm.rowLayout(numberOfColumns=2,
                  adjustableColumn=2,
                  columnAttach=(1, 'left', -1),
-                 columnWidth=[(1, 57), (2, 150)],
+                 columnWidth=[(1, 90), (2, 100)],
                  height=20)
-    pm.text(label='Filename:')
+    pm.text(label='Output name:')
     pm.textField('t_outputFileName',
                  text=postproc_config.DEFAULT_OUTPUT_NAME,
                  font=FONT)
+
+    pm.setParent('..')
+
+    pm.rowLayout(numberOfColumns=2,
+                 adjustableColumn=2,
+                 columnAttach=(1, 'left', -1),
+                 columnWidth=[(1, 90), (2, 100)],
+                 height=20)
+    pm.text(label='Template name:')
+    pm.textField('t_templateFileName',
+                 text=postproc_config.DEFAULT_TEMPLATE_NAME,
+                 font=FONT)
+
     pm.setParent('..')
 
     # pm.rowLayout(numberOfColumns=1,
@@ -574,17 +587,6 @@ def _build_program_settings_frame(parent_layout):
     pm.separator(height=3, style='none')
 
     pm.setParent(parent_layout)
-
-
-# def _build_output_frame(parent_layout):
-#
-#     program_output_frame = pm.frameLayout(label="Output",
-#                                           height=195,
-#                                           collapsable=True)
-#     program_output_scroll_field = pm.scrollField('programOutputScrollField')
-#
-#
-#     pm.setParent(parent_layout)
 
 
 def build_program_tab(parent_layout):

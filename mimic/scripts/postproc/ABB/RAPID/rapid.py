@@ -200,6 +200,7 @@ class SimpleRAPIDProcessor(postproc.PostProcessor):
         """
         Process a list of instructions and fill a program template.
         :param processed_commands: List of processed commands.
+        :param opts: UserOptions tuple
         :return:
         """
         # Get program structure and template
