@@ -46,43 +46,47 @@ def load_mimic_plugins(plugin_file_names):
         print '{} Plug-in already loaded'.format(script)
 
 
-def check_required_directories():
+def confirm_requirements_exist():
     """
     Confirm that the directories required for Mimic to run do, in fact, exist.
-    Confirm that the rigs directory contains something.
+    Confirm that the rigs directory contains something. Confirm that files, such
+    as LICENSE and mimic.mod, exist.
     :return:
     """
     # Check required directories
-    required_directories = [
+    requirements = [
         'rigs',
         'plug-ins',
         'shelves',
-        'scripts/postproc'
+        'scripts',
+        'LICENSE.md',
+        'mimic.mod',
     ]
     dir_mimic = general_utils.get_mimic_dir()
-    for d in required_directories:
-        path = '{}/{}'.format(dir_mimic, d)
+    for requirement in requirements:
+        if '.' in requirement:  # is file
+            parent = os.path.abspath(os.path.join(dir_mimic, os.pardir))
+            path = '{}/{}'.format(parent, requirement)
+        else:
+            path = '{}/{}'.format(dir_mimic, requirement)
         try:
-            assert os.path.isdir(path)
-            if d == 'rigs':  # Check for rigs
+            assert os.path.exists(path)
+            if requirement == 'rigs':  # Check for rigs
                 items = os.listdir(path)
                 assert any(os.path.isdir(os.path.join(path, item)) for item in items)
         except AssertionError:
             raise Exception("You don't have all of the necessary directories "
                             "for Mimic to run. Download the latest release from "
-                            "our GitHub repository!")
+                            "our GitHub repository! " + requirement)
 
 
 def run():
     """
-    Creates the Mimic UI.
+    Check that mimic is all there, loaded, and then create the Mimic UI.
     :return:
     """
-    # Confirm that Mimic is all there
-    check_required_directories()
-
-    # Load dependencies
+    # Perform preliminary checks
+    confirm_requirements_exist()
     load_mimic_plugins(mimic_config.REQUIRED_PLUGINS)
-
-    # Generate UI itself
+    # Build the UI itself
     mimic_ui.build_mimic_ui()
