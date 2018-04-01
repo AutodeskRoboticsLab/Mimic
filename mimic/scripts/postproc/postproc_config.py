@@ -11,7 +11,7 @@ DEFAULT_OUTPUT_NAME = 'output'
 
 # Pre-processor parameters
 DEFAULT_SAMPLE_RATE_VALUE = 0.012
-DEFAULT_SAMPLE_RATE_UNITS = 'seconds'
+DEFAULT_SAMPLE_RATE_UNITS = 'seconds'  # 'seconds' or 'frames'
 
 # Output options
 OPTS_IGNORE_WARNINGS = False

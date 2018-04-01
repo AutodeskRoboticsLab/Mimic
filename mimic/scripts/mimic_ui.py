@@ -152,10 +152,12 @@ def _build_ik_tab(parent_layout):
 
     # Invert Axis 4 button
     pm.symbolButton(image='flipA4Icon.png',
-                    command=pm.Callback(mimic_utils.invert_axis, 4))
+                    command=pm.Callback(mimic_utils.invert_axis, 4),
+                    annotation='Inverts Axis 6 rotation +/- 360 degrees')
     # Invert Axis 6 button
     pm.symbolButton(image='flipA6Icon.png',
-                    command=pm.Callback(mimic_utils.invert_axis, 6))
+                    command=pm.Callback(mimic_utils.invert_axis, 6),
+                    annotation='Inverts Axis 6 rotation +/- 360 degrees')
     pm.setParent(ik_tab_layout)  # Set parent to IK tab column layout
 
     pm.separator(height=5, style='none')
@@ -165,6 +167,8 @@ def _build_ik_tab(parent_layout):
     pm.rowLayout(numberOfColumns=1)
     pm.checkBox('cb_keyToolCtrl',
                 label="Key tool controller",
+                annotation='If checked, Tool Controller\'s Translate ' \
+                           'and Rotate attributes will be keyed',
                 value=1)
 
     pm.setParent(ik_tab_layout)  # Set parent to IK tab column layout
@@ -172,7 +176,16 @@ def _build_ik_tab(parent_layout):
     pm.separator(height=5, style='none')
 
     # Keyframe IK configuration button
-    pm.button(label='Set IK Keyframe', command=mimic_utils.key_ik)
+    pm.button(label='Set IK Keyframe',
+              command=mimic_utils.key_ik,
+              annotation='Keyframes Robot\'s IK-FK hierarchy in IK mode:\n' \
+                         'target_CTRL:\n' \
+                         '    ik = 1\n' \
+                         '    visibility = 1\n' \
+                         '    IK Solution 1, 2, and 3\n' \
+                         'a*FK_CTRL:\n' \
+                         '    rotateX, Y, or Z\n' \
+                         '    visibility = 0')   
 
     pm.setParent(parent_layout)
     return ik_tab_layout
@@ -193,30 +206,15 @@ def _build_fk_tab(parent_layout):
                'import mimic_utils; ' \
                'pm.setFocus("fkTab");')
 
-    # Select axis 1 symbol button
-    sel_a1_cmd = cmd_str + ' mimic_utils.select_fk_axis_handle(1)'
-    pm.symbolButton(image='a1FkIcon.png', command=sel_a1_cmd)
-
-    # Select axis 2 symbol button
-    sel_a2_cmd = cmd_str + ' mimic_utils.select_fk_axis_handle(2)'
-    pm.symbolButton(image='a2FkIcon.png', command=sel_a2_cmd)
-
-    # Select axis 3 symbol button
-    sel_a3_cmd = cmd_str + ' mimic_utils.select_fk_axis_handle(3)'
-    pm.symbolButton(image='a3FkIcon.png', command=sel_a3_cmd)
-
-    # Select axis 4 symbol button
-    sel_a4_cmd = cmd_str + ' mimic_utils.select_fk_axis_handle(4)'
-    pm.symbolButton(image='a4FkIcon.png', command=sel_a4_cmd)
-
-    # Select axis 5 symbol button
-    sel_a5_cmd = cmd_str + ' mimic_utils.select_fk_axis_handle(5)'
-    pm.symbolButton(image='a5FkIcon.png', command=sel_a5_cmd)
-
-    # Select axis 6 symbol button
-    sel_a6_cmd = cmd_str + ' mimic_utils.select_fk_axis_handle(6)'
-    pm.symbolButton(image='a6FkIcon.png', command=sel_a6_cmd)
-
+    for i in range(6):
+        axis = i+1
+        sel_cmd_str = cmd_str + ' mimic_utils.select_fk_axis_handle({})' \
+                                .format(axis)
+        button_img = 'a{}FkIcon.png'.format(axis)
+        button_ann = 'Selects Axis {} FK Controller'.format(axis)
+        pm.symbolButton(image=button_img,
+                        command=sel_cmd_str,
+                        annotation=button_ann)
     pm.setParent('..')
 
     # UI spacing
@@ -285,19 +283,34 @@ def _build_fk_tab(parent_layout):
 
     # Get and set FK pose buttons
     pm.gridLayout(nc=2, cw=109, ch=25)
-    pm.button(label="Get Pose", command=mimic_utils.get_fk_pose)
-    pm.button(label='Set Pose', command=mimic_utils.set_fk_pose)
+    pm.button(label="Get Pose",
+              command=mimic_utils.get_fk_pose,
+              annotation='Gets selected robot\'s current axis rotation ' \
+                         'values\nand prints them above')
+    pm.button(label='Set Pose',
+              command=mimic_utils.set_fk_pose,
+              annotation='Sets selected robot\'s current axis rotation ' \
+                         'values\nto the input values above')
 
     pm.setParent('..')
 
     # Clear FK pose button
-    pm.button(label='Clear', command=mimic_utils.clear_fk_pose_ui)
+    pm.button(label='Clear',
+              command=mimic_utils.clear_fk_pose_ui,
+              annotation='Clears axis rotation input fields above')
     pm.separator(height=14, style='out')
 
     # Keyframe FK button
     pm.button(label="Set FK Keyframe",
               command=mimic_utils.key_fk,
-              bgc=[.7, .7, .7])
+              backgroundColor=[.7, .7, .7],
+              annotation='Keyframes Robot\'s IK-FK hierarchy in FK mode:\n' \
+                         'target_CTRL:\n' \
+                         '    ik = 0\n' \
+                         '    visibility = 0\n' \
+                         'a*FK_CTRL:\n' \
+                         '    rotateX, Y, or Z\n' \
+                         '    visibility = 1')  
     pm.setParent(parent_layout)
     return fk_tab_layout
 
@@ -335,9 +348,18 @@ def _build_keyframing_tools_frame(parent_layout):
     pm.separator(height=5, style='none')
 
     pm.button(label='Delete IK/FK Keyframe',
-              command=mimic_utils.delete_ik_fk_keys)
+              command=mimic_utils.delete_ik_fk_keys,
+              annotation='Deletes keyframes on all attributes ' \
+                         'at current frame created with\n' \
+                         '"Set IK-FK Keyframe" buttons')
     pm.button(label='Select Keyframe Hierarchy',
-              command=mimic_utils.select_keyable_robot_objects)
+              command=mimic_utils.select_keyable_robot_objects,
+              annotation='Selects all objects keyframed ' \
+                         'with "Set IK-FK Keyframe" buttons:\n'\
+                         '    target_CTRL\n' \
+                         '    FK_CTRLS\n' \
+                         '    a*FK_CTRL\n' \
+                         '    tool_CTRL if one exists')
 
     pm.separator(height=5, style='none')
     pm.setParent(parent_layout)
@@ -348,7 +370,10 @@ def _build_general_frame(parent_layout):
     pm.columnLayout(adj=True, columnAttach=('both', 5))
     pm.separator(height=5, style='none')
 
-    pm.button(label='Save Pose', command=mimic_utils.save_pose_to_shelf)
+    pm.button(label='Save Pose',
+              command=mimic_utils.save_pose_to_shelf,
+              annotation='Saves selected robot\'s current configuration\n' \
+                         'to a button on the Mimic shelf')
     pm.separator(height=10, style='out')
 
     pm.gridLayout(numberOfColumns=2,
@@ -356,19 +381,31 @@ def _build_general_frame(parent_layout):
                   cellHeight=25)
 
     # Zero target button
-    pm.button(label='Zero Tool (TCS)', command=mimic_utils.zero_target)
+    pm.button(label='Zero Tool (TCS)',
+              command=mimic_utils.zero_target,
+              annotation='Sets target_CTRL (or tool_CTRL if it exists)\n'
+                         'transform to Zero')
     # Zero robot local controller button
-    pm.button(label='Zero Base (LCS)', command=mimic_utils.zero_base_local)
+    pm.button(label='Zero Base (LCS)',
+              command=mimic_utils.zero_base_local,
+              annotation='Sets local_CTRL transform to Zero')
     # Zero robot world controller button
-    pm.button(label='Zero Base (WCS)', command=mimic_utils.zero_base_world)
+    pm.button(label='Zero Base (WCS)',
+              command=mimic_utils.zero_base_world,
+              annotation='Sets world_CTRL transform to Zero')
     # Zero all button
-    pm.button(label='Zero All', command=mimic_utils.zero_all)
+    pm.button(label='Zero All',
+              command=mimic_utils.zero_all,
+              annotation='Sets local_CTRL, world_CTRL, and target_CTRL (or ' \
+                         'tool_CTRL if it exists)\ntransforms\' to Zero')
     pm.setParent('..')
 
     pm.separator(height=10, style='out')
 
     # Toggle heads up display button
-    pm.button(label='Toggle HUD', command=mimic_utils.axis_val_hud)
+    pm.button(label='Toggle HUD',
+              command=mimic_utils.axis_val_hud,
+              annotation='Toggles the visibility of Mimic\'s Heads Up Display')
 
     pm.separator(height=5, style='none')
 
@@ -427,7 +464,7 @@ def _build_general_settings_tab(parent_layout):
                  height=20)
     pm.text(label='Output name:')
     pm.textField('t_outputFileName',
-                 text=postproc_config.DEFAULT_OUTPUT_NAME,
+                 placeholderText=postproc_config.DEFAULT_OUTPUT_NAME,
                  font=FONT)
 
     pm.setParent('..')
@@ -439,7 +476,7 @@ def _build_general_settings_tab(parent_layout):
                  height=20)
     pm.text(label='Template name:')
     pm.textField('t_templateFileName',
-                 text=postproc_config.DEFAULT_TEMPLATE_NAME,
+                 placeholderText=postproc_config.DEFAULT_TEMPLATE_NAME,
                  font=FONT)
 
     pm.setParent('..')
@@ -482,7 +519,7 @@ def _build_general_settings_tab(parent_layout):
                  height=20)
     pm.radioButton('rb_keyframesOnly',
                    label='Sample keyframes only',
-                   enable=False)
+                   enable=True)
     pm.setParent('..')
 
     pm.rowLayout(numberOfColumns=3,
@@ -523,7 +560,6 @@ def _build_general_settings_tab(parent_layout):
     return general_settings_tab_layout
 
 
-# OPTIONS TAB
 def _build_proc_options_tab(parent_layout):
     # Create column Layout for General settings
     proc_options_tab_layout = pm.columnLayout('procOptions', adj=True, width=100)
@@ -933,9 +969,11 @@ def _build_add_external_axis_frame(parent_layout):
 
     pm.setParent('..')
 
+    '''
     pm.rowLayout(numberOfColumns=1)
     pm.checkBox('cb_lockOtherAttrs', label="Lock Other Axis Attributes", value=1)
     pm.setParent('..')
+    '''
     pm.separator(height=4, style='none')
 
     pm.setParent(add_external_axis_col)
@@ -953,11 +991,9 @@ def _build_external_axis_tools_frame(parent_layout):
                                                  columnAttach=('both', 5))
     pm.separator(height=5, style='none')
 
-    pm.button('Parent Robot to Axis Controller')
-    pm.separator(height=3, style='none')
+    pm.button('Attach Robot to Axis Controller')
 
     pm.button('Remove External Axis from Robot')
-    pm.separator(height=3, style='none')
 
     pm.button('Active | Inactive')
 
@@ -965,14 +1001,20 @@ def _build_external_axis_tools_frame(parent_layout):
     pm.setParent(parent_layout)
 
 
-def _build_axis_info_frame(parent_layout):
+def _build_edit_axes_frame(parent_layout):
     # Axis Info
-    program_output_frame = pm.frameLayout(label="Axis Info",
-                                          height=195,
-                                          collapsable=True)
-    output_scroll_field = pm.scrollField('externalAxisInfotScrollField')
+    pm.frameLayout(label="Edit Axes",
+                   height=195,
+                   collapsable=True)
+    pm.columnLayout(adj=True, columnAttach=('both', 5))
 
-    pm.button(label='List Robot\'s External Axes', height=25)
+    pm.textScrollList('tsl_externalAxes', height=85)
+    #pm.setParent('..')
+
+    pm.button(label='List Axes',
+              annotation='Lists all external axes on selected robot')
+    pm.button(label='Remove Axis',
+              annotation='Removes selected axis from robot')
     pm.setParent(parent_layout)
 
 
@@ -987,7 +1029,7 @@ def build_external_axes_tab(parent_layout):
     _build_external_axis_tools_frame(external_axis_tab_layout)
 
     # Axis info frame
-    _build_axis_info_frame(external_axis_tab_layout)
+    _build_edit_axes_frame(external_axis_tab_layout)
 
     pm.setParent(parent_layout)
     return external_axis_tab_layout

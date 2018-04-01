@@ -1647,7 +1647,6 @@ def key_fk(*args):
             switch_to_fk(robot)
 
         # Snap IK control to the FK hierarchy
-        print 'sup'
         _snap_IK_target_to_FK(robot)
 
         # Key all FK elements
@@ -1704,7 +1703,7 @@ def key_fk(*args):
 
 def select_keyable_robot_objects(*args):
     """
-    Select all keyable robot objects in the Maya scene.
+    Select IK-FK keyframe hierarchy
     :param args:
     :return:
     """
@@ -2246,14 +2245,13 @@ def _get_animation_parameters():
     return animation_params
 
 
-def _check_command_parameters(robot):
+def _check_command_parameters(robot, animation_params):
     """
     Checks that the user input for animation paramters is valid.
     :param robot: name string of the selected robot
+    :param animation_params: dict of animation parameters
     :return:
     """
-    # TODO: Consider renaming
-    animation_params = _get_animation_parameters()
     start_frame = animation_params['Start Frame']
     end_frame = animation_params['End Frame']
 
@@ -2272,16 +2270,16 @@ def _check_command_parameters(robot):
     return True
 
 
-def _get_commands_from_animation(robot, time_interval_value, time_interval_units):
+def _get_commands_from_animation(robot, animation_params, time_interval_value, time_interval_units):
     """
     Get key-framed commands from the animation slider.
     :param robot: name string of the selected robot
+    :param animation_params: dict of animation parameters
     :param time_interval_value: Sample rate
     :param time_interval_units: Sample rate units
-    :return:
+    :return commands: list of list of robot configurations at each step
     """
     # Get relevant animation parameters.
-    animation_params = _get_animation_parameters()
     start_frame = animation_params['Start Frame']
     end_frame = animation_params['End Frame']
     framerate = animation_params['Framerate']
@@ -2538,23 +2536,26 @@ def check_program(*args):
                    'select a single robot to export')
 
     robot = robots[0]
+
+    program_settings = _get_program_settings()
+    animation_params = _get_animation_parameters()
     # For the selected robot, convert the animation to a robot control
     # program and write it to a file
-    if not _check_command_parameters(robot):
+    if not _check_command_parameters(robot, animation_params):
         pm.scrollField('programOutputScrollField',
                        edit=True,
                        text='No program written \n\n' \
                             'Check script editor for\ndetails \n\n')
         return
 
-    program_settings = _get_program_settings()
+
 
     # Get programmed time between samples
     time_interval_value = program_settings['Time Interval']['value']
     time_interval_units = program_settings['Time Interval']['units']
 
     # Get axis configuration at each time interval (typically every frame)
-    raw_commands, step_sec = _get_commands_from_animation(robot, time_interval_value, time_interval_units)
+    raw_commands, step_sec = _get_commands_from_animation(robot, animation_params, time_interval_value, time_interval_units)
 
     # Check if limits have been exceeded (i.e. velocity, acceleration)
     exceeded_limits = _check_exceeded_velocity_limits(robot, raw_commands, step_sec)
@@ -2570,6 +2571,71 @@ def check_program(*args):
                        edit=True)
 
     # _check_selected_vs_supported_options()
+
+
+def get_keyframed_commands(robot, animation_params):
+    """
+    Get's robot configuration between the specified program range at each
+    keyframe. A "keyframe", in this function, is defined as ONLY an IK or FK
+    keyframe that has been set by the user
+    :param robot: name string of the selected robot
+    :param animation_params: dict of animation parameters
+    :return commands: list of list of robot configurations at each step
+    """
+
+
+    # Get relevant animation parameters.
+    start_frame = animation_params['Start Frame']
+    end_frame = animation_params['End Frame']
+
+    # Get a list of all keyframes on robots IK attribute for the given animation
+    # frame range
+    ik_keys = pm.keyframe('{}|robot_GRP|target_CTRL'.format(robot),
+                          attribute='ik',
+                          query=True,
+                          time='{}:{}'.format(start_frame, end_frame))
+
+    # Verify that there is also a keyframe set on the FK controls' rotate
+    # attributes. If there's not, we remove it from the list
+    # Note: we only need to check on controller as they are al keyframed
+    # together
+    ik_keys_filtered = [key for key in ik_keys if pm.keyframe('{}|robot_GRP|FK_CTRLS|a1FK_CTRL.rotateY'.format(robot),
+                                                              query=True,
+                                                              time=key)]
+
+    # Initialize output array.
+    commands = [[0] * 6 for i in range(len(ik_keys_filtered))]
+
+
+    # Get the robot's axis configuration at each time step and write it to the
+    # output array
+    for i, frame in enumerate(ik_keys_filtered):
+        for j in range(6):
+            commands[i][j] = pm.getAttr('{}|robot_GRP|target_CTRL.axis{}'
+                                        .format(robot, j + 1), time=frame)
+
+    # We have to manually inspect axes to ensure proper, continuous
+    # evaluation with rotations +/- 180 degrees. 
+
+    # Define which axes to inspect, along with their corresponding axis of
+    # rotation. These are typically axes that have rotation
+    # limits > 180 and/or < -180. Currently only axes 4 and 6 are 
+    # ported by attributes onv target_CTRL (e.g. invertAxis4)
+
+    axes = [4, 6]
+    rotation_axes = ['Z', 'Z']
+    for i, frame in enumerate(ik_keys_filtered):    
+        for j, axis in enumerate(axes):
+            # Get actual value based on keyframed value.
+            keyed_val = _get_reconciled_rotation_value(robot,
+                                                       axis,
+                                                       rotation_axes[j],
+                                                       frame)[0]
+
+            # Replace initial axis values with keyed values.
+            commands[i][axis - 1] = keyed_val
+
+    return commands
 
 
 def save_program(*args):
@@ -2599,26 +2665,42 @@ def save_program(*args):
     # program and write it to a file
 
     program_settings = _get_program_settings()
+    animation_params = _get_animation_parameters()
 
-    if not _check_command_parameters(robot):
+
+    if not _check_command_parameters(robot, animation_params):
         pm.scrollField('programOutputScrollField',
                        edit=True,
                        text='No program written \n\n' \
                             'Check script editor for\ndetails \n\n')
         return
 
-    # Get programmed time between samples
-    time_interval_value = program_settings['Time Interval']['value']
-    time_interval_units = program_settings['Time Interval']['units']
 
-    # Get axis configuration at each time interval (typically every frame)
-    raw_commands, step_sec = _get_commands_from_animation(robot, time_interval_value, time_interval_units)
+    # If the UI radio button is set to "sample rate"
+    if pm.radioCollection('sample_rate_radio_collection', query=True, select=True) == 'rb_timeInterval':
+        # Get programmed time between samples
+        time_interval_value = program_settings['Time Interval']['value']
+        time_interval_units = program_settings['Time Interval']['units']
 
-    # Check if limits have been exceeded (i.e. velocity, acceleration)
-    exceeded_limits = _check_exceeded_velocity_limits(robot, raw_commands, step_sec)
-    exceeded_limits_warning = _format_exceeded_velocity_limits(exceeded_limits)
-    if exceeded_limits_warning != '':
-        pm.warning('Velocity limits exceeded; expand the Mimic window to see output for details')
+        # Get axis configuration at each time interval (typically every frame)
+        raw_commands, step_sec = _get_commands_from_animation(robot, animation_params, time_interval_value, time_interval_units)
+
+        # Check if limits have been exceeded (i.e. velocity, acceleration)
+        exceeded_limits = _check_exceeded_velocity_limits(robot, raw_commands, step_sec)
+        exceeded_limits_warning = _format_exceeded_velocity_limits(exceeded_limits)
+        if exceeded_limits_warning != '':
+            pm.warning('Velocity limits exceeded; expand the Mimic window to see output for details')
+
+    # Otherwise the radio button is set to "Keyframes only"
+    else:
+        # If we're sampling keyframes only, we assume we're using a post-
+        # processor option that's not-time base, and therefor we don't
+        # check for velocity limits
+        exceeded_limits_warning = ''
+
+        # Get commands at keyframes only
+        raw_commands = get_keyframed_commands(robot, animation_params)
+
 
     # Check if warnings should be ignored
     ignore_warnings = program_settings['Ignore Warnings']
