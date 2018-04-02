@@ -64,20 +64,42 @@ def confirm_requirements_exist():
     ]
     dir_mimic = general_utils.get_mimic_dir()
     for requirement in requirements:
-        if '.' in requirement:  # is file
+        if '.' in requirement:  # not a directory (.md, .mod)
             parent = os.path.abspath(os.path.join(dir_mimic, os.pardir))
             path = '{}/{}'.format(parent, requirement)
         else:
             path = '{}/{}'.format(dir_mimic, requirement)
-        try:
+        try:  # Check that directories all exist; if not, raise exception!
             assert os.path.exists(path)
-            if requirement == 'rigs':  # Check for rigs
-                items = os.listdir(path)
-                assert any(os.path.isdir(os.path.join(path, item)) for item in items)
         except AssertionError:
-            raise Exception("You don't have all of the necessary directories "
-                            "for Mimic to run. Download the latest release from "
-                            "our GitHub repository! " + requirement)
+            if 'LICENSE.md' in path:  # Missing license!
+                # Don't block Mimic from running
+                print "Warning: We noticed that you don't have a copy of our LICENSE! " \
+                      "Download the latest release from our GitHub repository!"
+            else:
+                # Full stop, Mimic won't work correctly!
+                raise Exception("Exception: We noticed that you're missing a requirement! "
+                                "Download the latest release from our GitHub repository! "
+                                + requirement)
+        try:  # Check that the rigs directory has robots; if not, print warning!
+            if requirement == 'rigs':
+                items = os.listdir(path)
+                subdir_paths = [os.path.join(path, item) for item in items]
+                assert any(os.path.isdir(subdir_path) for subdir_path in subdir_paths)
+                for subdir_path in subdir_paths:
+                    try:
+                        print subdir_path
+                        items = os.listdir(subdir_path)
+                        print items
+                        assert any('.ma' in item for item in items)
+                        continue
+                    except OSError:  # not a directory (.md)
+                        pass
+        except AssertionError:
+            # Don't block Mimic from running
+            print "Warning: We noticed that you don't have any robot rigs! " \
+                  "Download the latest rigs from out GitHub repository " \
+                  "and add them to mimic/rigs!"
 
 
 def run():
