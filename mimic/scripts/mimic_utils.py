@@ -1701,7 +1701,7 @@ def key_fk(*args):
             pm.warning('Error setting IK keys in FK mode')
 
 
-def select_keyable_robot_objects(*args):
+def select_keyframe_hierarchy(*args):
     """
     Select IK-FK keyframe hierarchy
     :param args:

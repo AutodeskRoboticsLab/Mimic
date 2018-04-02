@@ -185,6 +185,7 @@ def _build_ik_tab(parent_layout):
                          '    IK Solution 1, 2, and 3\n' \
                          'a*FK_CTRL:\n' \
                          '    rotateX, Y, or Z\n' \
+                         'FK_CTRLS\n' \
                          '    visibility = 0')   
 
     pm.setParent(parent_layout)
@@ -310,6 +311,7 @@ def _build_fk_tab(parent_layout):
                          '    visibility = 0\n' \
                          'a*FK_CTRL:\n' \
                          '    rotateX, Y, or Z\n' \
+                         'FK_CTRLS\n' \
                          '    visibility = 1')  
     pm.setParent(parent_layout)
     return fk_tab_layout
@@ -353,7 +355,7 @@ def _build_keyframing_tools_frame(parent_layout):
                          'at current frame created with\n' \
                          '"Set IK-FK Keyframe" buttons')
     pm.button(label='Select Keyframe Hierarchy',
-              command=mimic_utils.select_keyable_robot_objects,
+              command=mimic_utils.select_keyframe_hierarchy,
               annotation='Selects all objects keyframed ' \
                          'with "Set IK-FK Keyframe" buttons:\n'\
                          '    target_CTRL\n' \
