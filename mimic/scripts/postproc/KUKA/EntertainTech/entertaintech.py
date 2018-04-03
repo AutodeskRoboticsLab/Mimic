@@ -96,7 +96,7 @@ class SimpleEntertainTechProcessor(postproc.PostProcessor):
         super(SimpleEntertainTechProcessor, self).__init__(
             type_robot='KUKA',
             type_processor='EntertainTech',
-            output_file_extension='emily',
+            program_file_extension=entertaintech_config.DEFAULT_FILE_EXTENSION,
             def_program_template=entertaintech_config.DEFAULT_PROGRAM)
 
         # Initialize internal parameters
@@ -111,7 +111,7 @@ class SimpleEntertainTechProcessor(postproc.PostProcessor):
         :return:
         """
         # Get program structure and template
-        program_template = self._get_program_template()  # don't overwrite original
+        program_template = self._read_program_template()  # don't overwrite original
         formatted_commands = '\n'.join(processed_commands)
         program = program_template.format(formatted_commands)
         if opts.Include_checksum:

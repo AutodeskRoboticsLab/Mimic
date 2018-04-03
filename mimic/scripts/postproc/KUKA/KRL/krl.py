@@ -228,7 +228,7 @@ class SimpleKRLProcessor(postproc.PostProcessor):
         super(SimpleKRLProcessor, self).__init__(
             type_robot='KUKA',
             type_processor='KRL',
-            output_file_extension='src',
+            program_file_extension=krl_config.DEFAULT_FILE_EXTENSION,
             def_program_template=krl_config.DEFAULT_PROGRAM)
 
         # Initialize internal parameters
@@ -241,7 +241,7 @@ class SimpleKRLProcessor(postproc.PostProcessor):
         :return:
         """
         # Get program structure and template
-        program_template = self._get_program_template()  # don't overwrite original
+        program_template = self._read_program_template()  # don't overwrite original
         formatted_commands = '\n'.join(processed_commands)
         return program_template.format(formatted_commands)
 

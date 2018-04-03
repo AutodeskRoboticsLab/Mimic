@@ -4,6 +4,9 @@
 This module contains basic configuration parameters for SimpleRAPIDProcessor.
 """
 
+# Default system parameters
+DEFAULT_FILE_EXTENSION = 'prg'
+
 # Default parameters
 DEFAULT_TOOL = 'tool0'
 DEFAULT_WOBJ = 'wobj0'

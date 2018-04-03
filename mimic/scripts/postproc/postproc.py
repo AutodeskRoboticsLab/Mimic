@@ -137,7 +137,7 @@ class PostProcessor(object):
     def __init__(self,
                  type_robot,
                  type_processor,
-                 output_file_extension,
+                 program_file_extension,
                  def_program_template):
         """
         Initialize generic processor. This function sets PostProcessor types
@@ -146,78 +146,145 @@ class PostProcessor(object):
             super(*subclass, self).__init__(*args)
         :param type_robot: Type of robot supported by this processor
         :param type_processor: Type of this processor
-        :param output_file_extension: Type of the output file
+        :param program_file_extension: Type of the output file
         """
         # Set processor parameters
         self.type_robot = type_robot
         self.type_processor = type_processor
-        self.output_file_extension = output_file_extension
-        self.template_filename = postproc_config.DEFAULT_TEMPLATE_NAME
+        self.program_file_extension = program_file_extension
+        self.program_directory = self._get_program_directory()
+        self.program_template_name = self._get_program_template_name()
+        self.program_output_name = self._get_program_output_name()
         self.default_program = def_program_template
+        self.warnings = []
 
-    def _get_program_template_path(self):
+    def _get_program_directory(self, directory=None):
         """
-        Constructs and returns the expected template path. The type of robot,
-        processor, and extension must coincide with those in the actual path
-        to the subclass PostProcessor.
-        :return:
-        """
-        mimic_dir = general_utils.get_mimic_dir()  # dependent on Maya
-        _template = '{}/scripts/postproc/{}/{}/{}.{}'
-        return _template.format(mimic_dir,
-                                self.type_robot,
-                                self.type_processor,
-                                self.template_filename,
-                                self.output_file_extension)
-
-    def _get_program_template(self):
-        """
-        Initialize program template. If there isn't one available in the Mimic
-        directory, the provided default program template will be used instead.
+        Constructs and returns the program template/output directory. If a directory
+        is provided and is valid, this function passes it directly out, otherwise it
+        uses the default directory instead, coinciding with the type of robot and type
+        of processor being used.
+        :param directory: Optional, user-defined directory.
         :return:
         """
         try:
-            # Get template from path
-            program_template_path = self._get_program_template_path()
-            with open(program_template_path, 'r') as f:
+            assert os.path.isdir(directory)
+        except (TypeError, AssertionError):
+            mimic_dir = general_utils.get_mimic_dir()  # dependent on Maya
+            template = '{}/scripts/postproc/{}/{}'
+            directory = template.format(mimic_dir, self.type_robot, self.type_processor)
+            print "Warning! Directory not found; using default: " + directory
+        return directory
+
+    def _get_program_template_name(self, name=None):
+        """
+        Get program template name. If a name is provided, this function passes it right
+        out, otherwise, it uses the default name instead. If the provided name contains
+        invalid characters, raises an error.
+        :param name:
+        :return:
+        """
+        if name == '' or name is None:
+            print "Warning! Using default template name."
+            name = postproc_config.DEFAULT_TEMPLATE_NAME
+        if not general_utils.str_is_simple(name):
+            raise ValueError('Warning! Template name contains invalid characters.')
+        return check_and_remove_file_extension(name)
+
+    def _get_program_output_name(self, name=None):
+        """
+        Get program output name. If a name is provided, this function passes it right
+        out, otherwise, it uses the default name instead. If the provided name contains
+        invalid characters, raises an error.
+        :param name:
+        :return:
+        """
+        if name == '' or name is None:
+            print "Warning! Using default output name."
+            name = postproc_config.DEFAULT_OUTPUT_NAME
+        if not general_utils.str_is_simple(name):
+            raise ValueError('Warning! Template name contains invalid characters.')
+        return check_and_remove_file_extension(name)
+
+    def _get_program_path(self, filename):
+        """
+        Get a path using a known directory and provided filename.
+        :param filename: Program filename (without extension).
+        :return:
+        """
+        return '{}/{}.{}'.format(self.program_directory, filename, self.program_file_extension)
+
+    def get_program_template_path(self, template_filename=None):
+        """
+        Get the path to the program template file.
+        :param template_filename: User defined filename.
+        :return:
+        """
+        if template_filename == '' or template_filename is None:
+            template_filename = self.program_template_name
+        path = self._get_program_path(template_filename)
+        if os.path.exists(path):
+            return path
+        else:
+            return 'Warning! No program template found in chosen directory; using default instead.'
+
+    def get_program_output_path(self, output_filename=None):
+        """
+        Get the path to the program template file.
+        :param output_filename: User defined filename.
+        :return:
+        """
+        if output_filename == '' or output_filename is None:
+            output_filename = self.program_output_name
+        return self._get_program_path(output_filename)
+
+    def get_processor_type(self):
+        """
+        Get the type of this post processor in the form 'robot_type processor_type'
+        :return:
+        """
+        return '{} {}'.format(self.type_robot, self.type_processor)
+
+    def _read_program_template(self):
+        """
+        Initialize program template. If there isn't one available in the provided
+        directory, the provided default program template will be used instead.
+        :return:
+        """
+        try:  # Get template from path
+            path = self.get_program_template_path()
+            with open(path, 'r') as f:
                 return f.read()
-        except IOError:  # file not found
+        except IOError:  # File not found
             # Use default template instead
+            print "Warning! Program template not found; using default."
             return self.default_program
 
-    def _get_program_output_path(self, output_directory, output_name, overwrite):
+    def _adjust_program_output_path(self, output_name, overwrite):
         """
         Constructs and returns the expected output path. Generated using the
         template path or output directory.
-        :param output_directory: Optional directory for the output file.
         :param output_name: Optional name of the output file.
         :param overwrite: Optional bool to overwrite existing file. If False,
         a number will be appended to the name of the output file.
         :return:
         """
-        if output_name == '' or output_name is None:
-            output_name = postproc_config.DEFAULT_OUTPUT_NAME  # use default name
-        elif not general_utils.str_is_simple(output_name):
-            raise Exception('File name contains invalid characters')
-        if output_directory == '' or output_directory is None:  # directory undefined
-            template_path = self._get_program_template_path()
-            template_name = self.template_filename
-            path = template_path.replace(template_name, output_name)
-        else:  # use the defined directory
-            path = '{}/{}.{}'.format(output_directory, output_name, self.output_file_extension)
+        # Get the program output path itself
+        program_output_path = self.get_program_output_path(output_name)
+        # Add a number to the end of the path if overwrite if False
         if not overwrite:  # check to see if we need to a number to the output name
-            if os.path.isfile(path):
+            if os.path.isfile(program_output_path):
                 expand = 1
-                extension = '.' + self.output_file_extension
+                extension = '.' + self.program_file_extension
                 while True:
                     expand += 1
-                    new_path = path.split(extension)[0] + str(expand) + extension
+                    new_path = program_output_path.split(extension)[0] + str(expand) + extension
                     if os.path.isfile(new_path):
                         continue
                     else:
-                        path = new_path
+                        program_output_path = new_path
                         break
-        return path
+        return program_output_path
 
     def _process_command(self, command, opts):
         """
@@ -240,40 +307,6 @@ class PostProcessor(object):
         """
         raise NotImplementedError
 
-    def process(self, commands, opts, template_filename=None):
-        """
-        Process a list of commands and user options. This function should
-        consider any options, format input commands, and fill a program template.
-        :param commands: List of Command tuple
-        :param opts: UserOptions tuple
-        :return:
-        """
-        if template_filename:
-            self.template_filename = template_filename
-        processed_commands = []
-        for command in commands:
-            processed_command = self._process_command(command, opts)
-            if processed_command is not None:
-                processed_commands.append(processed_command)
-        return self._process_program(processed_commands, opts)
-
-    def write(self, content, output_directory='', output_name='', overwrite=True):
-        """
-        Write content to a file in the same directory and with the same file
-        extension as the template file.
-        :param content: The content to write.
-        :param output_directory: Optional directory for the output file.
-        :param output_name: Optional name of the output file.
-        :param overwrite: Optional bool to overwrite existing file. If False,
-        a number will be appended to the name of the output file.
-        :return:
-        """
-        # Create an output file
-        output_path = self._get_program_output_path(output_directory, output_name, overwrite)
-        with open(output_path, 'w') as f:
-            f.write(content)
-        return output_path
-
     def get_formatted_commands(self, params):
         """
         From raw input commands, get formatted commands. This function should
@@ -284,6 +317,47 @@ class PostProcessor(object):
         """
         raise NotImplementedError
 
+    def set_program_directory(self, directory):
+        """
+        Set the program directory, where template and output files can be found.
+        :param directory:
+        :return:
+        """
+        # Set program directory
+        self.program_directory = self._get_program_directory(directory)
+
+    def process(self, commands, opts, template_filename=None):
+        """
+        Process a list of commands and user options. This function should
+        consider any options, format input commands, and fill a program template.
+        :param commands: List of Command tuple
+        :param opts: UserOptions tuple
+        :param template_filename: Filename for template itself.
+        :return:
+        """
+        self.program_template_name = self._get_program_template_name(template_filename)
+        processed_commands = []
+        for command in commands:
+            processed_command = self._process_command(command, opts)
+            if processed_command is not None:
+                processed_commands.append(processed_command)
+        return self._process_program(processed_commands, opts)
+
+    def write(self, content, output_filename=None, overwrite=True):
+        """
+        Write content to a file in the same directory and with the same file
+        extension as the template file.
+        :param content: The content to write.
+        :param output_filename: Optional name of the output file.
+        :param overwrite: Optional bool to overwrite existing file. If False,
+        a number will be appended to the name of the output file.
+        :return:
+        """
+        self.program_output_name = self._get_program_output_name(output_filename)
+        output_path = self._adjust_program_output_path(output_filename, overwrite)
+        with open(output_path, 'w') as f:
+            f.write(content)
+        return output_path
 
 def fill_template(params, structure, template):
     """
@@ -307,3 +381,15 @@ def get_structure_type(structure):
     :return:
     """
     return type(structure).__name__
+
+
+def check_and_remove_file_extension(filename):
+    """
+    Remove file extension from filename.
+    :param filename:
+    :return:
+    """
+    dot = '.'
+    if dot in filename:
+        filename = filename.split(dot)[0]
+    return filename

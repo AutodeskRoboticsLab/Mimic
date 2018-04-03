@@ -4,6 +4,9 @@
 This module contains basic configuration parameters for SimpleKRLProcessor.
 """
 
+# System parameters
+DEFAULT_FILE_EXTENSION = 'src'
+
 # Default program
 DEFAULT_PROGRAM = \
     'DEF example()\n' \

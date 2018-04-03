@@ -190,7 +190,7 @@ class SimpleRAPIDProcessor(postproc.PostProcessor):
         super(SimpleRAPIDProcessor, self).__init__(
             type_robot='ABB',
             type_processor='RAPID',
-            output_file_extension='prg',
+            program_file_extension=rapid_config.DEFAULT_FILE_EXTENSION,
             def_program_template=rapid_config.DEFAULT_PROGRAM)
 
         # Initialize internal parameters
@@ -208,7 +208,7 @@ class SimpleRAPIDProcessor(postproc.PostProcessor):
             formatted_commands = ',\n'.join(processed_commands)
             count = len(processed_commands)
             try:
-                program_template = self._get_program_template()  # don't overwrite original
+                program_template = self._read_program_template()  # don't overwrite original
                 if program_template.count('{}') != 2:
                     raise IndexError
                 return program_template.format(count, formatted_commands)
@@ -220,7 +220,7 @@ class SimpleRAPIDProcessor(postproc.PostProcessor):
         else:
             formatted_commands = '\n'.join(processed_commands)
             try:
-                program_template = self._get_program_template()  # don't overwrite original
+                program_template = self._read_program_template()  # don't overwrite original
                 return program_template.format(formatted_commands)
             except IndexError:
                 message = 'To use motion parameters as commands, template requires ' \

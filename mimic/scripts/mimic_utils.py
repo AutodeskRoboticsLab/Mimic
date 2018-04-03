@@ -2724,6 +2724,9 @@ def save_program(*args):
         # Configure raw_commands (hard coded)
         commands = processor.get_formatted_commands(raw_commands)
 
+        # Make sure we're using the right directory
+        processor.set_program_directory(output_directory)
+
         # Process the raw_commands into relevant robot control code
         template_filename = program_settings['Template Filename']
         filled_template = processor.process(commands, user_options, template_filename)
@@ -2732,14 +2735,21 @@ def save_program(*args):
         output_filename = program_settings['Output Filename']
         output_path = processor.write(
             filled_template,
-            output_directory=output_directory,
-            output_name=output_filename,
+            output_filename=output_filename,
             overwrite=overwrite_option)
 
         # Update the output-text viewer in the Mimic UI
+        details = 'Processor     : {}\n' \
+                  'Template path : {}\n' \
+                  'Output path   : {}\n' \
+                  '\n'
+        filled_details = details.format(processor.get_processor_type(),
+                                        processor.get_program_template_path(),
+                                        processor.get_program_output_path())
         pm.scrollField('programOutputScrollField',
-                       insertText=output_path + '\n\n',
+                       insertText=filled_details,
                        edit=True)
+
         pm.scrollField('programOutputScrollField',
                        insertText=filled_template + '\n',
                        edit=True)
