@@ -2739,11 +2739,13 @@ def save_program(*args):
             overwrite=overwrite_option)
 
         # Update the output-text viewer in the Mimic UI
-        details = 'Processor     : {}\n' \
-                  'Template path : {}\n' \
-                  'Output path   : {}\n' \
+        details = 'Processor name : {}\n' \
+                  'Processor type : {}\n' \
+                  'Template path  : {}\n' \
+                  'Output path    : {}\n' \
                   '\n'
-        filled_details = details.format(processor.get_processor_type(),
+        filled_details = details.format(processor.__class__.__name__,
+                                        processor.get_processor_type(),
                                         processor.get_program_template_path(),
                                         processor.get_program_output_path())
         pm.scrollField('programOutputScrollField',

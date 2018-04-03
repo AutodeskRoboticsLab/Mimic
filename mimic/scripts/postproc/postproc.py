@@ -156,7 +156,6 @@ class PostProcessor(object):
         self.program_template_name = self._get_program_template_name()
         self.program_output_name = self._get_program_output_name()
         self.default_program = def_program_template
-        self.warnings = []
 
     def _get_program_directory(self, directory=None):
         """
@@ -173,7 +172,6 @@ class PostProcessor(object):
             mimic_dir = general_utils.get_mimic_dir()  # dependent on Maya
             template = '{}/scripts/postproc/{}/{}'
             directory = template.format(mimic_dir, self.type_robot, self.type_processor)
-            print "Warning! Directory not found; using default: " + directory
         return directory
 
     def _get_program_template_name(self, name=None):
@@ -185,7 +183,6 @@ class PostProcessor(object):
         :return:
         """
         if name == '' or name is None:
-            print "Warning! Using default template name."
             name = postproc_config.DEFAULT_TEMPLATE_NAME
         if not general_utils.str_is_simple(name):
             raise ValueError('Warning! Template name contains invalid characters.')
@@ -200,7 +197,6 @@ class PostProcessor(object):
         :return:
         """
         if name == '' or name is None:
-            print "Warning! Using default output name."
             name = postproc_config.DEFAULT_OUTPUT_NAME
         if not general_utils.str_is_simple(name):
             raise ValueError('Warning! Template name contains invalid characters.')
@@ -257,7 +253,6 @@ class PostProcessor(object):
                 return f.read()
         except IOError:  # File not found
             # Use default template instead
-            print "Warning! Program template not found; using default."
             return self.default_program
 
     def _adjust_program_output_path(self, output_name, overwrite):
@@ -358,6 +353,7 @@ class PostProcessor(object):
         with open(output_path, 'w') as f:
             f.write(content)
         return output_path
+
 
 def fill_template(params, structure, template):
     """
