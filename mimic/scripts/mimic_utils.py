@@ -2746,8 +2746,8 @@ def save_program(*args):
                   '\n'
         filled_details = details.format(processor.__class__.__name__,
                                         processor.get_processor_type(),
-                                        processor.get_program_template_path(),
-                                        processor.get_program_output_path())
+                                        postproc.confirm_path_exists(processor.get_program_template_path()),
+                                        postproc.confirm_path_exists(processor.get_program_output_path()))
         pm.scrollField('programOutputScrollField',
                        insertText=filled_details,
                        edit=True)

@@ -153,8 +153,8 @@ class PostProcessor(object):
         self.type_processor = type_processor
         self.program_file_extension = program_file_extension
         self.program_directory = self._get_program_directory()
-        self.program_template_name = self._get_program_template_name()
-        self.program_output_name = self._get_program_output_name()
+        self.program_template_name = self._get_program_name(default=postproc_config.DEFAULT_TEMPLATE_NAME)
+        self.program_output_name = self._get_program_name(default=postproc_config.DEFAULT_OUTPUT_NAME)
         self.default_program = def_program_template
 
     def _get_program_directory(self, directory=None):
@@ -174,7 +174,7 @@ class PostProcessor(object):
             directory = template.format(mimic_dir, self.type_robot, self.type_processor)
         return directory
 
-    def _get_program_template_name(self, name=None):
+    def _get_program_name(self, name=None, default='default'):
         """
         Get program template name. If a name is provided, this function passes it right
         out, otherwise, it uses the default name instead. If the provided name contains
@@ -183,23 +183,9 @@ class PostProcessor(object):
         :return:
         """
         if name == '' or name is None:
-            name = postproc_config.DEFAULT_TEMPLATE_NAME
+            name = default
         if not general_utils.str_is_simple(name):
-            raise ValueError('Warning! Template name contains invalid characters.')
-        return check_and_remove_file_extension(name)
-
-    def _get_program_output_name(self, name=None):
-        """
-        Get program output name. If a name is provided, this function passes it right
-        out, otherwise, it uses the default name instead. If the provided name contains
-        invalid characters, raises an error.
-        :param name:
-        :return:
-        """
-        if name == '' or name is None:
-            name = postproc_config.DEFAULT_OUTPUT_NAME
-        if not general_utils.str_is_simple(name):
-            raise ValueError('Warning! Template name contains invalid characters.')
+            raise ValueError('Warning! Name contains invalid characters: ' + name)
         return check_and_remove_file_extension(name)
 
     def _get_program_path(self, filename):
@@ -218,11 +204,7 @@ class PostProcessor(object):
         """
         if template_filename == '' or template_filename is None:
             template_filename = self.program_template_name
-        path = self._get_program_path(template_filename)
-        if os.path.exists(path):
-            return path
-        else:
-            return 'Warning! No program template found in chosen directory; using default instead.'
+        return self._get_program_path(template_filename)
 
     def get_program_output_path(self, output_filename=None):
         """
@@ -330,7 +312,8 @@ class PostProcessor(object):
         :param template_filename: Filename for template itself.
         :return:
         """
-        self.program_template_name = self._get_program_template_name(template_filename)
+        self.program_template_name = self._get_program_name(
+            template_filename, default=postproc_config.DEFAULT_TEMPLATE_NAME)
         processed_commands = []
         for command in commands:
             processed_command = self._process_command(command, opts)
@@ -348,7 +331,8 @@ class PostProcessor(object):
         a number will be appended to the name of the output file.
         :return:
         """
-        self.program_output_name = self._get_program_output_name(output_filename)
+        self.program_output_name = self._get_program_name(
+            output_filename, default=postproc_config.DEFAULT_OUTPUT_NAME)
         output_path = self._adjust_program_output_path(output_filename, overwrite)
         with open(output_path, 'w') as f:
             f.write(content)
@@ -389,3 +373,15 @@ def check_and_remove_file_extension(filename):
     if dot in filename:
         filename = filename.split(dot)[0]
     return filename
+
+
+def confirm_path_exists(path):
+    """
+    Check that a file exists.
+    :param path:
+    :return:
+    """
+    if os.path.exists(path):
+        return path
+    else:
+        return 'Warning! No file found in chosen directory; using default instead.'
