@@ -66,6 +66,11 @@ following structure:
 - When accessed in Mimic the rigs are sorted alphabetically. A default rig can
   be configured using *mimic_config.py*. Rig names should be simple and descriptive.
 
+- You can *ignore* a rigs directory if it is preceded by an underscore, `_`, such
+  as for rig templates. For example, the subdirectories `_ABB` or `_templates`
+  would not appear in the Mimic UI. Note that directories preceded by a `.` are
+  also ignored, but this convention is typically reserved for system and hidden
+  files only.
 
 - To change the color of a robot, use the Hypershade to change the color of 
   “J#LowerBase_MAT” and “J#UpperBase_MAT” (these should match)
