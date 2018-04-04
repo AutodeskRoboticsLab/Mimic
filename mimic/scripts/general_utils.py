@@ -71,7 +71,10 @@ def get_rigs_dict():
     rigs_dir = '{}/rigs'.format(mimic_dir)
     # Get content of the rigs_paths dir
     rigs_dir_contents = os.listdir(rigs_dir)
-    rigs_sub_dirs = [d for d in rigs_dir_contents if not d.startswith('.')]
+    # Get rids directories; ignore hidden and user-ignored directories
+    # which are prefixed with '.' and '_' respectively
+    rigs_sub_dirs = [d for d in rigs_dir_contents
+                     if not d.startswith('.') and not d.startswith('_')]
     for sub_dir_name in rigs_sub_dirs:
         sub_dir = '{}/{}'.format(rigs_dir, sub_dir_name)
         # Get content of the subdirectory
