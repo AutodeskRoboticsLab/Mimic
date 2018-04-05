@@ -24,11 +24,8 @@ macOS   ~/Library/Preferences/Autodesk/maya/modules
 Windows ~/Documents/maya/modules
 ```
 
-- *If the `modules` directory above does not exist, create it.*
-- *If you're using Maya 2017 update 3 or earlier, you must
-  [manually load the Mimic shelf](https://youtu.be/bc3SqEXcE5Q?t=1m46s).*
-- *If you cloned this repo, download the latest robot rigs from
-  [releases](https://github.com/AutodeskRoboticsLab/Mimic/releases)*
+*See [troubleshooting](mimic/docs/troubleshooting.md) if you have trouble
+installing Mimic!*
 
 You can find tutorials, videos, and other media on our
 [website](https://www.mimicformaya.com/) and textual documentation in

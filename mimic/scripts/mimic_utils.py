@@ -2548,8 +2548,6 @@ def check_program(*args):
                             'Check script editor for\ndetails \n\n')
         return
 
-
-
     # Get programmed time between samples
     time_interval_value = program_settings['Time Interval']['value']
     time_interval_units = program_settings['Time Interval']['units']
@@ -2557,20 +2555,34 @@ def check_program(*args):
     # Get axis configuration at each time interval (typically every frame)
     raw_commands, step_sec = _get_commands_from_animation(robot, animation_params, time_interval_value, time_interval_units)
 
+    # Perform checks below!
+    warnings_invoked = False
+
     # Check if limits have been exceeded (i.e. velocity, acceleration)
     exceeded_limits = _check_exceeded_velocity_limits(robot, raw_commands, step_sec)
     exceeded_limits_warning = _format_exceeded_velocity_limits(exceeded_limits)
     if exceeded_limits_warning != '':
+        warnings_invoked = True
+
+    # Check if the robot-postproc compatibility warning was triggered
+    processor_type = program_settings['Processor Type']
+    processor = postproc_setup.POST_PROCESSORS[processor_type]()
+    robot_postproc_warning = _check_robot_postproc_compatibility(robot, processor)
+    if robot_postproc_warning != '':
+        warnings_invoked = True
+
+    # Write all warnings to output window
+    if warnings_invoked:
+        pm.scrollField('programOutputScrollField',
+                       insertText=robot_postproc_warning + '\n',
+                       edit=True)
         pm.scrollField('programOutputScrollField',
                        insertText=exceeded_limits_warning + '\n',
                        edit=True)
-        pm.warning('Velocity limits exceeded; expand the Mimic window to see output for details')
     else:
         pm.scrollField('programOutputScrollField',
-                       insertText='No limits exceeded!' + '\n',
+                       insertText='All checks passed; program OK!' + '\n',
                        edit=True)
-
-    # _check_selected_vs_supported_options()
 
 
 def get_keyframed_commands(robot, animation_params):
@@ -2582,8 +2594,6 @@ def get_keyframed_commands(robot, animation_params):
     :param animation_params: dict of animation parameters
     :return commands: list of list of robot configurations at each step
     """
-
-
     # Get relevant animation parameters.
     start_frame = animation_params['Start Frame']
     end_frame = animation_params['End Frame']
@@ -2605,7 +2615,6 @@ def get_keyframed_commands(robot, animation_params):
 
     # Initialize output array.
     commands = [[0] * 6 for i in range(len(ik_keys_filtered))]
-
 
     # Get the robot's axis configuration at each time step and write it to the
     # output array
@@ -2638,6 +2647,23 @@ def get_keyframed_commands(robot, animation_params):
     return commands
 
 
+def _check_robot_postproc_compatibility(robot, processor):
+    """
+    Verify the compatibility of the selected robot and the processor.
+    :return:
+    """
+    warning = ''
+    robot_type = pm.getAttr('{}|robot_GRP|target_CTRL.robotType'.format(robot))
+    processor_type = processor.type_robot
+    if robot_type != processor_type:
+        warning = 'WARNING!\n' \
+                  'The type of robot ({}) \n' \
+                  'and type of processor ({}) \n' \
+                  'selected are incompatible!\n'\
+            .format(robot_type, processor_type)
+    return warning
+
+
 def save_program(*args):
     """
     Acquires a list of commands from Mimic and issues it to a post processor;
@@ -2667,14 +2693,12 @@ def save_program(*args):
     program_settings = _get_program_settings()
     animation_params = _get_animation_parameters()
 
-
     if not _check_command_parameters(robot, animation_params):
         pm.scrollField('programOutputScrollField',
                        edit=True,
                        text='No program written \n\n' \
                             'Check script editor for\ndetails \n\n')
         return
-
 
     # If the UI radio button is set to "sample rate"
     if pm.radioCollection('sample_rate_radio_collection', query=True, select=True) == 'rb_timeInterval':
@@ -2701,13 +2725,14 @@ def save_program(*args):
         # Get commands at keyframes only
         raw_commands = get_keyframed_commands(robot, animation_params)
 
+    # Check if the robot-postproc compatibility warning was triggered
+    processor_type = program_settings['Processor Type']
+    processor = postproc_setup.POST_PROCESSORS[processor_type]()
+    robot_postproc_warning = _check_robot_postproc_compatibility(robot, processor)
 
     # Check if warnings should be ignored
     ignore_warnings = program_settings['Ignore Warnings']
-
-    if exceeded_limits_warning == '' or ignore_warnings:
-        # Get the type of processor from the Mimic UI.
-        processor_type = program_settings['Processor Type']
+    if ignore_warnings or (exceeded_limits_warning == '' and robot_postproc_warning == ''):
 
         # Get the user directory from the Mimic UI.
         output_directory = program_settings['Output Directory']
@@ -2717,9 +2742,6 @@ def save_program(*args):
 
         # Define options that will be passed into the processor.
         user_options = postproc_options.get_user_selected_options()
-
-        # Create processor given above options
-        processor = postproc_setup.POST_PROCESSORS[processor_type]()
 
         # Configure raw_commands (hard coded)
         commands = processor.get_formatted_commands(raw_commands)
@@ -2739,13 +2761,17 @@ def save_program(*args):
             overwrite=overwrite_option)
 
         # Update the output-text viewer in the Mimic UI
-        details = 'Processor name : {}\n' \
-                  'Processor type : {}\n' \
-                  'Template path  : {}\n' \
-                  'Output path    : {}\n' \
+        details = 'Type of robot     : {} {} ({})\n' \
+                  'Type of processor : {} {} ({})\n' \
+                  'Path to template  : {}\n' \
+                  'Path to output    : {}\n' \
                   '\n'
-        filled_details = details.format(processor.__class__.__name__,
-                                        processor.get_processor_type(),
+        filled_details = details.format(pm.getAttr('{}|robot_GRP|target_CTRL.robotType'.format(robot)),
+                                        pm.getAttr('{}|robot_GRP|target_CTRL.robotSubtype'.format(robot)),
+                                        robot,
+                                        processor.type_robot,
+                                        processor.type_processor,
+                                        processor.__class__.__name__,
                                         postproc.confirm_path_exists(processor.get_program_template_path()),
                                         postproc.confirm_path_exists(processor.get_program_output_path()))
         pm.scrollField('programOutputScrollField',
@@ -2755,6 +2781,11 @@ def save_program(*args):
         pm.scrollField('programOutputScrollField',
                        insertText=filled_template + '\n',
                        edit=True)
+
+    # Output warnings always
+    pm.scrollField('programOutputScrollField',
+                   insertText=robot_postproc_warning + '\n',
+                   edit=True)
 
     # Output warnings always
     pm.scrollField('programOutputScrollField',
