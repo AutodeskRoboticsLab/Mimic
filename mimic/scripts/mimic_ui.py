@@ -48,13 +48,13 @@ def build_mimic_ui():
     animate_tab_layout = build_animate_tab(mimic_tab_layout)
     program_tab_layout = build_program_tab(mimic_tab_layout)
     setup_tab_layout = build_setup_tab(mimic_tab_layout)
-    # external_axis_tab_layout = build_external_axes_tab(mimic_tab_layout)
+    #external_tab_layout = build_external_tab(mimic_tab_layout)
     prefs_tab_layout = build_prefs_tab(mimic_win)
 
     tabs = [(animate_tab_layout, "Animate"),
             (program_tab_layout, "Program"),
             (setup_tab_layout, "Setup"),
-            # (external_axis_tab_layout, "E.Axes"),
+            #(external_tab_layout, "External"),
             (prefs_tab_layout, "Prefs")]
 
     assign_tabs(tabs, mimic_tab_layout)
@@ -62,7 +62,9 @@ def build_mimic_ui():
     # Create output column
     outputColumn = pm.columnLayout('outputColumn', width=7, adj=True)
     outputForm = pm.formLayout()
-    outputScrollField = pm.scrollField('programOutputScrollField', width=3, height=610)
+    outputScrollField = pm.scrollField('programOutputScrollField',
+                                       width=3,
+                                       height=610)
     pm.formLayout(outputForm,
                   edit=True,
                   attachForm=[(outputScrollField, "top", 3),
@@ -73,7 +75,9 @@ def build_mimic_ui():
     pm.columnLayout('outputBarColumn', width=7)
     pm.separator(height=1, style='none')
     bullets = '\n'.join([unichr(0x2022) for _ in range(3)])
-    pm.text(bullets, align='left', annotation='Drag edge to view Output Window!')
+    pm.text(bullets,
+            align='left',
+            annotation='Drag edge to view Output Window!')
 
     # Launch UI window
     pm.window('mimic_win', height=560, width=245, edit=True)
@@ -912,7 +916,7 @@ def build_setup_tab(parent_layout):
     return setup_tab_layout
 
 
-# EXTERNAL AXES TAB
+# EXTERNAL TAB
 def _build_add_external_axis_frame(parent_layout):
     add_external_axis_frame = pm.frameLayout(label="Add External Axis",
                                              collapsable=True)
@@ -937,7 +941,9 @@ def _build_add_external_axis_frame(parent_layout):
     driving_attributes = ['translateX', 'translateY', 'translateZ',
                           'rotateX', 'rotateY', 'rotateZ']
 
-    pm.optionMenu('drivingAttributeMenu', label='Driving Attribute:', height=18)
+    pm.optionMenu('drivingAttributeMenu',
+                  label='Driving Attribute:',
+                  height=18)
 
     for attr in driving_attributes:
         pm.menuItem(label=attr)
@@ -1020,21 +1026,64 @@ def _build_edit_axes_frame(parent_layout):
     pm.setParent(parent_layout)
 
 
-def build_external_axes_tab(parent_layout):
-    # Create preferences tab Layout
-    external_axis_tab_layout = pm.columnLayout(adj=True, height=525, width=200)
-
-    # Add External Axis Frame
-    _build_add_external_axis_frame(external_axis_tab_layout)
-
-    # External axis tools frame
-    _build_external_axis_tools_frame(external_axis_tab_layout)
-
-    # Axis info frame
-    _build_edit_axes_frame(external_axis_tab_layout)
+def _build_external_axes_tab(parent_layout):
+    external_axes_tab_layout = pm.columnLayout('externalAxesTab',
+                                               adj=True,
+                                               width=100)
+    _build_add_external_axis_frame(external_axes_tab_layout)
+    _build_external_axis_tools_frame(external_axes_tab_layout)
+    _build_edit_axes_frame(external_axes_tab_layout)
 
     pm.setParent(parent_layout)
-    return external_axis_tab_layout
+    return external_axes_tab_layout
+
+
+def _build_io_tab(parent_layout):
+    io_tab_layout = pm.columnLayout('ioTab',
+                                    adj=True,
+                                    width=100)
+    pm.setParent(parent_layout)
+    return io_tab_layout
+
+
+def _build_comms_tab(parent_layout):
+    comms_tab_layout = pm.columnLayout('commsTab',
+                                    adj=True,
+                                    width=100)
+    pm.setParent(parent_layout)
+    return comms_tab_layout
+
+
+def build_external_tab(parent_layout):
+    # Create preferences tab Layout
+    external_tab_layout = pm.columnLayout(adj=True, height=525, width=200)
+    
+    # Create Form Layout with embeded Tab Layout
+    external_tabs_form = pm.formLayout()
+    external_tabs_layout = pm.tabLayout('external_tabs_layout',
+                                        height=100,
+                                        borderStyle='none')
+    pm.formLayout(external_tabs_form,
+                  edit=True,
+                  attachForm=[(external_tabs_layout, "top", 0),
+                              (external_tabs_layout, "bottom", 0),
+                              (external_tabs_layout, "left", 0),
+                              (external_tabs_layout, "right", 0)])
+
+
+    external_axes_tab_layout = _build_external_axes_tab(external_tabs_layout)
+    io_tab_layout = _build_io_tab(external_tabs_layout)
+    comms_tab_layout = _build_comms_tab(external_tabs_layout)
+    
+    tabs = [[external_axes_tab_layout, 'External Axes'],
+            [io_tab_layout, 'IOs'],
+            [comms_tab_layout, 'Comms']]
+
+    assign_tabs(tabs, external_tabs_layout)
+
+    pm.setParent(parent_layout)
+
+    return external_tab_layout
 
 
 # PREFS TAB

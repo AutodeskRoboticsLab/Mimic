@@ -7,6 +7,7 @@ Functions that actually make Mimic run.
 try:
     import pymel.core as pm
     import maya.mel as mel
+    import maya.OpenMaya as OpenMaya
 
     MAYA_IS_RUNNING = True
 except ImportError:  # Maya is not running
@@ -18,6 +19,7 @@ import re
 
 import general_utils
 import mimic_config
+
 from postproc import postproc
 from postproc import postproc_setup
 from postproc import postproc_options
@@ -1375,6 +1377,77 @@ def set_fk_pose(*args):
         pm.warning('Error setting FK pose')
 
 
+'''
+def get_quaternion_rotation(node):
+    """
+    Uses the Maya Python API to find the quaternion rotation representation
+    for the input node
+    :param node: string, object to find rotation for
+    :return rotation: list, 4x1 list representing quaternion rotation of the
+    input node
+    """    
+    def __MFnTransformNode(node):
+        """
+        from a given transform node (passed as string) return the
+        actual MFnTransform from the API
+        """
+        
+        dagpath = OpenMaya.MDagPath()
+        
+        # Add to the sectectionList
+        selList = OpenMaya.MSelectionList()
+        selList.add(node)
+        selList.getDagPath(0, dagpath)
+        
+        # Make the Main Transform Nodes
+        return OpenMaya.MFnTransform( dagpath )
+
+    MFntNode = __MFnTransformNode(node)
+
+    node_rotation = OpenMaya.MQuaternion()
+    MFntDestin.getRotation(node_rotation, OpenMaya.MSpace.kWorld)
+
+    #Read the source Quaternions and copy to destination
+    rotation = OpenMaya.MQuaternion()
+    MFntNode.getRotation(rotation, OpenMaya.MSpace.kWorld)
+
+    return rotation
+'''
+
+
+def _ik_and_fk_aligned(ik_ctrl, tcp_handle):
+    """
+    Checks if the IK controller is already aligned to the FK hierarchy
+    :param ik_ctrl: string, object representing the ik controller
+    :param tcp_handle: string, object representing the tcp location on the fk
+    hierarchy
+    :return ik_fk_are_aligned: bool, True if the ik_ctrl and tcp_handle are
+    aligned, False if they are not
+    """
+
+    # Define some small number to threshold our output
+    delta = .0001
+
+    # Initialize variables
+    #translation_is_aligned = False
+    #rotation_is_aligned = False
+    ik_fk_are_aligned = False
+
+    # Find the translation of each object and compare them
+    ik_trans = pm.xform(ik_ctrl, q=True, rp=True, ws=True)
+    tcp_trans = pm.xform(tcp_handle, q=True, rp=True, ws=True)
+
+    # Find the distance between the ik controller and the tcp handle
+    trans_diff = math.sqrt((ik_trans[0] - tcp_trans[0])**2
+                         + (ik_trans[1] - tcp_trans[1])**2
+                         + (ik_trans[2] - tcp_trans[2])**2)
+
+    if round(trans_diff, 6) < delta:
+        ik_fk_are_aligned = True
+
+    return ik_fk_are_aligned
+
+
 def _snap_IK_target_to_FK(robot):
     """
     Snaps the IK control handle to the end of the FK heirarchy
@@ -1646,8 +1719,31 @@ def key_fk(*args):
         if pm.getAttr('{}|robot_GRP|target_CTRL.ik'.format(robot)):
             switch_to_fk(robot)
 
-        # Snap IK control to the FK hierarchy
-        _snap_IK_target_to_FK(robot)
+
+        # We first check if the target/tool controller transformation and
+        # orientation is already aligned with the FK chain. If so, it 
+        # indicates that we're performing an IK to FK switch, and we 
+        # keyframe its position and orientation directly, without 
+        # snapoing the IK control to the FK hierarchy. This is to avoid
+        # unneccessarily changing the controllers Euler Angle rotation
+        # repreentation that can cause unpredictable behavior between frames
+
+
+        if pm.objExists('{}|robot_GRP|tool_CTRL'.format(robot)):
+            ctrl_ik = '{}|robot_GRP|tool_CTRL'.format(robot)
+            ctrl_fk = '{}|robot_GRP|robot_GEOM|Base|axis1|axis2|axis3|' \
+                      'axis4|axis5|axis6|tcp_GRP|tcp_HDL|tool_CTRL_FK' \
+                      .format(robot)
+
+        # If robot doesn't have a tool controller, use target_CTRL.
+        else:
+            ctrl_ik = '{}|robot_GRP|target_CTRL'.format(robot)
+            ctrl_fk = '{}|robot_GRP|robot_GEOM|Base|axis1|axis2|axis3|' \
+                      'axis4|axis5|axis6|tcp_GRP|tcp_HDL' \
+                      .format(robot)
+
+        if not _ik_and_fk_aligned(ctrl_ik, ctrl_fk):
+            _snap_IK_target_to_FK(robot)
 
         # Key all FK elements
         try:
