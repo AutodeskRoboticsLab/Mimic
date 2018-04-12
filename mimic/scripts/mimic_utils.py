@@ -2685,29 +2685,40 @@ def _check_command_rotations(robot, animation_settings, command_dicts):
     """
     # TODO: Do this check using userOptions instead...
     # Get axes, if they exist
-    command_dicts_axes = []
+    command_axes = []
     for command_dict in command_dicts:
         axes = command_dict['Axes'] if 'Axes' in command_dict else None
-        command_dicts_axes.append(axes)
+        command_axes.append(list(axes))
     # Make sure the user has selected use of axes
-    if not all(x is None for x in command_dicts_axes):
+    if not all(x is None for x in command_axes):
         start_frame = animation_settings['Start Frame']
-        for i in range(len(command_dicts)):
-            reconciled_axes = []
-            for j in range(6):
-                value = command_dicts_axes[i][j]
-                if i == 3 or i == 5:  # zero-indexed
+        # Get indices for command and axis
+        for command_index in range(len(command_dicts)):
+            for axis_index in range(6):
+                # Get the initial value
+                value = command_axes[command_index][axis_index]
+                # Operate on the value depending on conditional
+                if axis_index == 3 or axis_index == 5:  # zero-indexed
                     rotation_axis = 'Z'
-                    if j == 0:  # Get initial value
+                    if command_index == 0:  # Get initial value
+                        axis_number = axis_index + 1
                         value = _get_reconciled_rotation_value(
-                            robot, i + 1, rotation_axis, start_frame)[0]
+                            robot,
+                            axis_number,
+                            rotation_axis,
+                            start_frame)[0]
                     else:  # Perform the check
-                        previous_value = command_dicts_axes[j - 1][j]
-                        value = _accumulate_rotation(value, previous_value)
-                        # Replace axis values with keyed values
-                reconciled_axes.append(value)
-            axes = postproc.Axes(*reconciled_axes)
-            command_dicts[i]['Axes'] = axes
+                        previous_value = command_axes[command_index - 1][axis_index]
+                        value = _accumulate_rotation(
+                            value,
+                            previous_value)
+                    # Replace original value with new value
+                    command_axes[command_index][axis_index] = value
+                else:  # Not a problem axis
+                    pass
+            # Replace the original commands with the new commands
+            reconciled_axes = postproc.Axes(*command_axes[command_index])
+            command_dicts[command_index]['Axes'] = reconciled_axes
     return command_dicts
 
 
