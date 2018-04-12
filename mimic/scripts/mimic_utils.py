@@ -2564,7 +2564,7 @@ def _get_command_dicts(robot, animation_settings, postproc_settings, user_option
     command_dicts = _sample_frames_for_commands(robot, frames, user_options)
 
     # Check rotations for commands
-    # command_dicts = __check_command_rotations(robot, animation_settings, command_dicts)
+    command_dicts = _check_command_rotations(robot, animation_settings, command_dicts)
 
     return command_dicts
 
@@ -2681,40 +2681,40 @@ def _check_robot_postproc_compatibility(robot, processor):
     return warning
 
 
-# def __check_command_rotations(robot, animation_settings, command_dicts):
-#     """
-#     Check commands that used a sample rate.
-#     :param robot:
-#     :param animation_settings:
-#     :param command_dicts:
-#     :return:
-#     """
-#     # TODO: Do this check using userOptions instead...
-#     # Get axes, if they exist
-#     command_dicts_axes = []
-#     for command_dict in command_dicts:
-#         axes = command_dict['Axes'] if 'Axes' in command_dict else None
-#         command_dicts_axes.append(axes)
-#     # Make sure the user has selected use of axes
-#     if not all(x is None for x in command_dicts_axes):
-#         start_frame = animation_settings['Start Frame']
-#         for i in range(len(command_dicts)):
-#             reconciled_axes = []
-#             for j in range(6):
-#                 value = command_dicts_axes[i][j]
-#                 if i == 3 or i == 5:  # zero-indexed
-#                     rotation_axis = 'Z'
-#                     if j == 0:  # Get initial value
-#                         value = _get_reconciled_rotation_value(
-#                             robot, i + 1, rotation_axis, start_frame)[0]
-#                     else:  # Perform the check
-#                         previous_value = command_dicts_axes[j - 1][j]
-#                         value = _accumulate_rotation(value, previous_value)
-#                         # Replace axis values with keyed values
-#                 reconciled_axes.append(value)
-#             axes = postproc.Axes(*reconciled_axes)
-#             command_dicts[i]['Axes'] = axes
-#     return command_dicts
+def _check_command_rotations(robot, animation_settings, command_dicts):
+    """
+    Check commands that used a sample rate.
+    :param robot:
+    :param animation_settings:
+    :param command_dicts:
+    :return:
+    """
+    # TODO: Do this check using userOptions instead...
+    # Get axes, if they exist
+    command_dicts_axes = []
+    for command_dict in command_dicts:
+        axes = command_dict['Axes'] if 'Axes' in command_dict else None
+        command_dicts_axes.append(axes)
+    # Make sure the user has selected use of axes
+    if not all(x is None for x in command_dicts_axes):
+        start_frame = animation_settings['Start Frame']
+        for i in range(len(command_dicts)):
+            reconciled_axes = []
+            for j in range(6):
+                value = command_dicts_axes[i][j]
+                if i == 3 or i == 5:  # zero-indexed
+                    rotation_axis = 'Z'
+                    if j == 0:  # Get initial value
+                        value = _get_reconciled_rotation_value(
+                            robot, i + 1, rotation_axis, start_frame)[0]
+                    else:  # Perform the check
+                        previous_value = command_dicts_axes[j - 1][j]
+                        value = _accumulate_rotation(value, previous_value)
+                        # Replace axis values with keyed values
+                reconciled_axes.append(value)
+            axes = postproc.Axes(*reconciled_axes)
+            command_dicts[i]['Axes'] = axes
+    return command_dicts
 
 
 # ----------------------------------------------------------------------
@@ -2786,7 +2786,8 @@ def _sample_frames_for_commands(robot, frames, user_options):
     command_dicts = []
     for frame in frames:
         # Set the background to the current frame
-        pm.currentTime(frame)
+        # TODO: Implement this! This rocks:
+        # pm.currentTime(frame)
         # Create a dict of datatypes per frame
         command_dict = {}
         # Add this frame number/step/index to the dictionary
@@ -2829,7 +2830,7 @@ def _sample_frame_get_axes(robot, frame):
     axes = []
     for i in range(6):
         axis_name = '{}|robot_GRP|target_CTRL.axis{}'.format(robot, i + 1)
-        axis = pm.getAttr(axis_name)
+        axis = pm.getAttr(axis_name, time=frame)
         axes.append(axis)
     return axes
 
@@ -2841,6 +2842,10 @@ def _sample_frame_get_pose(robot_name, frame):
     :param frame:
     :return:
     """
+    # Set the time
+    # TODO: Implement this in parent function
+    pm.currentTime(frame)
+
     tool_name = '{}|robot_GRP|tool_CTRL'.format(robot_name)
     try:  # Try to grab the named tool
         tool_object = pm.ls(tool_name)[0]  # Try to get tool, may raise an exception
