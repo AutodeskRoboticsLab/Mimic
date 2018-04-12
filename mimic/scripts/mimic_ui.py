@@ -1171,7 +1171,7 @@ def _build_hotkeys_frame(parent_layout):
 
 def _build_ui_prefs_frame(parent_layout):
     pm.frameLayout(label="UI", collapsable=True)
-    pm.columnLayout(adj=True, columnAttach=('both', 5))
+    ui_prefs_column = pm.columnLayout(adj=True, columnAttach=('both', 5))
 
     pm.separator(height=2, style='none')
 
@@ -1196,6 +1196,27 @@ def _build_ui_prefs_frame(parent_layout):
               width=50,
               height=20,
               command=mimic_utils.set_shader_range)
+    
+    pm.setParent(ui_prefs_column)
+    pm.separator(height=8, style='none')
+    pm.setParent(parent_layout)
+
+
+def _build_performance_prefs_frame(parent_layout):
+    pm.frameLayout(label="Performance", collapsable=True)
+    performance_prefs_column = pm.columnLayout(adj=True, columnAttach=('both', 5))
+
+    pm.separator(height=2, style='none')
+
+    # Execute reconcile rotation
+    pm.checkBox('cb_executeReconcileRotation',
+                label="Execute Reconcile Rotation",
+                annotation='If checked, reconcileRotation script job' \
+                           'will run',
+                value=mimic_config.EXECUTE_RECONCILE_ROTATION_DEFAULT)
+    
+    pm.setParent(performance_prefs_column)
+    pm.separator(height=8, style='none')
     pm.setParent(parent_layout)
 
 
@@ -1208,6 +1229,9 @@ def build_prefs_tab(parent_layout):
 
     # UI frame
     _build_ui_prefs_frame(prefs_tab_layout)
+
+    # Performance frame
+    _build_performance_prefs_frame(prefs_tab_layout)
 
     pm.setParent(parent_layout)
 

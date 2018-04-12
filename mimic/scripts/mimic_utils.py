@@ -310,6 +310,19 @@ def reconcile_rotation():
         print 'No Robots in Scene'
         return
 
+
+    # If the Mimic UI is not open, use the default setting
+    if not pm.window("mimic_win", exists=True):
+        execute_reconcile_rotation = mimic_config.EXECUTE_RECONCILE_ROTATION_DEFAULT
+    else:
+        execute_reconcile_rotation = pm.checkBox('cb_executeReconcileRotation',
+                                                 query=True,
+                                                 value=True)
+
+    # If execute Reconcile Rotation is set to False, end the function
+    if not execute_reconcile_rotation:
+        return
+
     # Define which axes this function will operate on, along with their
     # corresponding axis of rotation. These are typically axes that have 
     # rotation limits > 180 and/or < -180. Currently only axes 4 and 6 are 
