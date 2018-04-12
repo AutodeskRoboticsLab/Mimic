@@ -284,15 +284,31 @@ class PostProcessor(object):
         """
         raise NotImplementedError
 
-    def get_formatted_commands(self, params):
+    def _format_command(self, params_dict):
         """
-        From raw input commands, get formatted commands. This function should
-        convert minimally formatted input parameters (provided by Mimic) into
-        formatted datatypes specific to the subclass.
-        :param params:
+        Processor-specific function. Certain types of commands are very specific
+        to the processor in use or application, such as EntertainTech, requiring
+        in some cases both Motion and IO datatypes in a single line of code. This
+        function allows PostProcessor (processor) subclasses to format the input
+        params flexibly and as needed.
+        :param params_dict: Dictionary of namedtuple containing all command
+        parameters (i.e. Axes, ExternalAxes, etc).
         :return:
         """
         raise NotImplementedError
+
+    def format_commands(self, params_dicts):
+        """
+        Processor-specific function. Calls _format_command for all params.
+        :param params_dicts: List of dictionary of namedtuple containing all
+        command parameters (i.e. Axes, ExternalAxes, etc).
+        :return:
+        """
+        commands = []
+        for params_dict in params_dicts:
+            command = self._format_command(params_dict)
+            commands.append(command)
+        return commands
 
     def set_program_directory(self, directory):
         """
@@ -337,6 +353,8 @@ class PostProcessor(object):
         with open(output_path, 'w') as f:
             f.write(content)
         return output_path
+
+
 
 
 def fill_template(params, structure, template):
@@ -385,3 +403,4 @@ def confirm_path_exists(path):
         return path
     else:
         return 'Warning! No file found in chosen directory; using default instead.'
+

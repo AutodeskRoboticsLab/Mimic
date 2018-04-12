@@ -101,14 +101,26 @@ __visible = 'visible'
 _OPTS_COLUMN_NAME = '{}_opts_col_0'
 
 
-def format_field_name_for_checkbox(field_name):
+def format_field_name_for_checkbox(field):
     """
     Format the name of an option-checkbox using the field name of the option
-    as it exists in the UserOptions tuple.
-    :param field_name:
+    as it exists in the UserOptions tuple for the purpose of having a unique
+    codename in the Mimic backend.
+    :param field:
     :return:
     """
-    return 'cb_{}'.format(field_name)
+    return 'cb_{}'.format(field)
+
+
+def format_field_name_for_pretty_ui(field):
+    """
+    Format the name of an option-checkbox using the field name of the option
+    as it exists in the UserOptions tuple for the purpose of having readable
+    text in the Mimic UI.
+    :param field:
+    :return:
+    """
+    return field.replace('_', ' ')
 
 
 def get_user_selected_options():
@@ -174,7 +186,7 @@ def create_options_dict(selected_options, supported_options):
     for i in range(len(selected_options)):
         field = _fields[i]  # name of the option
         # Set the checkbox parameters for the Mimic UI
-        _checkbox_name_pretty = field.replace('_', ' ')
+        _checkbox_name_pretty = format_field_name_for_pretty_ui(field)
         _checkbox_name = format_field_name_for_checkbox(field)
         _checkbox_value = selected_options[i] and supported_options[i]
         _checkbox_enable = supported_options[i]

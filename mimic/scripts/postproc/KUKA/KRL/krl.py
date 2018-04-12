@@ -210,7 +210,10 @@ MotionCommand = namedtuple(
 IO_COMMAND = 'io_command'
 IOCommand = namedtuple(
     IO_COMMAND, [
-        postproc.DIGITAL_OUTPUT
+        postproc.DIGITAL_OUTPUT,
+        postproc.DIGITAL_INPUT,
+        postproc.ANALOG_OUTPUT,
+        postproc.ANALOG_INPUT
     ]
 )
 
@@ -258,32 +261,52 @@ class SimpleKRLProcessor(postproc.PostProcessor):
         elif not opts.Ignore_IOs and command_type == IO_COMMAND:
             return _process_io_command(command, opts)
 
-    def get_formatted_commands(self, params):
+    def _format_command(self, params_dict):
         """
-        Get formatted commands from raw axes.
-        :param params:
+        Processor-specific function. Certain types of commands are very specific
+        to the processor in use or application, such as EntertainTech, requiring
+        in some cases both Motion and IO datatypes in a single line of code. This
+        function allows PostProcessor (processor) subclasses to format the input
+        params flexibly and as needed.
+
+        For this processor:
+        Can create a MotionCommand namedTuple from optional input parameters.
+        Can create a IOCommand namedTuple from optional input parameters.
+
+        :param params_dict: Dictionary of namedtuple containing all command
+        parameters (i.e. Axes, ExternalAxes, etc).
         :return:
         """
-        commands = []
-        for axes in params:
-            command = MotionCommand(
-                axes=postproc.Axes(*axes),
-                pose=None,
-                external_axes=None,
-                configuration=None)
-            commands.append(command)
-        return commands
+        # Try to get a MotionCommand
+        keys = ['Axes', 'ExternalAxes', 'Pose', 'DigitalOutput']
+        params = []
+        for key in keys:
+            param = params_dict[key] if key in params_dict else None
+            params.append(param)
+        if params.count(None) != len(params):
+            return MotionCommand(*params)
+        else:
+            # Try to get an IO command
+            keys = ['DigitalOutput', 'DigitalInput', 'AnalogOutput', 'AnalogInput']
+            params = []
+            for key in keys:
+                param = params_dict[key] if key in params_dict else None
+                params.append(param)
+            if params.count(None) != len(params):
+                return IOCommand(*params)
 
     def _set_supported_options(self):
         """
         Set the supported options for this processor. Only set to True if the
-        optional parameter is acutally supported by this processor!
+        optional parameter is actually supported by this processor!
         :return:
         """
         return postproc_options.configure_user_options(
             ignore_motion=True,
             use_nonlinear_motion=True,
-            include_axes=True
+            use_linear_motion=True,
+            include_axes=True,
+            include_pose=True
         )
 
 
@@ -329,8 +352,9 @@ def _process_motion_command(command, opts):  # Implement in base class!
             motion_data.extend(_convert_pose(command.pose))
         else:
             raise ValueError('Invalid command')
-    else:
-        raise ValueError('Invalid command')
+
+    else:  # User never supplied a motion type
+        raise ValueError('Invalid motion type')
 
     # Format parameters into string
     motion_data = [general_utils.num_to_str(d, include_sign=False, precision=3)

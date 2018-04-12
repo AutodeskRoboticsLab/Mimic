@@ -123,14 +123,13 @@ def num_to_str(num, include_sign=False, precision=6, padding=0):
     elif num == 9E9:
         return '9E9'
     else:
-        if num == 0:
-            num = abs(num)  # remove '-' if 0
-        num_string = '{:.{prec}f}'.format(num, prec=precision)
+        num = abs(num) if num == 0 else round(num, precision)  # remove '-' sign
+        num_string = '{:.{precision}f}'.format(num, precision=precision)
         if include_sign:
-            if num >= 0:  # '-' sign is always included
+            if num >= 0:
                 num_string = '+' + num_string
         if padding > 0:
-            num_string = '{0:>{pad}}'.format(num_string, pad=padding)
+            num_string = '{0:>{padding}}'.format(num_string, padding=padding)
         return num_string
 
 
@@ -202,6 +201,38 @@ def array_multiply(a, b):
             for k in range(len(b)):
                 result[i][j] += a[i][k] * b[k][j]
     return result
+
+
+def matrix_multiply_3x3(a, b):
+    """
+    Multiply a 3x3 matrix by another 3x3 matrix.
+    :param a: 3x3 matrix
+    :param b: 3x3 matrix
+    :return:
+    """
+    # Initialize output 3x3 matrix
+    result = [[0 for _ in range(3)] for _ in range(3)]
+    for i in range(3):
+        for j in range(3):
+            for k in range(3):
+                # Perform matrix computation
+                result[i][j] += a[i][k]*b[k][j]
+    return result
+
+
+def matrix_get_3x3_from_4x4(matrix):
+    """
+    Extract the coordinate vectors from an input matrix [1, 16]
+    :param matrix:
+    :return:
+    """
+    output = []
+    for i in range(3):
+        vector = []
+        for j in range(3):
+            vector.append(matrix[i][j])
+        output.append(vector)
+    return output
 
 
 def transpose_list(l):
