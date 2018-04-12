@@ -2298,30 +2298,30 @@ def get_maya_framerate():
 # ----------------------------------------------------------------------
 
 
-def __check_program(*args):
+def check_program(*args):
     """
     Check program parameters, raise exception on failure
     :return:
     """
-    __clear_output_window()
+    _clear_output_window()
 
     # Check program, commands, raise exception on failure
-    program_settings = __get_settings()
-    command_dicts = __get_command_dicts(*program_settings)
-    __check_command_dicts(command_dicts, *program_settings)
+    program_settings = _get_settings()
+    command_dicts = _get_command_dicts(*program_settings)
+    _check_command_dicts(command_dicts, *program_settings)
 
 
-def __save_program(*args):
+def save_program(*args):
     """
     Save the program.
     :return:
     """
-    __clear_output_window()
+    _clear_output_window()
 
     # Check program, commands, raise exception on failure
-    program_settings = __get_settings()
-    command_dicts = __get_command_dicts(*program_settings)
-    __check_command_dicts(command_dicts, *program_settings)
+    program_settings = _get_settings()
+    command_dicts = _get_command_dicts(*program_settings)
+    _check_command_dicts(command_dicts, *program_settings)
 
     robot = program_settings[0]
     # animation_settings = program_settings[1]
@@ -2352,10 +2352,10 @@ def __save_program(*args):
         overwrite=overwrite_option)
 
     # Show us what we did!
-    __show_program_in_output_window(robot, processor, program)
+    _show_program_in_output_window(robot, processor, program)
 
 
-def __clear_output_window():
+def _clear_output_window():
     """
     Clear the output window
     :return:
@@ -2363,7 +2363,7 @@ def __clear_output_window():
     pm.scrollField(OUTPUT_WINDOW_NAME, clear=True, edit=True)
 
 
-def __show_program_in_output_window(robot, processor, program):
+def _show_program_in_output_window(robot, processor, program):
     """
     Display program in the output window.
     :param robot:
@@ -2401,21 +2401,21 @@ def __show_program_in_output_window(robot, processor, program):
 # ----------------------------------------------------------------------
 
 
-def __get_settings():
+def _get_settings():
     """
     Get program parameters.
     :return:
     """
     # Get parameters
-    robot = __get_selected_robot_name()
-    animation_settings = __get_settings_for_animation(robot)
-    postproc_settings = __get_settings_for_postproc(robot)
+    robot = _get_selected_robot_name()
+    animation_settings = _get_settings_for_animation(robot)
+    postproc_settings = _get_settings_for_postproc(robot)
     user_options = postproc_options.get_user_selected_options()
     # Return all of these
     return robot, animation_settings, postproc_settings, user_options
 
 
-def __get_settings_for_animation(robot):
+def _get_settings_for_animation(robot):
     """
     Get the animation parameters start frame, end frame, framerate, and total time
     in seconds from Maya.
@@ -2468,7 +2468,7 @@ def __get_settings_for_animation(robot):
     return animation_settings
 
 
-def __get_settings_for_postproc(robot):
+def _get_settings_for_postproc(robot):
     """
     Get program settings from the Mimic UI.
     :return program_settings: dictionary
@@ -2514,7 +2514,7 @@ def __get_settings_for_postproc(robot):
 
     # Check if the robot-postproc compatibility warning was triggered
     processor = postproc_setup.POST_PROCESSORS[processor_type]()
-    warning = __check_robot_postproc_compatibility(robot, processor)
+    warning = _check_robot_postproc_compatibility(robot, processor)
     if warning != '':
         pm.warning(warning)
         # Check to see if the user has elected to ignore warnings
@@ -2538,7 +2538,7 @@ def __get_settings_for_postproc(robot):
     return postproc_settings
 
 
-def __get_command_dicts(robot, animation_settings, postproc_settings, user_options):
+def _get_command_dicts(robot, animation_settings, postproc_settings, user_options):
     """
     Get robot commands from animation and options.
     :param robot:
@@ -2554,14 +2554,14 @@ def __get_command_dicts(robot, animation_settings, postproc_settings, user_optio
     # Get frames to sample
     frames = []
     if using_sample_rate:
-        frames = __get_frames_using_sample_rate(animation_settings, postproc_settings)
+        frames = _get_frames_using_sample_rate(animation_settings, postproc_settings)
     elif using_keyframes_only:
-        frames = __get_frames_using_keyframes_only(robot, animation_settings)
+        frames = _get_frames_using_keyframes_only(robot, animation_settings)
     else:
         pass
 
     # Get commands from sampled frames
-    command_dicts = __sample_frames_for_commands(robot, frames, user_options)
+    command_dicts = _sample_frames_for_commands(robot, frames, user_options)
 
     # Check rotations for commands
     # command_dicts = __check_command_rotations(robot, animation_settings, command_dicts)
@@ -2572,7 +2572,7 @@ def __get_command_dicts(robot, animation_settings, postproc_settings, user_optio
 # ----------------------------------------------------------------------
 
 
-def __check_command_dicts(command_dicts, robot, animation_settings, postproc_settings, user_options):
+def _check_command_dicts(command_dicts, robot, animation_settings, postproc_settings, user_options):
     """
     Check command dictionary for warnings.
     :param command_dicts:
@@ -2588,7 +2588,7 @@ def __check_command_dicts(command_dicts, robot, animation_settings, postproc_set
         # Check if limits have been exceeded (i.e. velocity, acceleration)
         if user_options.Include_axes:
             step_sec = animation_settings['Framerate']
-            warning = __check_velocity_of_axes(robot, command_dicts)
+            warning = _check_velocity_of_axes(robot, command_dicts)
             if warning != '':
                 warnings.append(warning)
                 pm.warning(warning)
@@ -2609,7 +2609,7 @@ def __check_command_dicts(command_dicts, robot, animation_settings, postproc_set
         pm.scrollField(OUTPUT_WINDOW_NAME, insertText=warning, edit=True)
 
 
-def __check_velocity_of_axes(robot, command_dicts):
+def _check_velocity_of_axes(robot, command_dicts):
     """
     Check a list of commands for velocity errors. Construct string to return
     printable statement of all exceeded velocities for each axis; ex. range
@@ -2664,7 +2664,7 @@ def __check_velocity_of_axes(robot, command_dicts):
         return ''
 
 
-def __check_robot_postproc_compatibility(robot, processor):
+def _check_robot_postproc_compatibility(robot, processor):
     """
     Verify the compatibility of the selected robot and the processor.
     :return:
@@ -2720,7 +2720,7 @@ def __check_robot_postproc_compatibility(robot, processor):
 # ----------------------------------------------------------------------
 
 
-def __get_frames_using_sample_rate(animation_settings, postproc_settings):
+def _get_frames_using_sample_rate(animation_settings, postproc_settings):
     """
     Get frames from animation using a sample rate.
     :param animation_settings:
@@ -2747,7 +2747,7 @@ def __get_frames_using_sample_rate(animation_settings, postproc_settings):
     return frames
 
 
-def __get_frames_using_keyframes_only(robot, animation_settings):
+def _get_frames_using_keyframes_only(robot, animation_settings):
     """
     Get frames from animation using a robot's keyframes only.
     :param robot:
@@ -2774,7 +2774,7 @@ def __get_frames_using_keyframes_only(robot, animation_settings):
     return frames
 
 
-def __sample_frames_for_commands(robot, frames, user_options):
+def _sample_frames_for_commands(robot, frames, user_options):
     """
     Sample robot commands using a list of frames and user options.
     :param robot:
@@ -2794,10 +2794,10 @@ def __sample_frames_for_commands(robot, frames, user_options):
         # Get motion parameters
         if not user_options.Ignore_motion:
             if user_options.Include_axes:
-                axes = __sample_frame_get_axes(robot, frame)
+                axes = _sample_frame_get_axes(robot, frame)
                 command_dict['Axes'] = postproc.Axes(*axes)
             if user_options.Include_pose:
-                pose = __sample_frame_get_pose(robot, frame)
+                pose = _sample_frame_get_pose(robot, frame)
                 command_dict['Pose'] = postproc.Pose(*pose)
             if user_options.Include_external_axes:
                 # external_axes = None
@@ -2819,7 +2819,7 @@ def __sample_frames_for_commands(robot, frames, user_options):
     return command_dicts
 
 
-def __sample_frame_get_axes(robot, frame):
+def _sample_frame_get_axes(robot, frame):
     """
     Get robot Axes from an animation frame.
     :param robot:
@@ -2834,7 +2834,7 @@ def __sample_frame_get_axes(robot, frame):
     return axes
 
 
-def __sample_frame_get_pose(robot_name, frame):
+def _sample_frame_get_pose(robot_name, frame):
     """
     Get robot Pose from an animation frame.
     :param robot_name: Name of the robot
@@ -2876,7 +2876,7 @@ def __sample_frame_get_pose(robot_name, frame):
     reordered_rotation = [[pose_rotation[i][j] for j in order] for i in order]
 
     # Apply rotation depending on robot type
-    robot_type = __get_robot_type(robot_name)
+    robot_type = _get_robot_type(robot_name)
     if robot_type == 'ABB':
         conversion_matrix = [[0, 0, -1], [0, 1, 0], [1, 0, 0]]
     elif robot_type == 'KUKA':
@@ -2895,7 +2895,7 @@ def __sample_frame_get_pose(robot_name, frame):
 
 # ----------------------------------------------------------------------
 
-def __get_selected_robot_name():
+def _get_selected_robot_name():
     """
     Get robot
     :return:
@@ -2915,7 +2915,7 @@ def __get_selected_robot_name():
     return robot
 
 
-def __get_robot_type(robot_name):
+def _get_robot_type(robot_name):
     """
     Get Type of robot
     :param robot_name:

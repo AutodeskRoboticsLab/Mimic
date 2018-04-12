@@ -618,8 +618,8 @@ def _build_program_settings_frame(parent_layout):
     pm.separator(height=3, style='none')
 
     pm.separator(height=3, style='none')
-    pm.button('Check Program', command=mimic_utils.__check_program, height=25)
-    pm.button('Save Program', command=mimic_utils.__save_program, height=25)
+    pm.button('Check Program', command=mimic_utils.check_program, height=25)
+    pm.button('Save Program', command=mimic_utils.save_program, height=25)
     pm.separator(height=3, style='none')
 
     pm.setParent(parent_layout)
