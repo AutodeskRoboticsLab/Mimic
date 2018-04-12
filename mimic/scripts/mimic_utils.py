@@ -7,7 +7,6 @@ Functions that actually make Mimic run.
 try:
     import pymel.core as pm
     import maya.mel as mel
-    import maya.OpenMaya as OpenMaya
 
     MAYA_IS_RUNNING = True
 except ImportError:  # Maya is not running
@@ -19,7 +18,6 @@ import re
 
 import general_utils
 import mimic_config
-
 from postproc import postproc
 from postproc import postproc_setup
 from postproc import postproc_options
@@ -32,14 +30,16 @@ reload(postproc_options)
 reload(general_utils)
 reload(inverse_kinematics)
 
+OUTPUT_WINDOW_NAME = 'programOutputScrollField'
+
 
 def get_robot_roots(all_robots=0, sel=[]):
     """
     Gets the root node name of the robot(s) in the scene (e.g. 'KUKA_KR60_0')
     - If all_robots = 1, get_robot_roots returns the robot name(s) for all
       robots in the scene, regardless of selection
-    - If all_robots = 0, get_robot_roots returns the robot name(s) for 
-      selected objects, if the object is a child of the robot 
+    - If all_robots = 0, get_robot_roots returns the robot name(s) for
+      selected objects, if the object is a child of the robot
       (e.g. 'target_CTRL')
     :param all_robots: boolean; flag to specify which robot names to return:
      all robots or just the selected ones
@@ -165,8 +165,8 @@ def _get_closest_ik_keyframe(robot, current_frame):
     ik attribute, as well as the FK_CTRLS rotate attributes
     :param robot: name string of the selected robot
     :param current_frame: int; frame that is currently being evaluated
-    :return closest_ik_key: int; 
-    :return count_direction: int; 
+    :return closest_ik_key: int;
+    :return count_direction: int;
     """
     # Get a list of all keyframes on robots IK attribute.
     ik_keys = pm.keyframe('{}|robot_GRP|target_CTRL'.format(robot),
@@ -237,7 +237,7 @@ def _get_reconciled_rotation_value(robot, axis, rotation_axis, current_frame):
     keyed_val = None
     flip = False
 
-    # Find the closest keyframe on the robot's IK attribute 
+    # Find the closest keyframe on the robot's IK attribute
     closest_ik_key, count_direction = _get_closest_ik_keyframe(robot,
                                                                current_frame)
 
@@ -262,7 +262,7 @@ def _get_reconciled_rotation_value(robot, axis, rotation_axis, current_frame):
         if abs(DG_val - keyed_val) > 300:
             flip = True
 
-    # If the current frame doesn't have an IK attribute keyframe, 
+    # If the current frame doesn't have an IK attribute keyframe,
     # find the closest one and traverse the timeline to determine the correct
     # evaluation.
     else:
@@ -293,23 +293,22 @@ def _get_reconciled_rotation_value(robot, axis, rotation_axis, current_frame):
 
 def reconcile_rotation():
     """
-    The robot's inverse kinematic solver can only solve rotation values theta, 
-    such that 180 deg > theta > -180 deg, even though some axes are capable 
-    of rotating beyond that. We account for this by manually accumulating the 
-    rotation beyond +/- 180 deg, which can cause Maya's dependency graph to 
-    evaluate improperly in some cases. To account for these scenarios, we can 
+    The robot's inverse kinematic solver can only solve rotation values theta,
+    such that 180 deg > theta > -180 deg, even though some axes are capable
+    of rotating beyond that. We account for this by manually accumulating the
+    rotation beyond +/- 180 deg, which can cause Maya's dependency graph to
+    evaluate improperly in some cases. To account for these scenarios, we can
     keyframe rotation values.
 
     This function determines the proper rotation value of an axis at the
     desired frame by comparing the evaluation to the closest keyframed value
-    and flips the axis value manually if necessary.  
+    and flips the axis value manually if necessary.
     :return:
     """
     robots = get_robot_roots(1)  # Get the names of all robots in the scene
     if not robots:
         print 'No Robots in Scene'
         return
-
 
     # If the Mimic UI is not open, use the default setting
     if not pm.window("mimic_win", exists=True):
@@ -324,8 +323,8 @@ def reconcile_rotation():
         return
 
     # Define which axes this function will operate on, along with their
-    # corresponding axis of rotation. These are typically axes that have 
-    # rotation limits > 180 and/or < -180. Currently only axes 4 and 6 are 
+    # corresponding axis of rotation. These are typically axes that have
+    # rotation limits > 180 and/or < -180. Currently only axes 4 and 6 are
     # supported by attributes on target_CTRL (e.g. invertAxis4).
     axes = [4, 6]
     rotation_axes = ['Z', 'Z']
@@ -392,7 +391,7 @@ def add_mimic_script_node(*args):
     pm.cycleCheck(evaluation=0)
 
     # The scriptNode only works after the scene has been saved, closed, and
-    # reopened. So we have to run the scriptJobs manually for the initial 
+    # reopened. So we have to run the scriptJobs manually for the initial
     # scene session.
     mimic_script_jobs()
 
@@ -488,10 +487,10 @@ def find_ik_solutions(robot):
     target = pm.ls('{}|robot_GRP|target_HDL'.format(robot))[0]
 
     # Maya uses a different coordinate system than our IK solver, so we have
-    # to convert from Maya's frame to the solver's frame. 
+    # to convert from Maya's frame to the solver's frame.
 
     # Solver's tool frame (X,Y,Z) = Maya's tool frame (Z, X, Y)
-    # Rotation matrix from Maya tool frame to solver's tool frame. 
+    # Rotation matrix from Maya tool frame to solver's tool frame.
     R_tool_frame = [[0, -1, 0], [1, 0, 0], [0, 0, 1]]
     # Solver world frame (X,Y,Z) = Maya world frame (-Y, X, Z)
     # Rotation matrix from Maya's world frame to solver world frame.
@@ -589,7 +588,7 @@ def find_ik_solutions(robot):
                                          general_utils.transpose_list(
                                              general_utils.array_multiply(Re, T))[0])]
 
-    # Find the flange point w.r.t the robot's local frame (circle controller) 
+    # Find the flange point w.r.t the robot's local frame (circle controller)
     # in solver's world frame
     flange_point = general_utils.transpose_list(
         general_utils.array_multiply(Rlm,
@@ -597,7 +596,7 @@ def find_ik_solutions(robot):
                                       [flange_point[1]],
                                       [flange_point[2]]]))[0]
 
-    # Find the pivot point w.r.t the robot's local frame (circle controller) 
+    # Find the pivot point w.r.t the robot's local frame (circle controller)
     # in solver's world frame
     pivot_point = general_utils.transpose_list(
         general_utils.array_multiply(Rlm,
@@ -949,7 +948,7 @@ def axis_val_hud(*args):
             pm.setAttr('{}|robot_GRP|limitMeter_CTRL.v'.format(robot), 0)
             pm.setAttr('{}|robot_GRP|limitMeter_GRP.v'.format(robot), 0)
         return
-    else: # If not, create it
+    else:  # If not, create it
         for i in range(6):
             pm.headsUpDisplay('a{}_hud'.format(i + 1),
                               section=5,
@@ -1155,7 +1154,7 @@ def detach_tool_controller(*args):
             # Check if the selection is a valid tool controller
             if 'tool_CTRL' in str(sel):
                 # If so unlock the robot's target_CTRL translate and
-                # rotate attributes and parent the tool_CTRL to the world 
+                # rotate attributes and parent the tool_CTRL to the world
                 robot = get_robot_roots(sel=[sel])[0]
 
                 pm.delete('{}|robot_GRP|target_CTRL|targetToToolCtrl_pCnst' \
@@ -1195,7 +1194,7 @@ def detach_tool_model(*args):
             # Check if the selection is a valid tool model
             if 'tool_MDL' in str(sel):
                 # If so unlock the model's translate and rotate attributes
-                # and parent the object to the world 
+                # and parent the object to the world
                 try:
                     pm.setAttr(sel.translate, lock=False)
                     pm.setAttr(sel.rotate, lock=False)
@@ -1390,77 +1389,6 @@ def set_fk_pose(*args):
         pm.warning('Error setting FK pose')
 
 
-'''
-def get_quaternion_rotation(node):
-    """
-    Uses the Maya Python API to find the quaternion rotation representation
-    for the input node
-    :param node: string, object to find rotation for
-    :return rotation: list, 4x1 list representing quaternion rotation of the
-    input node
-    """    
-    def __MFnTransformNode(node):
-        """
-        from a given transform node (passed as string) return the
-        actual MFnTransform from the API
-        """
-        
-        dagpath = OpenMaya.MDagPath()
-        
-        # Add to the sectectionList
-        selList = OpenMaya.MSelectionList()
-        selList.add(node)
-        selList.getDagPath(0, dagpath)
-        
-        # Make the Main Transform Nodes
-        return OpenMaya.MFnTransform( dagpath )
-
-    MFntNode = __MFnTransformNode(node)
-
-    node_rotation = OpenMaya.MQuaternion()
-    MFntDestin.getRotation(node_rotation, OpenMaya.MSpace.kWorld)
-
-    #Read the source Quaternions and copy to destination
-    rotation = OpenMaya.MQuaternion()
-    MFntNode.getRotation(rotation, OpenMaya.MSpace.kWorld)
-
-    return rotation
-'''
-
-
-def _ik_and_fk_aligned(ik_ctrl, tcp_handle):
-    """
-    Checks if the IK controller is already aligned to the FK hierarchy
-    :param ik_ctrl: string, object representing the ik controller
-    :param tcp_handle: string, object representing the tcp location on the fk
-    hierarchy
-    :return ik_fk_are_aligned: bool, True if the ik_ctrl and tcp_handle are
-    aligned, False if they are not
-    """
-
-    # Define some small number to threshold our output
-    delta = .0001
-
-    # Initialize variables
-    #translation_is_aligned = False
-    #rotation_is_aligned = False
-    ik_fk_are_aligned = False
-
-    # Find the translation of each object and compare them
-    ik_trans = pm.xform(ik_ctrl, q=True, rp=True, ws=True)
-    tcp_trans = pm.xform(tcp_handle, q=True, rp=True, ws=True)
-
-    # Find the distance between the ik controller and the tcp handle
-    trans_diff = math.sqrt((ik_trans[0] - tcp_trans[0])**2
-                         + (ik_trans[1] - tcp_trans[1])**2
-                         + (ik_trans[2] - tcp_trans[2])**2)
-
-    if round(trans_diff, 6) < delta:
-        ik_fk_are_aligned = True
-
-    return ik_fk_are_aligned
-
-
 def _snap_IK_target_to_FK(robot):
     """
     Snaps the IK control handle to the end of the FK heirarchy
@@ -1495,6 +1423,39 @@ def _snap_IK_target_to_FK(robot):
         except:
             pm.warning('Coundn\'t snap {} target_CTRL handle to FK' \
                        .format(robot))
+
+
+def _ik_and_fk_aligned(ik_ctrl, tcp_handle):
+    """
+    Checks if the IK controller is already aligned to the FK hierarchy
+    :param ik_ctrl: string, object representing the ik controller
+    :param tcp_handle: string, object representing the tcp location on the fk
+    hierarchy
+    :return ik_fk_are_aligned: bool, True if the ik_ctrl and tcp_handle are
+    aligned, False if they are not
+    """
+
+    # Define some small number to threshold our output
+    delta = .0001
+
+    # Initialize variables
+    #translation_is_aligned = False
+    #rotation_is_aligned = False
+    ik_fk_are_aligned = False
+
+    # Find the translation of each object and compare them
+    ik_trans = pm.xform(ik_ctrl, q=True, rp=True, ws=True)
+    tcp_trans = pm.xform(tcp_handle, q=True, rp=True, ws=True)
+
+    # Find the distance between the ik controller and the tcp handle
+    trans_diff = math.sqrt((ik_trans[0] - tcp_trans[0])**2
+                         + (ik_trans[1] - tcp_trans[1])**2
+                         + (ik_trans[2] - tcp_trans[2])**2)
+
+    if round(trans_diff, 6) < delta:
+        ik_fk_are_aligned = True
+
+    return ik_fk_are_aligned
 
 
 def switch_to_ik(robot):
@@ -1558,7 +1519,7 @@ def switch_to_fk(robot):
             # Turn FK control visibility on
         pm.setAttr('{}|robot_GRP|FK_CTRLS.v'.format(robot), 1)
 
-        # Find axis angles from IK pose, and match FK control handles    
+        # Find axis angles from IK pose, and match FK control handles
         fk_config = find_fk_config(robot)
 
         pm.setAttr('{}|robot_GRP|FK_CTRLS|a1FK_CTRL.rotateY'.format(robot),
@@ -1728,19 +1689,17 @@ def key_fk(*args):
 
     for robot in robots:
         # If the robot's IK attribute is on, switch the robot to
-        # FK mode before proceeding 
+        # FK mode before proceeding
         if pm.getAttr('{}|robot_GRP|target_CTRL.ik'.format(robot)):
             switch_to_fk(robot)
 
-
         # We first check if the target/tool controller transformation and
-        # orientation is already aligned with the FK chain. If so, it 
-        # indicates that we're performing an IK to FK switch, and we 
-        # keyframe its position and orientation directly, without 
-        # snapoing the IK control to the FK hierarchy. This is to avoid
+        # orientation is already aligned with the FK chain. If so, it
+        # indicates that we're performing an IK to FK switch, and we
+        # keyframe its position and orientation directly, without
+        # snapping the IK control to the FK hierarchy. This is to avoid
         # unneccessarily changing the controllers Euler Angle rotation
-        # repreentation that can cause unpredictable behavior between frames
-
+        # representation that can cause unpredictable behavior between frames
 
         if pm.objExists('{}|robot_GRP|tool_CTRL'.format(robot)):
             ctrl_ik = '{}|robot_GRP|tool_CTRL'.format(robot)
@@ -2023,7 +1982,7 @@ def assign_hotkey(command_name, annotation_str, command_string):
             pm.hotkeySet('Mimic_Hotkeys', current=True, edit=True)
             print 'Hotkey Set changed to Mimic Hotkeys'
         # If Mimic Hotkey set doesn't exist, propt the user to create a custom
-        # Hotkey set and switch to it. 
+        # Hotkey set and switch to it.
         else:
             hotkey_set_created = _create_hotkey_set()
             # If the user does not create a new hotkey set, exit the function
@@ -2280,11 +2239,14 @@ def save_pose_to_shelf(*args):
 
     prompt_dialog = pm.promptDialog(t="Robot Pose", m="Pose Name:", b="Save")
 
-    # Condition statement that checks if our button gets clicked.  If this condition is met, then run the following commands
+    # Condition statement that checks if our button gets clicked.
+    # If this condition is met, then run the following commands
     if prompt_dialog == "Save":
         # This variable stores the Name we add to our Prompt Dialog
         prompt_dialog_name = pm.promptDialog(query=True, text=True)
-        # This line creates our Shelf Button that uses MEL as the source type for the commands stored in "store_cmds", and adds the Shelf Button under our custom tab named "Body Poses"
+        # This line creates our Shelf Button that uses MEL as the source type
+        # for the commands stored in "store_cmds", and adds the Shelf Button
+        # under our custom tab named "Body Poses"
         pm.shelfButton(l=prompt_dialog_name, annotation=prompt_dialog_name, imageOverlayLabel=prompt_dialog_name,
                        i='commandButton.png', command=store_cmds, p=target_shelf, sourceType="python")
 
@@ -2333,7 +2295,127 @@ def get_maya_framerate():
     return framerate
 
 
-def _get_animation_parameters():
+# ----------------------------------------------------------------------
+
+
+def __check_program(*args):
+    """
+    Check program parameters, raise exception on failure
+    :return:
+    """
+    __clear_output_window()
+
+    # Check program, commands, raise exception on failure
+    program_settings = __get_settings()
+    command_dicts = __get_command_dicts(*program_settings)
+    __check_command_dicts(command_dicts, *program_settings)
+
+
+def __save_program(*args):
+    """
+    Save the program.
+    :return:
+    """
+    __clear_output_window()
+
+    # Check program, commands, raise exception on failure
+    program_settings = __get_settings()
+    command_dicts = __get_command_dicts(*program_settings)
+    __check_command_dicts(command_dicts, *program_settings)
+
+    robot = program_settings[0]
+    # animation_settings = program_settings[1]
+    postproc_settings = program_settings[2]
+    user_options = program_settings[3]
+
+    # Get the selected post processor
+    processor_type = postproc_settings['Processor Type']
+    processor = postproc_setup.POST_PROCESSORS[processor_type]()
+
+    # Apply processor-specific formatting to commands
+    commands = processor.format_commands(command_dicts)
+
+    # Make sure we're using the right directory
+    output_directory = postproc_settings['Output Directory']
+    processor.set_program_directory(output_directory)
+
+    # Process the raw_commands into relevant robot control code
+    template_filename = postproc_settings['Template Filename']
+    program = processor.process(commands, user_options, template_filename)
+
+    # write the processed animation as robot code to a file
+    overwrite_option = postproc_settings['Overwrite Option']
+    output_filename = postproc_settings['Output Filename']
+    output_path = processor.write(
+        program,
+        output_filename=output_filename,
+        overwrite=overwrite_option)
+
+    # Show us what we did!
+    __show_program_in_output_window(robot, processor, program)
+
+
+def __clear_output_window():
+    """
+    Clear the output window
+    :return:
+    """
+    pm.scrollField(OUTPUT_WINDOW_NAME, clear=True, edit=True)
+
+
+def __show_program_in_output_window(robot, processor, program):
+    """
+    Display program in the output window.
+    :param robot:
+    :param processor:
+    :param program:
+    :return:
+    """
+    # Update the output-text viewer in the Mimic UI
+    details = 'Type of robot     : {} {} ({})\n' \
+              'Type of processor : {} {} ({})\n' \
+              'Path to template  : {}\n' \
+              'Path to output    : {}\n' \
+              '\n'
+
+    filled_details = details.format(
+        pm.getAttr('{}|robot_GRP|target_CTRL.robotType'.format(robot)),
+        pm.getAttr('{}|robot_GRP|target_CTRL.robotSubtype'.format(robot)),
+        robot,
+        processor.type_robot,
+        processor.type_processor,
+        processor.__class__.__name__,
+        postproc.confirm_path_exists(processor.get_program_template_path()),
+        postproc.confirm_path_exists(processor.get_program_output_path())
+    )
+
+    pm.scrollField(OUTPUT_WINDOW_NAME,
+                   insertText=filled_details,
+                   edit=True)
+
+    pm.scrollField(OUTPUT_WINDOW_NAME,
+                   insertText=program + '\n',
+                   edit=True)
+
+
+# ----------------------------------------------------------------------
+
+
+def __get_settings():
+    """
+    Get program parameters.
+    :return:
+    """
+    # Get parameters
+    robot = __get_selected_robot_name()
+    animation_settings = __get_settings_for_animation(robot)
+    postproc_settings = __get_settings_for_postproc(robot)
+    user_options = postproc_options.get_user_selected_options()
+    # Return all of these
+    return robot, animation_settings, postproc_settings, user_options
+
+
+def __get_settings_for_animation(robot):
     """
     Get the animation parameters start frame, end frame, framerate, and total time
     in seconds from Maya.
@@ -2344,419 +2426,245 @@ def _get_animation_parameters():
     framerate = get_maya_framerate()
 
     # Define the animation time in seconds.
+    warning = ''
     animation_time_sec = ((end_frame + 1) - start_frame) / framerate
-
-    animation_params = {'Start Frame': start_frame,
-                        'End Frame': end_frame,
-                        'Framerate': framerate,
-                        'Animation Time (sec)': animation_time_sec}
-
-    return animation_params
-
-
-def _check_command_parameters(robot, animation_params):
-    """
-    Checks that the user input for animation paramters is valid.
-    :param robot: name string of the selected robot
-    :param animation_params: dict of animation parameters
-    :return:
-    """
-    start_frame = animation_params['Start Frame']
-    end_frame = animation_params['End Frame']
-
     if end_frame <= start_frame:
-        pm.warning('End Frame must be larger than Start Frame')
-        return
-
-    # If no keyframes are set, exit the function.
-    closest_ik_key = _get_closest_ik_keyframe(robot, start_frame)[0]
-
-    if not type(closest_ik_key) == float:
-        pm.warning('You must set an IK or FK keyframe to ensure ' \
-                   'proper evaluation when saving a program; ' \
-                   'no program written')
-        return
-    return True
-
-
-def _get_commands_from_animation(robot, animation_params, time_interval_value, time_interval_units):
-    """
-    Get key-framed commands from the animation slider.
-    :param robot: name string of the selected robot
-    :param animation_params: dict of animation parameters
-    :param time_interval_value: Sample rate
-    :param time_interval_units: Sample rate units
-    :return commands: list of list of robot configurations at each step
-    """
-    # Get relevant animation parameters.
-    start_frame = animation_params['Start Frame']
-    end_frame = animation_params['End Frame']
-    framerate = animation_params['Framerate']
-    animation_time_sec = animation_params['Animation Time (sec)']
-
-    # Convert time interval from frames to seconds if necessary
-    if time_interval_units == 'seconds':
-        step_sec = time_interval_value
-    else:  # time_interval_units == 'frames'
-        step_sec = float(time_interval_value) / framerate
-
-    # Find the closest multiple of the number of steps in our animation 
-    # num_steps = int((step_sec * math.ceil(animation_time_sec / step_sec) + step_sec) / step_sec)
-    num_steps = int(math.ceil(animation_time_sec / step_sec) + 1)
-
-    # Create array of timesteps in milliseconds.
-    time_array_sec = [round(i * step_sec, 5) for i in range(0, num_steps)]
-
-    # Create array of timesteps in frames.
-    time_array_frame = [round(start_frame + (framerate * t_sec), 3) for t_sec in time_array_sec]
-
-    # Initialize output array.
-    commands = [[0] * 6 for i in range(len(time_array_frame))]
-
-    # Get the robot's axis configuration at each time step and write it to the
-    # output array
-    for i, frame in enumerate(time_array_frame):
-        for j in range(6):
-            commands[i][j] = pm.getAttr('{}|robot_GRP|target_CTRL.axis{}'
-                                        .format(robot, j + 1), time=frame)
-
-    # We have to manually inspect axes to ensure proper, continuous
-    # evaluation with rotations +/- 180 degrees. 
-
-    # Define which axes to inspect, along with their corresponding axis of
-    # rotation. These are typically axes that have rotation limits > 180 and/
-    # or < -180. Currently only axes 4 and 6 are supported by attributes on
-    # target_CTRL (e.g. invertAxis4)
-    axes = [4, 6]
-    rotation_axes = ['Z', 'Z']
-
-    for i, axis in enumerate(axes):
-        # Get actual initial value based on keyframed value.
-        keyed_val = _get_reconciled_rotation_value(robot,
-                                                   axis,
-                                                   rotation_axes[i],
-                                                   start_frame)[0]
-
-        # Replace initial axis values with keyed values.
-        commands[0][axis - 1] = keyed_val
-
-        # Traverse through the path table and ensure continuous evaluation on
-        # the axes in question.
-        for j, val in enumerate(commands):
-            if j == 0:
-                continue
-            commands[j][axis - 1] = _accumulate_rotation(commands[j][axis - 1],
-                                                         commands[j - 1][axis - 1])
-    return commands, step_sec
-
-
-def _check_exceeded_velocity_limits(robot, commands, time_interval_val=0.012):
-    """
-    Check a list of commands for velocity errors.
-    :param robot: name string of the selected robot
-    :param commands: A list of list of robot axes
-    :param time_interval_val: Time between commands
-    :return:
-    """
-    velocity_limits = get_velocity_limits(robot)
-    animation_params = _get_animation_parameters()
-    framerate = animation_params['Framerate']
-    start_frame = animation_params['Start Frame']
-
-    # Speeds becomes an array with num_axes rows and len(commands)-1 columns
-    # Each row corresponds to the velocities at each time interval for each
-    # robot Axis
-    velocities = []
-
-    # Find the speed of each axis at every sampled time interval
-    for i in range(len(commands[0])):
-        positions = [config[i] for config in commands]
-        velocities.append([abs(b - a) / time_interval_val
-                           for a, b in zip(positions, positions[1:])])
-
-    # Construct a dictionary of the frames on each axis where velocity
-    # limits have been exceeded  
-    exceeded_limits = {}
-    for i, axis in enumerate(velocities):
-        dict_key = 'Axis {}'.format(i + 1)
-        # Initialize dictionary of axes
-        exceeded_limits[dict_key] = []
-        for j, velocity in enumerate(axis):
-            if velocity > velocity_limits[i]:
-                this_frame = int(math.ceil(framerate * j * time_interval_val))
-                frame = start_frame + this_frame
-                exceeded_limits[dict_key].append(frame)
-
-    # Remove duplicate frames from exceeded limits
-    for each in exceeded_limits:
-        exceeded_limits_set = list(set(exceeded_limits[each]))
-        exceeded_limits_set.sort()
-        exceeded_limits[each] = exceeded_limits_set
-
-    return exceeded_limits
-
-
-def _format_exceeded_velocity_limits(exceeded_limits):
-    """
-    Construct string to return printable statement of all exceeded velocities
-    for each axis; ex. range [0, 1, 2, 3] will be formatted '0-3'.
-    :param exceeded_limits: List of input exceeded limits.
-    :return:
-    """
-    invoke_warning = False
-    warning_identifiers = []
-    # Get axis keys in order
-    axes = exceeded_limits.keys()
-    axes.sort()
-    for axis in axes:  # Try for all axes
-        # Check if the axis key has values
-        frames = exceeded_limits[axis]
-        if not frames:
-            continue  # skip to next
-        else:
-            invoke_warning = True
-            frames = general_utils.list_as_range_strings(frames)
-            frames = '\n'.join('\t{}'.format(frame) for frame in frames)
-            warning_identifiers.append(axis)
-            warning_identifiers.append(frames)
-    if invoke_warning:
-        warning = 'WARNING!\n' \
-                  'Velocity limits exceeded!\n' \
-                  'See the following frames:\n'
-        warning_identifiers.insert(0, warning)
-        return '\n'.join(warning_identifiers)
+        warning = 'End Frame must be larger than Start Frame'
     else:
-        return ''
+        # If no keyframes are set, exit the function.
+        closest_ik_key = _get_closest_ik_keyframe(robot, start_frame)[0]
+        if not type(closest_ik_key) == float:
+            warning = 'You must set an IK or FK keyframe to ensure ' \
+                      'proper evaluation when saving a program; ' \
+                      'no program written'
+    if warning != '':
+        pm.scrollField(OUTPUT_WINDOW_NAME,
+                       edit=True,
+                       text='No program written \n\n' \
+                            'Check script editor for\ndetails \n\n')
+        raise Exception(warning)
+
+    animation_settings = {'Start Frame': start_frame,
+                          'End Frame': end_frame,
+                          'Framerate': framerate,
+                          'Animation Time (sec)': animation_time_sec}
+
+    # Check for warnings
+    warning = ''
+
+    # Raise warning if end frame and start frame incompatible
+    if end_frame <= start_frame:
+        warning = 'End Frame must be larger than Start Frame'
+    # Raise warning if no keyframes are set
+    closest_ik_key = _get_closest_ik_keyframe(robot, start_frame)[0]
+    if not type(closest_ik_key) == float:
+        warning = 'You must set an IK or FK keyframe to ensure ' \
+                  'proper evaluation when saving a program; ' \
+                  'no program written'
+
+    if warning != '':
+        raise Exception(warning)
+
+    return animation_settings
 
 
-def _get_program_settings():
+def __get_settings_for_postproc(robot):
     """
     Get program settings from the Mimic UI.
     :return program_settings: dictionary
     """
-    program_settings = {}
+    # Get all important settings
+    using_time_interval = pm.radioCollection(
+        'sample_rate_radio_collection', query=True, select=True) == 'rb_timeInterval'
+    using_keyframes_only = not using_time_interval  # TODO: Clever, but not expandable
+    time_interval_value = pm.textField('t_timeBetweenSamples', query=True, text=True)
+    time_interval_units = 'seconds' \
+        if pm.radioButtonGrp('time_unit_radio_group', query=True, sl=True) == 1 \
+        else 'frames'
+    ignore_warnings = pm.checkBox('cb_ignoreWarnings', value=True, query=True)
+    processor_type = pm.optionMenu('postProcessorList', query=True, value=True)
+    output_directory = pm.textField('t_programDirectoryText', text=True, query=True)
+    output_filename = pm.textField('t_outputFileName', text=True, query=True)
+    template_filename = pm.textField('t_templateFileName', text=True, query=True)
+    overwrite_option = pm.checkBox('cb_overwriteFile', value=True, query=True)
 
-    # Sample Time
-    time_unit_radio_button = pm.radioButtonGrp('time_unit_radio_group',
-                                               query=True,
-                                               sl=True)
-    if time_unit_radio_button == 1:
-        time_unit = 'seconds'
-    else:
-        time_unit = 'frames'
+    # Check for warnings
+    warning = ''
 
-    try:
-        time_between_samples = float(pm.textField('t_timeBetweenSamples',
-                                                  query=True,
-                                                  text=True))
-        if time_between_samples <= 0:
-            if time_unit == 'seconds':
-                pm.warning('Time interval must be greater than zero; ' \
-                           'Using default: .012 seconds')
-                time_between_samples = 0.012
-            else:
-                pm.warning('Time interval must be greater than zero; ' \
-                           'Using default: 1 frame')
-                time_between_samples = 1
+    if using_time_interval:
+        # Confirm that the time interval is valid
+        try:
+            time_interval_value = float(time_interval_value)
+            assert time_interval_value > 0
+        except ValueError:
+            if time_interval_units == 'seconds':
+                warning = 'Time interval must be a float'
+            else:  # time_interval_units == 'frames'
+                warning = 'Time interval must be a float'
+            pm.warning(warning)
+            raise Exception(warning)
+        except AssertionError:
+            if time_interval_units == 'seconds':
+                warning = 'Time interval must be greater than zero'
+            else:  # time_interval_units = 'frames'
+                warning = 'Time interval must be greater than zero'
 
-    except ValueError:
-        if time_unit == 'seconds':
-            pm.warning('Time interval must be a float; ' \
-                       'using default: .012 seconds')
-            time_between_samples = .012
-        else:
-            pm.warning('Time interval must be a float; ' \
-                       'using default: 1 frame')
-            time_between_samples = 1
-
-            # Set the UI back to the default unit if necessary
-    pm.textField('t_timeBetweenSamples',
-                 edit=True,
-                 text=str(time_between_samples))
-
-    # Ignore warnings
-    ignore_warnings = pm.checkBox('cb_ignoreWarnings',
-                                  value=True,
-                                  query=True)
-
-    # Get the type of processor from the Mimic UI.
-    processor_type = pm.optionMenu('postProcessorList',
-                                   query=True,
-                                   value=True)
-
-    # Get the user directory from the Mimic UI.
-    output_directory = pm.textField('t_programDirectoryText',
-                                    text=True,
-                                    query=True)
-
-    # Get the file name from the Mimic UI and prepend the name of the
-    # current robot.
-    output_filename = pm.textField('t_outputFileName',
-                                   text=True,
-                                   query=True)
-
-    template_filename = pm.textField('t_templateFileName',
-                                   text=True,
-                                   query=True)
-
-    # Get the sample rate from the Mimic UI
-    sample_rate = pm.radioCollection('sample_rate_radio_collection',
-                                     q=True,
-                                     sl=True)
-
-    # Check if the file should be overwritten if it already exists.
-    overwrite_option = pm.checkBox('cb_overwriteFile',
-                                   value=True,
-                                   query=True)
-
-    # Assign values to output dict
-    program_settings['Time Interval'] = {'value': time_between_samples,
-                                         'units': time_unit}
-    program_settings['Ignore Warnings'] = ignore_warnings
-    program_settings['Processor Type'] = processor_type
-    program_settings['Output Directory'] = output_directory
-    program_settings['Output Filename'] = output_filename
-    program_settings['Template Filename'] = template_filename
-    program_settings['Overwrite Option'] = overwrite_option
-
-    return program_settings
-
-
-def check_program(*args):
-    """
-    Checks robot, command parameters, performs the velocity check on a list of
-    commands to be used for use as robot control code.
-    :param args:
-    :return:
-    """
-    # TODO: Copied directly from save_program... bad implementation
-    # clear output window
-    pm.scrollField('programOutputScrollField', clear=True, edit=True)
-
-    robots = get_robot_roots()
-    if not robots:
-        pm.warning('Nothing Selected; ' \
-                   'Select a valid robot to export; ' \
-                   'no program written')
-        return
-
-    if len(robots) > 1:
-        pm.warning('Too many robots selected; ' \
-                   'select a single robot to export')
-
-    robot = robots[0]
-
-    program_settings = _get_program_settings()
-    animation_params = _get_animation_parameters()
-    # For the selected robot, convert the animation to a robot control
-    # program and write it to a file
-    if not _check_command_parameters(robot, animation_params):
-        pm.scrollField('programOutputScrollField',
-                       edit=True,
-                       text='No program written \n\n' \
-                            'Check script editor for\ndetails \n\n')
-        return
-
-    # Get programmed time between samples
-    time_interval_value = program_settings['Time Interval']['value']
-    time_interval_units = program_settings['Time Interval']['units']
-
-    # Get axis configuration at each time interval (typically every frame)
-    raw_commands, step_sec = _get_commands_from_animation(robot, animation_params, time_interval_value, time_interval_units)
-
-    # Perform checks below!
-    warnings_invoked = False
-
-    # Check if limits have been exceeded (i.e. velocity, acceleration)
-    exceeded_limits = _check_exceeded_velocity_limits(robot, raw_commands, step_sec)
-    exceeded_limits_warning = _format_exceeded_velocity_limits(exceeded_limits)
-    if exceeded_limits_warning != '':
-        warnings_invoked = True
+    if warning != '':
+        raise Exception(warning)
 
     # Check if the robot-postproc compatibility warning was triggered
-    processor_type = program_settings['Processor Type']
     processor = postproc_setup.POST_PROCESSORS[processor_type]()
-    robot_postproc_warning = _check_robot_postproc_compatibility(robot, processor)
-    if robot_postproc_warning != '':
-        warnings_invoked = True
+    warning = __check_robot_postproc_compatibility(robot, processor)
+    if warning != '':
+        pm.warning(warning)
+        # Check to see if the user has elected to ignore warnings
+        if ignore_warnings:
+            warning = 'Warnings ignored; be careful!\n'
+            pm.scrollField(OUTPUT_WINDOW_NAME, insertText=warning, edit=True)
 
-    # Write all warnings to output window
-    if warnings_invoked:
-        pm.scrollField('programOutputScrollField',
-                       insertText=robot_postproc_warning + '\n',
-                       edit=True)
-        pm.scrollField('programOutputScrollField',
-                       insertText=exceeded_limits_warning + '\n',
-                       edit=True)
+    # Assign values to output dict
+    postproc_settings = {
+        'Using Time Interval': using_time_interval,
+        'Using Keyframes Only': using_keyframes_only,
+        'Time Interval Value': time_interval_value,
+        'Time Interval Units': time_interval_units,
+        'Ignore Warnings': ignore_warnings,
+        'Processor Type': processor_type,
+        'Output Directory': output_directory,
+        'Output Filename': output_filename,
+        'Template Filename': template_filename,
+        'Overwrite Option': overwrite_option
+    }
+    return postproc_settings
+
+
+def __get_command_dicts(robot, animation_settings, postproc_settings, user_options):
+    """
+    Get robot commands from animation and options.
+    :param robot:
+    :param animation_settings: User-defined animation settings.
+    :param animation_settings: User-defined program settings.
+    :param user_options: User-defined postproc options.
+    :return:
+    """
+    # Determine sample mode
+    using_sample_rate = postproc_settings['Using Time Interval']
+    using_keyframes_only = postproc_settings['Using Keyframes Only']
+
+    # Get frames to sample
+    frames = []
+    if using_sample_rate:
+        frames = __get_frames_using_sample_rate(animation_settings, postproc_settings)
+    elif using_keyframes_only:
+        frames = __get_frames_using_keyframes_only(robot, animation_settings)
     else:
-        pm.scrollField('programOutputScrollField',
-                       insertText='All checks passed; program OK!' + '\n',
-                       edit=True)
+        pass
+
+    # Get commands from sampled frames
+    command_dicts = __sample_frames_for_commands(robot, frames, user_options)
+
+    # Check rotations for commands
+    # command_dicts = __check_command_rotations(robot, animation_settings, command_dicts)
+
+    return command_dicts
 
 
-def get_keyframed_commands(robot, animation_params):
+# ----------------------------------------------------------------------
+
+
+def __check_command_dicts(command_dicts, robot, animation_settings, postproc_settings, user_options):
     """
-    Get's robot configuration between the specified program range at each
-    keyframe. A "keyframe", in this function, is defined as ONLY an IK or FK
-    keyframe that has been set by the user
+    Check command dictionary for warnings.
+    :param command_dicts:
+    :return:
+    """
+    # Include warnings here
+    warnings = []
+
+    # Check to see if the user has elected to ignore warnings
+    ignore_warnings = postproc_settings['Ignore Warnings']
+    if not ignore_warnings:
+
+        # Check if limits have been exceeded (i.e. velocity, acceleration)
+        if user_options.Include_axes:
+            step_sec = animation_settings['Framerate']
+            warning = __check_velocity_of_axes(robot, command_dicts)
+            if warning != '':
+                warnings.append(warning)
+                pm.warning(warning)
+
+        # if user_options.Include_pose:
+        #     # TODO: Implement a velocity check for poses
+        #     pass
+
+        if warnings:  # Do something about it
+            warning = '\n'.join(warnings) + '\n'
+            pm.scrollField(OUTPUT_WINDOW_NAME, insertText=warning, edit=True)
+            raise Exception(warning)
+        else:
+            warning = 'Commands OK!\n'
+            pm.scrollField(OUTPUT_WINDOW_NAME, insertText=warning, edit=True)
+    else:
+        warning = 'Warnings ignored; be careful!\n'
+        pm.scrollField(OUTPUT_WINDOW_NAME, insertText=warning, edit=True)
+
+
+def __check_velocity_of_axes(robot, command_dicts):
+    """
+    Check a list of commands for velocity errors. Construct string to return
+    printable statement of all exceeded velocities for each axis; ex. range
+    [0, 1, 2, 3] will be formatted '0-3'.
     :param robot: name string of the selected robot
-    :param animation_params: dict of animation parameters
-    :return commands: list of list of robot configurations at each step
+    :param command_dicts: A list of list of robot axes
+    :return:
     """
-    # Get relevant animation parameters.
-    start_frame = animation_params['Start Frame']
-    end_frame = animation_params['End Frame']
+    velocity_limits = get_velocity_limits(robot)
+    violations = {}
 
-    # Get a list of all keyframes on robots IK attribute for the given animation
-    # frame range
-    ik_keys = pm.keyframe('{}|robot_GRP|target_CTRL'.format(robot),
-                          attribute='ik',
-                          query=True,
-                          time='{}:{}'.format(start_frame, end_frame))
+    count = len(command_dicts)
+    previous_time = 0
+    previous_rotations = []
+    for i in range(count):
+        current_time = command_dicts[i]['Frame']
+        current_rotations = command_dicts[i]['Axes']
+        if i != 0:  # skip zeroth
+            displacement_time = current_time - previous_time
+            for j in range(6):
+                axis = 'Axis {}'.format(j + 1)
+                displacement = abs(current_rotations[j] - previous_rotations[j])
+                velocity = displacement / displacement_time
+                # Check if a limit has been violated
+                if velocity >= velocity_limits[j]:
+                    if axis not in violations:
+                        violations[axis] = []
+                    violations[axis].append(current_time)
+        previous_time = current_time
+        previous_rotations = current_rotations
 
-    # Verify that there is also a keyframe set on the FK controls' rotate
-    # attributes. If there's not, we remove it from the list
-    # Note: we only need to check on controller as they are al keyframed
-    # together
-    ik_keys_filtered = [key for key in ik_keys if pm.keyframe('{}|robot_GRP|FK_CTRLS|a1FK_CTRL.rotateY'.format(robot),
-                                                              query=True,
-                                                              time=key)]
-
-    # Initialize output array.
-    commands = [[0] * 6 for i in range(len(ik_keys_filtered))]
-
-    # Get the robot's axis configuration at each time step and write it to the
-    # output array
-    for i, frame in enumerate(ik_keys_filtered):
-        for j in range(6):
-            commands[i][j] = pm.getAttr('{}|robot_GRP|target_CTRL.axis{}'
-                                        .format(robot, j + 1), time=frame)
-
-    # We have to manually inspect axes to ensure proper, continuous
-    # evaluation with rotations +/- 180 degrees. 
-
-    # Define which axes to inspect, along with their corresponding axis of
-    # rotation. These are typically axes that have rotation
-    # limits > 180 and/or < -180. Currently only axes 4 and 6 are 
-    # ported by attributes onv target_CTRL (e.g. invertAxis4)
-
-    axes = [4, 6]
-    rotation_axes = ['Z', 'Z']
-    for i, frame in enumerate(ik_keys_filtered):    
-        for j, axis in enumerate(axes):
-            # Get actual value based on keyframed value.
-            keyed_val = _get_reconciled_rotation_value(robot,
-                                                       axis,
-                                                       rotation_axes[j],
-                                                       frame)[0]
-
-            # Replace initial axis values with keyed values.
-            commands[i][axis - 1] = keyed_val
-
-    return commands
+    # Format a warning
+    warning_params = []
+    # Get axis keys in order
+    axes = violations.keys()
+    if axes:
+        axes.sort()
+        for axis in axes:
+            # Check if the axis key has values
+            times = violations[axis]
+            time_ranges = general_utils.list_as_range_strings(times)
+            time_ranges_formatted = '\n'.join('\t{}'.format(time_range) for time_range in time_ranges)
+            warning_params.append(axis)
+            warning_params.append(time_ranges_formatted)
+        # Create warning
+        warning = 'WARNING!\n' \
+                  'Velocity limits have been violated!\n' \
+                  'See the following frames:\n'
+        warning_params.insert(0, warning)
+        return '\n'.join(warning_params)
+    else:
+        return ''
 
 
-def _check_robot_postproc_compatibility(robot, processor):
+def __check_robot_postproc_compatibility(robot, processor):
     """
     Verify the compatibility of the selected robot and the processor.
     :return:
@@ -2768,135 +2676,249 @@ def _check_robot_postproc_compatibility(robot, processor):
         warning = 'WARNING!\n' \
                   'The type of robot ({}) \n' \
                   'and type of processor ({}) \n' \
-                  'selected are incompatible!\n'\
+                  'selected are incompatible!\n' \
             .format(robot_type, processor_type)
     return warning
 
 
-def save_program(*args):
+# def __check_command_rotations(robot, animation_settings, command_dicts):
+#     """
+#     Check commands that used a sample rate.
+#     :param robot:
+#     :param animation_settings:
+#     :param command_dicts:
+#     :return:
+#     """
+#     # TODO: Do this check using userOptions instead...
+#     # Get axes, if they exist
+#     command_dicts_axes = []
+#     for command_dict in command_dicts:
+#         axes = command_dict['Axes'] if 'Axes' in command_dict else None
+#         command_dicts_axes.append(axes)
+#     # Make sure the user has selected use of axes
+#     if not all(x is None for x in command_dicts_axes):
+#         start_frame = animation_settings['Start Frame']
+#         for i in range(len(command_dicts)):
+#             reconciled_axes = []
+#             for j in range(6):
+#                 value = command_dicts_axes[i][j]
+#                 if i == 3 or i == 5:  # zero-indexed
+#                     rotation_axis = 'Z'
+#                     if j == 0:  # Get initial value
+#                         value = _get_reconciled_rotation_value(
+#                             robot, i + 1, rotation_axis, start_frame)[0]
+#                     else:  # Perform the check
+#                         previous_value = command_dicts_axes[j - 1][j]
+#                         value = _accumulate_rotation(value, previous_value)
+#                         # Replace axis values with keyed values
+#                 reconciled_axes.append(value)
+#             axes = postproc.Axes(*reconciled_axes)
+#             command_dicts[i]['Axes'] = axes
+#     return command_dicts
+
+
+# ----------------------------------------------------------------------
+
+
+def __get_frames_using_sample_rate(animation_settings, postproc_settings):
     """
-    Acquires a list of commands from Mimic and issues it to a post processor;
-    saves output as usable robot control code in user-defined directory.
-    :param args:
+    Get frames from animation using a sample rate.
+    :param animation_settings:
     :return:
     """
+    # Get relevant animation parameters.
+    start_frame = animation_settings['Start Frame']
+    # end_frame = animation_settings['End Frame']
+    framerate = animation_settings['Framerate']
+    animation_time_sec = animation_settings['Animation Time (sec)']
+    time_interval_units = postproc_settings['Time Interval Units']
+    time_interval_value = postproc_settings['Time Interval Value']
+    # Convert time interval from frames to seconds if necessary
+    if time_interval_units == 'seconds':
+        step_sec = float(time_interval_value)
+    else:  # time_interval_units == 'frames'
+        step_sec = float(time_interval_value) / float(framerate)
+    # Find the closest multiple of the number of steps in our animation
+    num_steps = int(math.ceil(float(animation_time_sec) / step_sec) + 1)
+    # Create array of time-steps in milliseconds.
+    time_array_sec = [round(i * step_sec, 5) for i in range(0, num_steps)]
+    # Create list of frames (time-steps).
+    frames = [round(start_frame + (framerate * t_sec), 3) for t_sec in time_array_sec]
+    return frames
 
-    # clear output window
-    pm.scrollField('programOutputScrollField', clear=True, edit=True)
 
+def __get_frames_using_keyframes_only(robot, animation_settings):
+    """
+    Get frames from animation using a robot's keyframes only.
+    :param robot:
+    :param animation_settings:
+    :return:
+    """
+    # Get relevant animation parameters.
+    start_frame = animation_settings['Start Frame']
+    end_frame = animation_settings['End Frame']
+    # Get list of keyframes on robots IK attribute for the given range
+    ik_keyframes = pm.keyframe(
+        '{}|robot_GRP|target_CTRL'.format(robot),
+        attribute='ik',
+        query=True,
+        time='{}:{}'.format(start_frame, end_frame))
+    # Verify that there is also a keyframe set on the FK controls' rotate
+    # attributes. If there's not, we remove it from the list
+    # Note: we only need to check on controller as they are all keyframed
+    # together
+    frames = [frame for frame in ik_keyframes if pm.keyframe(
+        '{}|robot_GRP|FK_CTRLS|a1FK_CTRL.rotateY'.format(robot),
+        query=True,
+        time=frame)]
+    return frames
+
+
+def __sample_frames_for_commands(robot, frames, user_options):
+    """
+    Sample robot commands using a list of frames and user options.
+    :param robot:
+    :param frames:
+    :param user_options:
+    :return:
+    """
+    # Initialize output array.
+    command_dicts = []
+    for frame in frames:
+        # Set the background to the current frame
+        pm.currentTime(frame)
+        # Create a dict of datatypes per frame
+        command_dict = {}
+        # Add this frame number/step/index to the dictionary
+        command_dict['Frame'] = frame
+        # Get motion parameters
+        if not user_options.Ignore_motion:
+            if user_options.Include_axes:
+                axes = __sample_frame_get_axes(robot, frame)
+                command_dict['Axes'] = postproc.Axes(*axes)
+            if user_options.Include_pose:
+                pose = __sample_frame_get_pose(robot, frame)
+                command_dict['Pose'] = postproc.Pose(*pose)
+            if user_options.Include_external_axes:
+                # external_axes = None
+                # command_dict['External Axes'] = postproc.ExternalAxes(*external_axes)
+                pass
+            if user_options.Include_configuration:
+                # configuration = None
+                # command_dict['Configuration'] = postproc.Configuration(*configuration)
+                pass
+        # Get IO parameters
+        if not user_options.Ignore_IOs:
+            if user_options.Include_digital_outputs:
+                # digital_output = None
+                # command_dict['Digital Output'] = postproc.DigitalOutput(*digital_output)
+                pass
+        command_dicts.append(command_dict)
+    # Reset current frame (just in case)
+    pm.currentTime(frames[0])
+    return command_dicts
+
+
+def __sample_frame_get_axes(robot, frame):
+    """
+    Get robot Axes from an animation frame.
+    :param robot:
+    :param frame:
+    :return:
+    """
+    axes = []
+    for i in range(6):
+        axis_name = '{}|robot_GRP|target_CTRL.axis{}'.format(robot, i + 1)
+        axis = pm.getAttr(axis_name)
+        axes.append(axis)
+    return axes
+
+
+def __sample_frame_get_pose(robot_name, frame):
+    """
+    Get robot Pose from an animation frame.
+    :param robot_name: Name of the robot
+    :param frame:
+    :return:
+    """
+    tool_name = '{}|robot_GRP|tool_CTRL'.format(robot_name)
+    try:  # Try to grab the named tool
+        tool_object = pm.ls(tool_name)[0]  # Try to get tool, may raise an exception
+    except IndexError as e:  # No tool attached, use flange
+        tool_name = '{}|robot_GRP|robot_GEOM|Base|' \
+                    'axis1|axis2|axis3|axis4|axis5|axis6|tcp_GRP|tcp_HDL'.format(robot_name)
+
+    # Local Base Frame controller (circle control at base of the robot).
+    base_name = pm.ls('{}|robot_GRP|local_CTRL'.format(robot_name))[0]
+
+    world_matrix = '.worldMatrix'
+    tool_name_world_matrix = tool_name + world_matrix
+    base_name_world_matrix = base_name + world_matrix
+
+    # Get rotation with respect to Maya's world frame
+    tool_matrix = pm.getAttr(tool_name_world_matrix, time=frame)
+    base_matrix = pm.getAttr(base_name_world_matrix, time=frame)
+    tool_rotation = general_utils.matrix_get_3x3_from_4x4(tool_matrix)
+    base_rotation = general_utils.matrix_get_3x3_from_4x4(base_matrix)
+
+    # Get translation per Maya's world frame
+    # pm.currentTime(frame)  # Must actually update the animation...
+    tool_translation = pm.xform(tool_name, query=True, rp=True, ws=True)
+    base_translation = pm.xform(base_name, query=True, rp=True, ws=True)
+
+    # Get translation and rotation
+    pose_translation = [tool_translation[i] - base_translation[i] for i in range(3)]
+    pose_rotation = general_utils.matrix_multiply_3x3(tool_rotation, base_rotation)
+
+    # Reorder position of parameters
+    order = [2, 0, 1]  # Indices to re-order; from Maya CS to Robot CS
+    reordered_translation = [pose_translation[i] * 10 for i in order]
+    reordered_rotation = [[pose_rotation[i][j] for j in order] for i in order]
+
+    # Apply rotation depending on robot type
+    robot_type = __get_robot_type(robot_name)
+    if robot_type == 'ABB':
+        conversion_matrix = [[0, 0, -1], [0, 1, 0], [1, 0, 0]]
+    elif robot_type == 'KUKA':
+        conversion_matrix = [[0, -1, 0], [0, 0, 1], [-1, 0, 0]]
+    else:
+        raise Exception('Robot type not supported for Pose movement')
+    converted_rotation = general_utils.matrix_multiply_3x3(reordered_rotation, conversion_matrix)
+
+
+
+    pose = []
+    pose.extend(reordered_translation)
+    [pose.extend(rotation) for rotation in converted_rotation]
+    return pose
+
+
+# ----------------------------------------------------------------------
+
+def __get_selected_robot_name():
+    """
+    Get robot
+    :return:
+    """
     robots = get_robot_roots()
     if not robots:
-        pm.warning('Nothing Selected; ' \
-                   'Select a valid robot to export; ' \
-                   'no program written')
+        message = 'Nothing Selected; ' \
+                  'Select a valid robot to export; ' \
+                  'no program written'
+        pm.warning(message)
         return
-
     if len(robots) > 1:
-        pm.warning('Too many robots selected; ' \
-                   'select a single robot to export')
-
+        message = 'Too many robots selected; ' \
+                  'select a single robot to export'
+        pm.warning(message)
     robot = robots[0]
-    # For the selected robot, convert the animation to a robot control
-    # program and write it to a file
+    return robot
 
-    program_settings = _get_program_settings()
-    animation_params = _get_animation_parameters()
 
-    if not _check_command_parameters(robot, animation_params):
-        pm.scrollField('programOutputScrollField',
-                       edit=True,
-                       text='No program written \n\n' \
-                            'Check script editor for\ndetails \n\n')
-        return
-
-    # If the UI radio button is set to "sample rate"
-    if pm.radioCollection('sample_rate_radio_collection', query=True, select=True) == 'rb_timeInterval':
-        # Get programmed time between samples
-        time_interval_value = program_settings['Time Interval']['value']
-        time_interval_units = program_settings['Time Interval']['units']
-
-        # Get axis configuration at each time interval (typically every frame)
-        raw_commands, step_sec = _get_commands_from_animation(robot, animation_params, time_interval_value, time_interval_units)
-
-        # Check if limits have been exceeded (i.e. velocity, acceleration)
-        exceeded_limits = _check_exceeded_velocity_limits(robot, raw_commands, step_sec)
-        exceeded_limits_warning = _format_exceeded_velocity_limits(exceeded_limits)
-        if exceeded_limits_warning != '':
-            pm.warning('Velocity limits exceeded; expand the Mimic window to see output for details')
-
-    # Otherwise the radio button is set to "Keyframes only"
-    else:
-        # If we're sampling keyframes only, we assume we're using a post-
-        # processor option that's not-time base, and therefor we don't
-        # check for velocity limits
-        exceeded_limits_warning = ''
-
-        # Get commands at keyframes only
-        raw_commands = get_keyframed_commands(robot, animation_params)
-
-    # Check if the robot-postproc compatibility warning was triggered
-    processor_type = program_settings['Processor Type']
-    processor = postproc_setup.POST_PROCESSORS[processor_type]()
-    robot_postproc_warning = _check_robot_postproc_compatibility(robot, processor)
-
-    # Check if warnings should be ignored
-    ignore_warnings = program_settings['Ignore Warnings']
-    if ignore_warnings or (exceeded_limits_warning == '' and robot_postproc_warning == ''):
-
-        # Get the user directory from the Mimic UI.
-        output_directory = program_settings['Output Directory']
-
-        # Check if the file should be overwritten if it already exists.
-        overwrite_option = program_settings['Overwrite Option']
-
-        # Define options that will be passed into the processor.
-        user_options = postproc_options.get_user_selected_options()
-
-        # Configure raw_commands (hard coded)
-        commands = processor.get_formatted_commands(raw_commands)
-
-        # Make sure we're using the right directory
-        processor.set_program_directory(output_directory)
-
-        # Process the raw_commands into relevant robot control code
-        template_filename = program_settings['Template Filename']
-        filled_template = processor.process(commands, user_options, template_filename)
-
-        # write the processed animation as robot code to a file
-        output_filename = program_settings['Output Filename']
-        output_path = processor.write(
-            filled_template,
-            output_filename=output_filename,
-            overwrite=overwrite_option)
-
-        # Update the output-text viewer in the Mimic UI
-        details = 'Type of robot     : {} {} ({})\n' \
-                  'Type of processor : {} {} ({})\n' \
-                  'Path to template  : {}\n' \
-                  'Path to output    : {}\n' \
-                  '\n'
-        filled_details = details.format(pm.getAttr('{}|robot_GRP|target_CTRL.robotType'.format(robot)),
-                                        pm.getAttr('{}|robot_GRP|target_CTRL.robotSubtype'.format(robot)),
-                                        robot,
-                                        processor.type_robot,
-                                        processor.type_processor,
-                                        processor.__class__.__name__,
-                                        postproc.confirm_path_exists(processor.get_program_template_path()),
-                                        postproc.confirm_path_exists(processor.get_program_output_path()))
-        pm.scrollField('programOutputScrollField',
-                       insertText=filled_details,
-                       edit=True)
-
-        pm.scrollField('programOutputScrollField',
-                       insertText=filled_template + '\n',
-                       edit=True)
-
-    # Output warnings always
-    pm.scrollField('programOutputScrollField',
-                   insertText=robot_postproc_warning + '\n',
-                   edit=True)
-
-    # Output warnings always
-    pm.scrollField('programOutputScrollField',
-                   insertText=exceeded_limits_warning + '\n',
-                   edit=True)
+def __get_robot_type(robot_name):
+    """
+    Get Type of robot
+    :param robot_name:
+    :return:
+    """
+    return pm.getAttr('{}|robot_GRP|target_CTRL.robotType'.format(robot_name))

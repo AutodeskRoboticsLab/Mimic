@@ -126,7 +126,7 @@ def assign_tabs(tabs, tab_layout, change_command=''):
                      changeCommand=change_command)
 
 
-# ANIMATE TAB 
+# ANIMATE TAB
 def _build_ik_tab(parent_layout):
     # Create column Layout for IK controls
     ik_tab_layout = pm.columnLayout('ikTab', adj=True, width=100)
@@ -190,7 +190,7 @@ def _build_ik_tab(parent_layout):
                          'a*FK_CTRL:\n' \
                          '    rotateX, Y, or Z\n' \
                          'FK_CTRLS\n' \
-                         '    visibility = 0')   
+                         '    visibility = 0')
 
     pm.setParent(parent_layout)
     return ik_tab_layout
@@ -316,7 +316,7 @@ def _build_fk_tab(parent_layout):
                          'a*FK_CTRL:\n' \
                          '    rotateX, Y, or Z\n' \
                          'FK_CTRLS\n' \
-                         '    visibility = 1')  
+                         '    visibility = 1')
     pm.setParent(parent_layout)
     return fk_tab_layout
 
@@ -487,12 +487,6 @@ def _build_general_settings_tab(parent_layout):
 
     pm.setParent('..')
 
-    # pm.rowLayout(numberOfColumns=1,
-    #              adjustableColumn=1,
-    #              columnAttach=(1, 'left', -1),
-    #              height=20)
-    # pm.text(label='Sample rate:', align='left')
-    # pm.setParent('..')
 
     # Sample rate radio buttons
     pm.separator(height=3, style='none')
@@ -624,8 +618,8 @@ def _build_program_settings_frame(parent_layout):
     pm.separator(height=3, style='none')
 
     pm.separator(height=3, style='none')
-    pm.button('Check Program', command=mimic_utils.check_program, height=25)
-    pm.button('Save Program', command=mimic_utils.save_program, height=25)
+    pm.button('Check Program', command=mimic_utils.__check_program, height=25)
+    pm.button('Save Program', command=mimic_utils.__save_program, height=25)
     pm.separator(height=3, style='none')
 
     pm.setParent(parent_layout)
@@ -643,7 +637,7 @@ def build_program_tab(parent_layout):
     return program_tab_layout
 
 
-# SETUP TAB 
+# SETUP TAB
 def _build_add_robot_frame(parent_layout):
     # Create frame layout with one column
     add_robot_frame = pm.frameLayout(label="Add Robot", collapsable=True)
@@ -1017,7 +1011,7 @@ def _build_edit_axes_frame(parent_layout):
     pm.columnLayout(adj=True, columnAttach=('both', 5))
 
     pm.textScrollList('tsl_externalAxes', height=85)
-    #pm.setParent('..')
+    # pm.setParent('..')
 
     pm.button(label='List Axes',
               annotation='Lists all external axes on selected robot')
@@ -1048,8 +1042,8 @@ def _build_io_tab(parent_layout):
 
 def _build_comms_tab(parent_layout):
     comms_tab_layout = pm.columnLayout('commsTab',
-                                    adj=True,
-                                    width=100)
+                                       adj=True,
+                                       width=100)
     pm.setParent(parent_layout)
     return comms_tab_layout
 
@@ -1057,7 +1051,7 @@ def _build_comms_tab(parent_layout):
 def build_external_tab(parent_layout):
     # Create preferences tab Layout
     external_tab_layout = pm.columnLayout(adj=True, height=525, width=200)
-    
+
     # Create Form Layout with embeded Tab Layout
     external_tabs_form = pm.formLayout()
     external_tabs_layout = pm.tabLayout('external_tabs_layout',
@@ -1070,11 +1064,10 @@ def build_external_tab(parent_layout):
                               (external_tabs_layout, "left", 0),
                               (external_tabs_layout, "right", 0)])
 
-
     external_axes_tab_layout = _build_external_axes_tab(external_tabs_layout)
     io_tab_layout = _build_io_tab(external_tabs_layout)
     comms_tab_layout = _build_comms_tab(external_tabs_layout)
-    
+
     tabs = [[external_axes_tab_layout, 'External Axes'],
             [io_tab_layout, 'IOs'],
             [comms_tab_layout, 'Comms']]
@@ -1196,7 +1189,7 @@ def _build_ui_prefs_frame(parent_layout):
               width=50,
               height=20,
               command=mimic_utils.set_shader_range)
-    
+
     pm.setParent(ui_prefs_column)
     pm.separator(height=8, style='none')
     pm.setParent(parent_layout)
@@ -1214,7 +1207,7 @@ def _build_performance_prefs_frame(parent_layout):
                 annotation='If checked, reconcileRotation script job' \
                            'will run',
                 value=mimic_config.EXECUTE_RECONCILE_ROTATION_DEFAULT)
-    
+
     pm.setParent(performance_prefs_column)
     pm.separator(height=8, style='none')
     pm.setParent(parent_layout)

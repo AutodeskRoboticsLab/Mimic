@@ -287,9 +287,9 @@ class SimpleRAPIDProcessor(postproc.PostProcessor):
             ignore_motion=True,
             use_motion_as_variables=True,
             use_nonlinear_motion=True,
-            use_linear_motion=True,
+            use_linear_motion=False,
             include_axes=True,
-            include_pose=True
+            include_pose=False
         )
 
 
