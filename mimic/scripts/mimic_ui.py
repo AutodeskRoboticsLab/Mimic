@@ -1199,6 +1199,22 @@ def _build_ui_prefs_frame(parent_layout):
     pm.setParent(parent_layout)
 
 
+def _build_performance_prefs_frame(parent_layout):
+    pm.frameLayout(label="Performance", collapsable=True)
+    pm.columnLayout(adj=True, columnAttach=('both', 5))
+
+    pm.separator(height=2, style='none')
+
+    # Execute reconcile rotation
+    pm.checkBox('cb_executeReconcileRotation',
+                label="Execute Reconcile Rotation",
+                annotation='If checked, reconcileRotation script job' \
+                           'will run',
+                value=mimic_config.EXECUTE_RECONCILE_ROTATION_DEFAULT)
+
+    pm.setParent(parent_layout)
+
+
 def build_prefs_tab(parent_layout):
     # Create preferences tab Layout
     prefs_tab_layout = pm.columnLayout('prefs_tab_layout', height=525, adj=True, width=200)
@@ -1208,6 +1224,9 @@ def build_prefs_tab(parent_layout):
 
     # UI frame
     _build_ui_prefs_frame(prefs_tab_layout)
+
+    # Performance frame
+    _build_performance_prefs_frame(prefs_tab_layout)
 
     pm.setParent(parent_layout)
 
