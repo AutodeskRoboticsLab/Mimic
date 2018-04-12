@@ -2295,7 +2295,7 @@ def get_maya_framerate():
     return framerate
 
 
-# ----------------------------------------------------------------------
+# PROGRAM FUNCTIONS
 
 
 def check_program(*args):
@@ -2396,9 +2396,6 @@ def _show_program_in_output_window(robot, processor, program):
     pm.scrollField(OUTPUT_WINDOW_NAME,
                    insertText=program + '\n',
                    edit=True)
-
-
-# ----------------------------------------------------------------------
 
 
 def _get_settings():
@@ -2569,9 +2566,6 @@ def _get_command_dicts(robot, animation_settings, postproc_settings, user_option
     return command_dicts
 
 
-# ----------------------------------------------------------------------
-
-
 def _check_command_dicts(command_dicts, robot, animation_settings, postproc_settings, user_options):
     """
     Check command dictionary for warnings.
@@ -2715,9 +2709,6 @@ def _check_command_rotations(robot, animation_settings, command_dicts):
             axes = postproc.Axes(*reconciled_axes)
             command_dicts[i]['Axes'] = axes
     return command_dicts
-
-
-# ----------------------------------------------------------------------
 
 
 def _get_frames_using_sample_rate(animation_settings, postproc_settings):
@@ -2897,8 +2888,6 @@ def _sample_frame_get_pose(robot_name, frame):
     [pose.extend(rotation) for rotation in converted_rotation]
     return pose
 
-
-# ----------------------------------------------------------------------
 
 def _get_selected_robot_name():
     """
