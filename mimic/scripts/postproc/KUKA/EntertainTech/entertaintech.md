@@ -28,6 +28,9 @@ This package contains the following directories and/or files:
     |-- entertaintech.py
     |-- entertaintech_config.py
     |-- template.emily
+    |-- example.src
+    |-- example.dat
+    |-- example.emily
 ```
 
 
@@ -38,7 +41,7 @@ This package contains the following directories and/or files:
   adhere to the MGMO cycle time; see KUKA.EntertainTech documentation!
   *This package will not work correctly if you choose other parameters!*
 - DO NOT modify or mutate the value of parameters that are either `__private`,
-  `_protected`, or located in `rapid.py` unless you intend to extend the core
+  `_protected`, or located in `entertaintech.py` unless you intend to extend the core
   functionality of this package.
 - It is highly recommended that you test your robot-control code in a safety
   certified simulator and implement such monitoring in your workcell prior to

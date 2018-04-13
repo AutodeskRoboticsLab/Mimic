@@ -300,6 +300,14 @@ class PostProcessor(object):
         """
         raise NotImplementedError
 
+    def _set_supported_options(self):
+        """
+        Set the supported options for this processor. Only set to True if the
+        optional parameter is actually supported by this processor!
+        :return:
+        """
+        raise NotImplementedError
+
     def format_commands(self, params_dicts):
         """
         Processor-specific function. Calls _format_command for all params.

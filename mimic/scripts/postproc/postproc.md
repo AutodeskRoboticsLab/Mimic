@@ -108,14 +108,11 @@ and must be defined manually therein (will raise a `NotImplementedError` if left
 undefined)
 
 ```
-# Public methods
-PostProcessor.process(self, *args)
-PostProcessor.write(self, *args)
-PostProcessor.get_formatted_commands(self, *args)
-
 # Methods that must be defined in subclass
+PostProcessor._format_command(self, *args)
 PostProcessor._process_command(self, *args)
-PostProcessor.get_formatted_commands(self, *args)
+PostProcessor._process_program(self, *args)
+PostProcessor._set_supported_options(self, *args)
 ```
 
 
@@ -337,7 +334,8 @@ cannot be altered except in Python. When commands are processed, placeholder
 parameters will be replaced with formatted commands. Mimic will output to the
 post processor directory a file in the form `output.*` containing robot-control
 code and formatted commands. In some cases, the directory also contains an
-example implementation in the form `example.*` which contains robot-control code.
+example implementation in the form `example.*` which contains robot-control code
+and/or supplementary material.
 
 The template below contains the placeholder parameter `{}`, a few syntactical
 elements such as `[HEADER]`, and a user-defined parameter `GEAR_NOMINAL_VEL`.
@@ -394,5 +392,8 @@ sometimes an additional program is required to run an output file.
 - It may be the case a post processor serves a method of programming robots that
   IS NOT fundamentally time-based. If so, *clearly* indicate that robot motion seen
   in Maya may and likely will differ from robot motion seen in the real world. 
+- Placeholders, `{}`, in template files should appear in-line or at the beginning
+  of a line of code; operations that provide formatting, such as tabs, should be
+  done by the processor.
 
 #

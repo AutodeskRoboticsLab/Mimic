@@ -37,7 +37,7 @@ This package contains the following directories and/or files:
   fundamentally time-based. Robot motion seen in Maya may and likely will differ
   from robot motion seen in the real world. 
 - DO NOT modify or mutate the value of parameters that are either `__private`,
-  `_protected`, or located in `rapid.py` unless you intend to extend the core
+  `_protected`, or located in `krl.py` unless you intend to extend the core
   functionality of this package.
 - It is highly recommended that you test your robot-control code in a safety
   certified simulator and implement such monitoring in your workcell prior to
