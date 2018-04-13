@@ -13,9 +13,9 @@ except ImportError:  # Maya is not running
     pm = None
     MAYA_IS_RUNNING = False
 
-from collections import OrderedDict
 import general_utils
 import mimic_config
+import mimic_program
 import mimic_utils
 from postproc import postproc_config
 from postproc import postproc_setup
@@ -23,6 +23,7 @@ from postproc import postproc_options
 
 reload(mimic_utils)
 reload(mimic_config)
+reload(mimic_program)
 reload(general_utils)
 reload(postproc_setup)
 reload(postproc_config)
@@ -49,13 +50,13 @@ def build_mimic_ui():
     animate_tab_layout = build_animate_tab(mimic_tab_layout)
     program_tab_layout = build_program_tab(mimic_tab_layout)
     setup_tab_layout = build_setup_tab(mimic_tab_layout)
-    #external_tab_layout = build_external_tab(mimic_tab_layout)
+    # external_tab_layout = build_external_tab(mimic_tab_layout)
     prefs_tab_layout = build_prefs_tab(mimic_win)
 
     tabs = [(animate_tab_layout, "Animate"),
             (program_tab_layout, "Program"),
             (setup_tab_layout, "Setup"),
-            #(external_tab_layout, "External"),
+            # (external_tab_layout, "External"),
             (prefs_tab_layout, "Prefs")]
 
     assign_tabs(tabs, mimic_tab_layout)
@@ -213,9 +214,9 @@ def _build_fk_tab(parent_layout):
                'pm.setFocus("fkTab");')
 
     for i in range(6):
-        axis = i+1
+        axis = i + 1
         sel_cmd_str = cmd_str + ' mimic_utils.select_fk_axis_handle({})' \
-                                .format(axis)
+            .format(axis)
         button_img = 'a{}FkIcon.png'.format(axis)
         button_ann = 'Selects Axis {} FK Controller'.format(axis)
         pm.symbolButton(image=button_img,
@@ -362,7 +363,7 @@ def _build_keyframing_tools_frame(parent_layout):
     pm.button(label='Select Keyframe Hierarchy',
               command=mimic_utils.select_keyframe_hierarchy,
               annotation='Selects all objects keyframed ' \
-                         'with "Set IK-FK Keyframe" buttons:\n'\
+                         'with "Set IK-FK Keyframe" buttons:\n' \
                          '    target_CTRL\n' \
                          '    FK_CTRLS\n' \
                          '    a*FK_CTRL\n' \
@@ -487,7 +488,6 @@ def _build_general_settings_tab(parent_layout):
                  font=FONT)
 
     pm.setParent('..')
-
 
     # Sample rate radio buttons
     pm.separator(height=3, style='none')
@@ -619,8 +619,8 @@ def _build_program_settings_frame(parent_layout):
     pm.separator(height=3, style='none')
 
     pm.separator(height=3, style='none')
-    pm.button('Check Program', command=mimic_utils.check_program, height=25)
-    pm.button('Save Program', command=mimic_utils.save_program, height=25)
+    pm.button('Check Program', command=mimic_program.check_program, height=25)
+    pm.button('Save Program', command=mimic_program.save_program, height=25)
     pm.separator(height=3, style='none')
 
     pm.setParent(parent_layout)

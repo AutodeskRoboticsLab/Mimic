@@ -10,6 +10,7 @@ LARGE_NUMBER = 9e9
 # To-do: Implement appraximation if no valid configuration exists for the given
 # target pose (represented by ValueError math domain error)
 
+
 def solver(robot_definition, pivot_point, tcp_rotation):
     """
     Fast inverse kinematic solver for most 6-axis industrial robots.
@@ -54,24 +55,26 @@ def solver(robot_definition, pivot_point, tcp_rotation):
 
     # Theta 2
     try:
-        theta2_1 = -math.acos((s1_2 + math.pow(c2, 2) - k_2) / (2 * s1 * c2)) + math.atan2(nx1, (pivot_point[2] - c1))
+        theta2_1 = -math.acos((s1_2 + math.pow(c2, 2) - k_2) / (2 * s1 * c2)) +\
+                   math.atan2(nx1, (pivot_point[2] - c1))
     except ValueError:  # math domain error
         theta2_1 = LARGE_NUMBER
 
     try:
-        theta2_2 = math.acos((s1_2 + math.pow(c2, 2) - k_2) / (2 * s1 * c2)) + math.atan2(nx1, (pivot_point[2] - c1))
+        theta2_2 = math.acos((s1_2 + math.pow(c2, 2) - k_2) / (2 * s1 * c2)) +\
+                   math.atan2(nx1, (pivot_point[2] - c1))
     except ValueError:  # math domain error
         theta2_2 = LARGE_NUMBER
 
     try:
-        theta2_3 = math.acos((s2_2 + math.pow(c2, 2) - k_2) / (2 * s2 * c2)) - math.atan2((nx1 + 2 * a1),
-                                                                                          (pivot_point[2] - c1))
+        theta2_3 = math.acos((s2_2 + math.pow(c2, 2) - k_2) / (2 * s2 * c2)) -\
+                   math.atan2((nx1 + 2 * a1), (pivot_point[2] - c1))
     except ValueError:  # math domain error
         theta2_3 = LARGE_NUMBER
 
     try:
-        theta2_4 = -(
-        math.acos((s2_2 + math.pow(c2, 2) - k_2) / (2 * s2 * c2)) + math.atan2((nx1 + 2 * a1), (pivot_point[2] - c1)))
+        theta2_4 = -(math.acos((s2_2 + math.pow(c2, 2) - k_2) / (2 * s2 * c2)) +\
+                     math.atan2((nx1 + 2 * a1), (pivot_point[2] - c1)))
     except ValueError:  # math domain error
         theta2_4 = LARGE_NUMBER
 

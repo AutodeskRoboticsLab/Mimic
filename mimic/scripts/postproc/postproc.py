@@ -176,7 +176,8 @@ class PostProcessor(object):
             directory = template.format(mimic_dir, self.type_robot, self.type_processor)
         return directory
 
-    def _get_program_name(self, name=None, default='default'):
+    @staticmethod
+    def _get_program_name(name=None, default='default'):
         """
         Get program template name. If a name is provided, this function passes it right
         out, otherwise, it uses the default name instead. If the provided name contains
@@ -355,8 +356,6 @@ class PostProcessor(object):
         with open(output_path, 'w') as f:
             f.write(content)
         return output_path
-
-
 
 
 def fill_template(params, structure, template):

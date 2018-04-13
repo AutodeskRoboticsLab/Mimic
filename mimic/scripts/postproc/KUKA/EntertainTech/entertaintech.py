@@ -122,7 +122,8 @@ class SimpleEntertainTechProcessor(postproc.PostProcessor):
             program = program[:index] + checksum_string + program[index:]
         return program
 
-    def _process_command(self, command, opts):
+    @staticmethod
+    def _process_command(command, opts):
         """
         Process a single command and user options.
         :param command: Command tuple
@@ -160,7 +161,8 @@ class SimpleEntertainTechProcessor(postproc.PostProcessor):
             self.time_index += self.time_step  # Increment to next time-index
             return RecordsCommand(*params)
 
-    def _set_supported_options(self):
+    @staticmethod
+    def _set_supported_options():
         """
         Set the supported options for this processor. Only set to True if the
         optional parameter is actually supported by this processor!

@@ -230,7 +230,8 @@ class SimpleRAPIDProcessor(postproc.PostProcessor):
                           '1 placeholder for the motion variables.'
                 raise IndexError(message)
 
-    def _process_command(self, command, opts):
+    @staticmethod
+    def _process_command(command, opts):
         """
         Process a single command with user options.
         :param command: Command tuple
@@ -243,7 +244,8 @@ class SimpleRAPIDProcessor(postproc.PostProcessor):
         elif not opts.Ignore_IOs and command_type == IO_COMMAND:
             return _process_io_command(command, opts)
 
-    def _format_command(self, params_dict):
+    @staticmethod
+    def _format_command(params_dict):
         """
         Processor-specific function. Certain types of commands are very specific
         to the processor in use or application, such as EntertainTech, requiring
@@ -277,7 +279,8 @@ class SimpleRAPIDProcessor(postproc.PostProcessor):
             if params.count(None) != len(params):
                 return IOCommand(*params)
 
-    def _set_supported_options(self):
+    @staticmethod
+    def _set_supported_options():
         """
         Set the supported options for this processor. Only set to True if the
         optional parameter is actually supported by this processor!

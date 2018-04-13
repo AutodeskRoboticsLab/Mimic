@@ -6,7 +6,7 @@ be integrated by all processor subclasses.
 """
 
 import sys
-sys.dont_write_bytecode=True
+sys.dont_write_bytecode = True
 
 try:
     import pymel.core as pm
@@ -135,8 +135,8 @@ def get_user_selected_options():
         field = _fields[i]
         checkbox_name = format_field_name_for_checkbox(field)
         checkbox_value = pm.checkBox(checkbox_name,
-                                    value=True,
-                                    query=True)
+                                     value=True,
+                                     query=True)
         values.append(checkbox_value)
     # Create a new tuple from the above
     return UserOptions(*values)
@@ -164,6 +164,7 @@ def assert_selected_vs_supported_options(selected_options, supported_options):
     :return:
     """
     count = len(selected_options)
+    i = 0
     try:
         for i in range(count):
             assert selected_options[i] == supported_options[i]
