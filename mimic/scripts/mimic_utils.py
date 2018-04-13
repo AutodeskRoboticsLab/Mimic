@@ -501,7 +501,7 @@ def find_ik_solutions(robot):
     tcp_trans[1][0] = tcp.getTranslation()[1]
     tcp_trans[2][0] = tcp.getTranslation()[2]
     # Convert TCP translation from Maya's tool frame to solver tool frame.
-    tcp_trans = general_utils.array_multiply(R_tool_frame, tcp_trans)
+    tcp_trans = general_utils.matrix_multiply_1xm_nxm(R_tool_frame, tcp_trans)
 
     # Get translation of local base frame (Circle controller) w.r.t robot's
     # world frame (Square controller).
@@ -509,7 +509,7 @@ def find_ik_solutions(robot):
     lcs_trans[1][0] = lcs.getTranslation()[1]
     lcs_trans[2][0] = lcs.getTranslation()[2]
     # Convert lcs translation from Maya's world frame to solver world frame.
-    lcs_trans = general_utils.array_multiply(R_world_frame, lcs_trans)
+    lcs_trans = general_utils.matrix_multiply_1xm_nxm(R_world_frame, lcs_trans)
 
     # Get translation of target in Maya's world frame w.r.t robot world frame
     # (Square controller).
@@ -517,7 +517,7 @@ def find_ik_solutions(robot):
     target_point[1][0] = target.getTranslation()[1]
     target_point[2][0] = target.getTranslation()[2]
     # Convert target translation from Maya's world frame to solver world frame.
-    target_point = general_utils.array_multiply(R_world_frame, target_point)
+    target_point = general_utils.matrix_multiply_1xm_nxm(R_world_frame, target_point)
 
     # Get lcs, tcp, and target matrices in Maya's world frame
     lcs_matrix = pm.xform(lcs, query=True, os=True, m=True)
@@ -535,7 +535,7 @@ def find_ik_solutions(robot):
          general_utils.transpose_list(tcp_z_axis)[0]])
     # Convert truncated tcp rotation matrix to solver tool frame
     tcp_rot = general_utils.transpose_list(
-        general_utils.array_multiply(R_tool_frame, tcp_matrix_truncated))
+        general_utils.matrix_multiply_1xm_nxm(R_tool_frame, tcp_matrix_truncated))
 
     # Local coordinate system matrix (circle controller)
     lcs_x_axis = [[lcs_matrix[0]], [lcs_matrix[1]], [lcs_matrix[2]]]
@@ -547,8 +547,8 @@ def find_ik_solutions(robot):
          general_utils.transpose_list(lcs_z_axis)[0]])
     # Convert local base frame rotation matrix to solver world frame
     lcs_rot = general_utils.transpose_list(
-        general_utils.array_multiply(R_world_frame,
-                                     lcs_matrix_truncated))
+        general_utils.matrix_multiply_1xm_nxm(R_world_frame,
+                                              lcs_matrix_truncated))
 
     # Target rotation matrix
     target_x_axis = [[target_matrix[0]], [target_matrix[1]], [target_matrix[2]]]
@@ -560,17 +560,17 @@ def find_ik_solutions(robot):
          general_utils.transpose_list(target_z_axis)[0]])
     # Convert target rotation matrix to solver world frame
     target_rot = general_utils.transpose_list(
-        general_utils.array_multiply(R_world_frame,
-                                     target_matrix_truncated))
+        general_utils.matrix_multiply_1xm_nxm(R_world_frame,
+                                              target_matrix_truncated))
 
     # Find Flange and Pivot locations in local solver world frame
     # Rotation of the tcp w.r.t to the target in solver world frame
-    Re = general_utils.array_multiply(
+    Re = general_utils.matrix_multiply_1xm_nxm(
         general_utils.transpose_list(target_rot), tcp_rot)
 
     # Rotation of the robot's local coordinate system (circle
     # controller) w.r.t the solver world frame
-    Rlm = general_utils.array_multiply(R_world_frame, lcs_rot)
+    Rlm = general_utils.matrix_multiply_1xm_nxm(R_world_frame, lcs_rot)
 
     # Find distance from the robot's local coordinate system (circle
     # controller) to target point in solver world frame
@@ -581,32 +581,32 @@ def find_ik_solutions(robot):
     # Find the flange point in the solver's world frame
     flange_point = [i - j for i, j in zip(target_point,
                                           general_utils.transpose_list(
-                                              general_utils.array_multiply(Re, tcp_trans))[0])]
+                                              general_utils.matrix_multiply_1xm_nxm(Re, tcp_trans))[0])]
 
     # Find the pivot point in the solver's world frame
     pivot_point = [i - j for i, j in zip(flange_point,
                                          general_utils.transpose_list(
-                                             general_utils.array_multiply(Re, T))[0])]
+                                             general_utils.matrix_multiply_1xm_nxm(Re, T))[0])]
 
     # Find the flange point w.r.t the robot's local frame (circle controller)
     # in solver's world frame
     flange_point = general_utils.transpose_list(
-        general_utils.array_multiply(Rlm,
-                                     [[flange_point[0]],
+        general_utils.matrix_multiply_1xm_nxm(Rlm,
+                                              [[flange_point[0]],
                                       [flange_point[1]],
                                       [flange_point[2]]]))[0]
 
     # Find the pivot point w.r.t the robot's local frame (circle controller)
     # in solver's world frame
     pivot_point = general_utils.transpose_list(
-        general_utils.array_multiply(Rlm,
-                                     [[pivot_point[0]],
+        general_utils.matrix_multiply_1xm_nxm(Rlm,
+                                              [[pivot_point[0]],
                                       [pivot_point[1]],
                                       [pivot_point[2]]]))[0]
 
     # Define the Rotation of the tcp w.r.t the target in robot's local frame
     # (cirlce controller)
-    Re = general_utils.array_multiply(Rlm, Re)
+    Re = general_utils.matrix_multiply_1xm_nxm(Rlm, Re)
 
     # Find all IK solutions for the given configuration
     all_ik_sols = inverse_kinematics.solver(robot_definition, pivot_point, Re)
@@ -2309,7 +2309,7 @@ def check_program(*args):
     # Check program, commands, raise exception on failure
     program_settings = _get_settings()
     command_dicts = _get_command_dicts(*program_settings)
-    _check_command_dicts(command_dicts, *program_settings)
+    _check_command_dicts(command_dicts, *program_settings, override_ignore=True)
 
 
 def save_program(*args):
@@ -2557,7 +2557,7 @@ def _get_command_dicts(robot, animation_settings, postproc_settings, user_option
     return command_dicts
 
 
-def _check_command_dicts(command_dicts, robot, animation_settings, postproc_settings, user_options):
+def _check_command_dicts(command_dicts, robot, animation_settings, postproc_settings, user_options, override_ignore=False):
     """
     Check command dictionary for warnings.
     :param command_dicts:
@@ -2570,7 +2570,7 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
     if user_options.Include_axes:
         warning = _check_velocity_of_axes(robot, command_dicts, animation_settings['Framerate'])
         if warning != '':
-            if not ignore_warnings:
+            if not ignore_warnings and not override_ignore:
                 raise Exception(warning)
             else:
                 warning += '\n'
@@ -2881,12 +2881,13 @@ def _sample_frame_get_pose(robot_name, frame):
         conversion_matrix = [[0, -1, 0], [0, 0, 1], [-1, 0, 0]]
     else:
         raise Exception('Robot type not supported for Pose movement')
+
+    # Convert parameters from Maya-space to Robot-space
     converted_rotation = general_utils.matrix_multiply_3x3(reordered_rotation, conversion_matrix)
-
-
+    converted_translation = general_utils.matrix_multiply_1xm_nxm([reordered_translation], reordered_rotation)[0]
 
     pose = []
-    pose.extend(reordered_translation)
+    pose.extend(converted_translation)
     [pose.extend(rotation) for rotation in converted_rotation]
     return pose
 

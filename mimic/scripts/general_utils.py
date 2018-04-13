@@ -188,18 +188,18 @@ def compare_strings_as_lower(s1, s2):
     return string.lower(s1) == string.lower(s2)
 
 
-def array_multiply(a, b):
+def matrix_multiply_1xm_nxm(a, b):
     """
-    Multiply a one-dimensional array and a two-dimensional array.
-    :param a: One dimensional array
-    :param b: 2 Dimensional array
+    Multiply a 1xM matrix and a NxM matrix.
+    :param a: 1xM matrix
+    :param b: NxM matrix
     :return:
     """
-    result = [[0] * len(b[0]) for i in range(len(a))]
+    result = [[0] * len(b[0]) for _ in range(len(a))]
     for i in range(len(a)):
-        # iterate through columns of Y
+        # iterate through columns of b
         for j in range(len(b[0])):
-            # iterate through rows of Y
+            # iterate through rows of b
             for k in range(len(b)):
                 result[i][j] += a[i][k] * b[k][j]
     return result
