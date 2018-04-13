@@ -38,12 +38,13 @@ def load_mimic_plugins(plugin_file_names):
                 # Try loading it (and turn on autoload)
                 pm.loadPlugin(script)
                 pm.pluginInfo(script, autoload=True)
-                print '{} Plug-in loaded'.format(script)
+                # print '{} Plug-in loaded'.format(script)
                 continue
             except Exception as e:
-                pm.warning('Could not load plugin {}: {}'.format(script, e))
+                warning = 'Could not load plugin {}: {}'.format(script, e)
+                raise Exception(warning)
         # If it's already loaded:
-        print '{} Plug-in already loaded'.format(script)
+        # print '{} Plug-in already loaded'.format(script)
 
 
 def confirm_requirements_exist():
@@ -69,19 +70,20 @@ def confirm_requirements_exist():
             path = '{}/{}'.format(parent, requirement)
         else:
             path = '{}/{}'.format(dir_mimic, requirement)
-        try:  # Check that directories all exist; if not, raise exception!
+        try:  # Check that directories all exist
             assert os.path.exists(path)
         except AssertionError:
             if 'LICENSE.md' in path:  # Missing license!
-                # Don't block Mimic from running
-                print "Warning: We noticed that you don't have a copy of our LICENSE! " \
-                      "Download the latest release from our GitHub repository!"
+                warning = "Warning: We noticed that you don't have a copy of our LICENSE! " \
+                          "It needs to be in your maya/modules directory at all times! " \
+                          "Download the latest release or clone our GitHub repository!"
+                raise Exception(warning)
             else:
-                # Full stop, Mimic won't work correctly!
-                raise Exception("Exception: We noticed that you're missing a requirement! "
-                                "Download the latest release from our GitHub repository! "
-                                + requirement)
-        try:  # Check that the rigs directory has robots; if not, print warning!
+                warning = "Exception: We noticed that you're missing the requirement: {}! " \
+                          "Download the latest release or clone our GitHub repository! " \
+                          .format(requirement)
+                raise Exception(warning)
+        try:  # Check that the rigs directory has robots
             if requirement == 'rigs':
                 items = os.listdir(path)
                 subdir_paths = [os.path.join(path, item) for item in items]
@@ -97,9 +99,10 @@ def confirm_requirements_exist():
                         pass
         except AssertionError:
             # Don't block Mimic from running
-            print "Warning: We noticed that you don't have any robot rigs! " \
-                  "Download the latest rigs from out GitHub repository " \
-                  "and add them to mimic/rigs!"
+            warning = "Warning: We noticed that you don't have any robot rigs! " \
+                      "Download the latest rigs from out GitHub repository " \
+                      "and add them to mimic/rigs!"
+            raise Exception(warning)
 
 
 def run():
