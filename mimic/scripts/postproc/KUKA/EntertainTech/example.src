@@ -18,7 +18,7 @@ DEF example()
 
     ; Set up initial parameters for program
     MY_START_AXIS = {A1 0, A2 -90, A3 90, A4 0, A5 0, A6 0, e1 0, e2 0, e3 0, e4 0, e5 0, e6 0}
-    MY_DUMMY_POS = {X 880, Y 0, Z 1040, A 0, B 90, C 0}
+    MY_DUMMY_POS = {X 0, Y 0, Z 0, A 0, B 0, C 0}
 
     ; Check whether the path table is loaded.
     RETURN_VALUE = EMI_RECSTATE(Device[], "example.emily")
@@ -43,6 +43,6 @@ DEF example()
     MY_VAR = MD_CMD(Device[], "UNLOAD example.emily", INT_PARAM[], REAL_PARAM[])
 
     ; Return to start
-    ;PTP MY_START_AXIS
+    PTP MY_START_AXIS
 
 END

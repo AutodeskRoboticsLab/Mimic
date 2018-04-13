@@ -28,7 +28,7 @@ reload(inverse_kinematics)
 OUTPUT_WINDOW_NAME = 'programOutputScrollField'
 
 
-def get_robot_roots(all_robots=True, sel=[]):
+def get_robot_roots(all_robots=False, sel=[]):
     """
     Gets the root node name of the robot(s) in the scene (e.g. 'KUKA_KR60_0')
     - If all_robots = True, get_robot_roots returns the robot name(s) for all
