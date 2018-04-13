@@ -275,15 +275,11 @@ def _get_command_dicts(robot, animation_settings, postproc_settings, user_option
         frames = _get_frames_using_sample_rate(animation_settings, postproc_settings)
     elif using_keyframes_only:
         frames = _get_frames_using_keyframes_only(robot, animation_settings)
-    else:
+    else:  # add other sampling modes here
         pass
 
     # Get commands from sampled frames
     command_dicts = _sample_frames(robot, frames, user_options)
-
-    # Check rotations for commands
-    command_dicts = _check_command_rotations(robot, animation_settings, command_dicts)
-
     return command_dicts
 
 
@@ -298,6 +294,7 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
 
     # Check if limits have been exceeded (i.e. velocity, acceleration)
     if user_options.Include_axes:
+        command_dicts = _check_command_rotations(robot, animation_settings, command_dicts)
         warning = _check_velocity_of_axes(robot, command_dicts, animation_settings['Framerate'])
         if warning != '':
             # Print this one always
@@ -571,7 +568,7 @@ def _sample_frame_get_pose(robot_name, frame):
     tool_name = '{}|robot_GRP|tool_CTRL'.format(robot_name)
     try:  # Try to grab the named tool
         tool_object = pm.ls(tool_name)[0]  # Try to get tool, may raise an exception
-    except IndexError as e:  # No tool attached, use flange
+    except IndexError:  # No tool attached, use flange
         tool_name = '{}|robot_GRP|robot_GEOM|Base|' \
                     'axis1|axis2|axis3|axis4|axis5|axis6|tcp_GRP|tcp_HDL'.format(robot_name)
 
@@ -603,7 +600,8 @@ def _sample_frame_get_pose(robot_name, frame):
     reordered_rotation = [[pose_rotation[i][j] for j in order] for i in order]
 
     # Apply rotation depending on robot type
-    robot_type = _get_robot_type(robot_name)
+    # TODO: Integrate this with rigs, unclear and shouldn't be hardcoded
+    robot_type = mimic_utils.get_robot_type(robot_name)
     if robot_type == 'ABB':
         conversion_matrix = [[0, 0, -1], [0, 1, 0], [1, 0, 0]]
     elif robot_type == 'KUKA':

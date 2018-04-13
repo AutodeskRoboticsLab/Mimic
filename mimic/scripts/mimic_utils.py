@@ -2301,7 +2301,7 @@ def get_selected_robot_name():
     return robot
 
 
-def _get_robot_type(robot_name):
+def get_robot_type(robot_name):
     """
     Get Type of robot
     :param robot_name:

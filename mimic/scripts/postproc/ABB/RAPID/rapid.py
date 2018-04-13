@@ -286,6 +286,7 @@ class SimpleRAPIDProcessor(postproc.PostProcessor):
         optional parameter is actually supported by this processor!
         :return:
         """
+        # TODO: implement include_pose and use_linear_motion
         return postproc_options.configure_user_options(
             ignore_motion=True,
             use_motion_as_variables=True,

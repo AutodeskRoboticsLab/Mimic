@@ -400,8 +400,9 @@ def confirm_path_exists(path):
     :param path:
     :return:
     """
+    # TODO: Unclear usage
     if os.path.exists(path):
         return path
     else:
-        return 'Warning! No file found in chosen directory; using default instead.'
-
+        return 'Warning! No file found in chosen directory. ' \
+               'Using default instead.'
