@@ -6,7 +6,6 @@ unittests.py
 
 extern/
 releases/
-mimic/scripts/rigging
 
 *.ma.swatches
 *.swatches
