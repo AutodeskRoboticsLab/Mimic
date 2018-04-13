@@ -1,4 +1,5 @@
 #!usr/bin/env python
+# -*- coding: utf-8 -*-
 
 """
 Generic utilities for use with Mimic. Utilities contained in this module are

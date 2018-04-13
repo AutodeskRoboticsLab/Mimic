@@ -1,4 +1,5 @@
 #!usr/bin/env python
+# -*- coding: utf-8 -*-
 
 """
 Functions that actually make Mimic run.
@@ -2309,7 +2310,7 @@ def check_program(*args):
     # Check program, commands, raise exception on failure
     program_settings = _get_settings()
     command_dicts = _get_command_dicts(*program_settings)
-    _check_command_dicts(command_dicts, *program_settings, override_ignore=True)
+    _check_command_dicts(command_dicts, *program_settings)
 
 
 def save_program(*args):
@@ -2324,6 +2325,8 @@ def save_program(*args):
     program_settings = _get_settings()
     command_dicts = _get_command_dicts(*program_settings)
     _check_command_dicts(command_dicts, *program_settings)
+
+    # Continue to save program:
 
     robot = program_settings[0]
     # animation_settings = program_settings[1]
@@ -2557,7 +2560,7 @@ def _get_command_dicts(robot, animation_settings, postproc_settings, user_option
     return command_dicts
 
 
-def _check_command_dicts(command_dicts, robot, animation_settings, postproc_settings, user_options, override_ignore=False):
+def _check_command_dicts(command_dicts, robot, animation_settings, postproc_settings, user_options):
     """
     Check command dictionary for warnings.
     :param command_dicts:
@@ -2570,21 +2573,21 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
     if user_options.Include_axes:
         warning = _check_velocity_of_axes(robot, command_dicts, animation_settings['Framerate'])
         if warning != '':
-            if not ignore_warnings and not override_ignore:
+            # Print this one always
+            warning += '\n'
+            pm.scrollField(OUTPUT_WINDOW_NAME, insertText=warning, edit=True)
+            if not ignore_warnings:
                 raise Exception(warning)
-            else:
-                warning += '\n'
-                pm.scrollField(OUTPUT_WINDOW_NAME, insertText=warning, edit=True)
 
     if user_options.Include_pose:
         # TODO: Implement velocity check for poses
         # warning = _check_velocity_of_pose(robot, command_dicts, animation_settings['Framerate'])
         # if warning != '':
+        #     # Print this one always
+        #     warning += '\n'
+        #     pm.scrollField(OUTPUT_WINDOW_NAME, insertText=warning, edit=True)
         #     if not ignore_warnings:
         #         raise Exception(warning)
-        #     else:
-        #         warning += '\n'
-        #         pm.scrollField(OUTPUT_WINDOW_NAME, insertText=warning, edit=True)
         pass
 
 

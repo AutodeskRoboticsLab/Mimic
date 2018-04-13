@@ -1,4 +1,5 @@
 #!usr/bin/env python
+# -*- coding: utf-8 -*-
 
 """
 The main module.
@@ -39,14 +40,8 @@ def load_mimic_plugins(plugin_file_names):
                 pm.loadPlugin(plugin_file_name)
                 pm.pluginInfo(plugin_file_name, autoload=True)
                 print '{} Plug-in loaded'.format(plugin_file_name)
-                # continue
-            except:
+            except Exception:  # Unknown error
                 pass
-                # warning = 'Could not load plugin {}: {}'.format(script, e)
-                # pm.warning(warning)
-                # raise Exception(warning)
-        # If it's already loaded:
-        # print '{} Plug-in already loaded'.format(script)
 
 
 def confirm_requirements_exist():
@@ -76,15 +71,21 @@ def confirm_requirements_exist():
             assert os.path.exists(path)
         except AssertionError:
             if 'LICENSE.md' in path:  # Missing license!
-                warning = "Warning: We noticed that you don't have a copy of our LICENSE! " \
-                          "It needs to be in your maya/modules directory at all times! " \
-                          "Download the latest release or clone our GitHub repository!"
+                warning = 'Exception: We noticed that you don\'t have a copy of our LICENSE! ' \
+                          'It needs to be in your maya/modules directory at all times! ' \
+                          'Download the latest release or clone our GitHub repository!'
                 raise Exception(warning)
             else:
-                warning = "Exception: We noticed that you're missing the requirement: {}! " \
-                          "Download the latest release or clone our GitHub repository! " \
+                warning = 'Exception: We noticed that you\'re missing the requirement: {}! ' \
+                          'Download the latest release or clone our GitHub repository! ' \
                           .format(requirement)
                 raise Exception(warning)
+        except UnicodeError:
+            warning = 'Exception: Sorry! You\'ve encountered a known, but unsolved issue! ' \
+                      'The path to the Mimic directory contains unicode characters, which ' \
+                      'are sometimes found in usernames, and Mimic gets confused. We\'re ' \
+                      'working on this and you\'re welcome to help!'
+            raise Exception(warning)
         try:  # Check that the rigs directory has robots
             if requirement == 'rigs':
                 items = os.listdir(path)
@@ -101,9 +102,9 @@ def confirm_requirements_exist():
                         pass
         except AssertionError:
             # Don't block Mimic from running
-            warning = "Warning: We noticed that you don't have any robot rigs! " \
-                      "Download the latest rigs from out GitHub repository " \
-                      "and add them to mimic/rigs!"
+            warning = 'Warning: We noticed that you don\'t have any robot rigs! ' \
+                      'Download the latest rigs from out GitHub repository ' \
+                      'and add them to mimic/rigs!'
             raise Exception(warning)
 
 
