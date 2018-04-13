@@ -2303,6 +2303,7 @@ def check_program(*args):
     Check program parameters, raise exception on failure
     :return:
     """
+    # Do this first upon button click!
     _clear_output_window()
 
     # Check program, commands, raise exception on failure
@@ -2316,6 +2317,7 @@ def save_program(*args):
     Save the program.
     :return:
     """
+    # Do this first upon button click!
     _clear_output_window()
 
     # Check program, commands, raise exception on failure
@@ -2423,10 +2425,10 @@ def _get_settings_for_animation(robot):
     framerate = get_maya_framerate()
 
     # Define the animation time in seconds.
-    warning = ''
     animation_time_sec = ((end_frame + 1) - start_frame) / framerate
     if end_frame <= start_frame:
         warning = 'End Frame must be larger than Start Frame'
+        raise Exception(warning)
     else:
         # If no keyframes are set, exit the function.
         closest_ik_key = _get_closest_ik_keyframe(robot, start_frame)[0]
@@ -2434,34 +2436,26 @@ def _get_settings_for_animation(robot):
             warning = 'You must set an IK or FK keyframe to ensure ' \
                       'proper evaluation when saving a program; ' \
                       'no program written'
-    if warning != '':
-        pm.scrollField(OUTPUT_WINDOW_NAME,
-                       edit=True,
-                       text='No program written \n\n' \
-                            'Check script editor for\ndetails \n\n')
-        raise Exception(warning)
-
-    animation_settings = {'Start Frame': start_frame,
-                          'End Frame': end_frame,
-                          'Framerate': framerate,
-                          'Animation Time (sec)': animation_time_sec}
-
-    # Check for warnings
-    warning = ''
+            raise Exception(warning)
 
     # Raise warning if end frame and start frame incompatible
     if end_frame <= start_frame:
         warning = 'End Frame must be larger than Start Frame'
+        raise Exception(warning)
+
     # Raise warning if no keyframes are set
     closest_ik_key = _get_closest_ik_keyframe(robot, start_frame)[0]
     if not type(closest_ik_key) == float:
         warning = 'You must set an IK or FK keyframe to ensure ' \
                   'proper evaluation when saving a program; ' \
                   'no program written'
-
-    if warning != '':
         raise Exception(warning)
 
+    # All good, create output dictionary
+    animation_settings = {'Start Frame': start_frame,
+                          'End Frame': end_frame,
+                          'Framerate': framerate,
+                          'Animation Time (sec)': animation_time_sec}
     return animation_settings
 
 
@@ -2486,8 +2480,6 @@ def _get_settings_for_postproc(robot):
     overwrite_option = pm.checkBox('cb_overwriteFile', value=True, query=True)
 
     # Check for warnings
-    warning = ''
-
     if using_time_interval:
         # Confirm that the time interval is valid
         try:
@@ -2496,27 +2488,26 @@ def _get_settings_for_postproc(robot):
         except ValueError:
             if time_interval_units == 'seconds':
                 warning = 'Time interval must be a float'
+                raise Exception(warning)
             else:  # time_interval_units == 'frames'
                 warning = 'Time interval must be a float'
-            pm.warning(warning)
-            raise Exception(warning)
+                raise Exception(warning)
         except AssertionError:
             if time_interval_units == 'seconds':
                 warning = 'Time interval must be greater than zero'
+                raise Exception(warning)
             else:  # time_interval_units = 'frames'
                 warning = 'Time interval must be greater than zero'
-
-    if warning != '':
-        raise Exception(warning)
+                raise Exception(warning)
 
     # Check if the robot-postproc compatibility warning was triggered
     processor = postproc_setup.POST_PROCESSORS[processor_type]()
     warning = _check_robot_postproc_compatibility(robot, processor)
     if warning != '':
-        pm.warning(warning)
-        # Check to see if the user has elected to ignore warnings
-        if ignore_warnings:
-            warning = 'Warnings ignored; be careful!\n'
+        if not ignore_warnings:
+            raise Exception(warning)
+        else:
+            warning += '\n'
             pm.scrollField(OUTPUT_WINDOW_NAME, insertText=warning, edit=True)
 
     # Assign values to output dict
@@ -2558,7 +2549,7 @@ def _get_command_dicts(robot, animation_settings, postproc_settings, user_option
         pass
 
     # Get commands from sampled frames
-    command_dicts = _sample_frames_for_commands(robot, frames, user_options)
+    command_dicts = _sample_frames(robot, frames, user_options)
 
     # Check rotations for commands
     command_dicts = _check_command_rotations(robot, animation_settings, command_dicts)
@@ -2572,68 +2563,68 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
     :param command_dicts:
     :return:
     """
-    # Include warnings here
-    warnings = []
-
     # Check to see if the user has elected to ignore warnings
     ignore_warnings = postproc_settings['Ignore Warnings']
-    if not ignore_warnings:
 
-        # Check if limits have been exceeded (i.e. velocity, acceleration)
-        if user_options.Include_axes:
-            step_sec = animation_settings['Framerate']
-            warning = _check_velocity_of_axes(robot, command_dicts)
-            if warning != '':
-                warnings.append(warning)
-                pm.warning(warning)
+    # Check if limits have been exceeded (i.e. velocity, acceleration)
+    if user_options.Include_axes:
+        warning = _check_velocity_of_axes(robot, command_dicts, animation_settings['Framerate'])
+        if warning != '':
+            if not ignore_warnings:
+                raise Exception(warning)
+            else:
+                warning += '\n'
+                pm.scrollField(OUTPUT_WINDOW_NAME, insertText=warning, edit=True)
 
-        # if user_options.Include_pose:
-        #     # TODO: Implement a velocity check for poses
-        #     pass
-
-        if warnings:  # Do something about it
-            warning = '\n'.join(warnings) + '\n'
-            pm.scrollField(OUTPUT_WINDOW_NAME, insertText=warning, edit=True)
-            raise Exception(warning)
-        else:
-            warning = 'Commands OK!\n'
-            pm.scrollField(OUTPUT_WINDOW_NAME, insertText=warning, edit=True)
-    else:
-        warning = 'Warnings ignored; be careful!\n'
-        pm.scrollField(OUTPUT_WINDOW_NAME, insertText=warning, edit=True)
+    if user_options.Include_pose:
+        # TODO: Implement velocity check for poses
+        # warning = _check_velocity_of_pose(robot, command_dicts, animation_settings['Framerate'])
+        # if warning != '':
+        #     if not ignore_warnings:
+        #         raise Exception(warning)
+        #     else:
+        #         warning += '\n'
+        #         pm.scrollField(OUTPUT_WINDOW_NAME, insertText=warning, edit=True)
+        pass
 
 
-def _check_velocity_of_axes(robot, command_dicts):
+def _check_velocity_of_axes(robot, command_dicts, framerate):
     """
     Check a list of commands for velocity errors. Construct string to return
     printable statement of all exceeded velocities for each axis; ex. range
     [0, 1, 2, 3] will be formatted '0-3'.
     :param robot: name string of the selected robot
     :param command_dicts: A list of list of robot axes
+    :param command_dicts: Maya animation framerate (fps)
     :return:
     """
     velocity_limits = get_velocity_limits(robot)
     violations = {}
 
     count = len(command_dicts)
-    previous_time = 0
-    previous_rotations = []
-    for i in range(count):
-        current_time = command_dicts[i]['Frame']
-        current_rotations = command_dicts[i]['Axes']
-        if i != 0:  # skip zeroth
-            displacement_time = current_time - previous_time
-            for j in range(6):
-                axis = 'Axis {}'.format(j + 1)
-                displacement = abs(current_rotations[j] - previous_rotations[j])
+    previous_frame = 0
+    previous_axes = []
+
+    for command_index in range(count):
+        # Get time and axes right now
+        command_frame = command_dicts[command_index]['Frame']
+        command_axes = command_dicts[command_index]['Axes']
+        if command_index > 0:  # skip zeroth
+            displacement_time = abs(command_frame - previous_frame) / framerate
+            for axis_index in range(6):
+                displacement = abs(command_axes[axis_index] - previous_axes[axis_index])
                 velocity = displacement / displacement_time
                 # Check if a limit has been violated
-                if velocity >= velocity_limits[j]:
-                    if axis not in violations:
-                        violations[axis] = []
-                    violations[axis].append(current_time)
-        previous_time = current_time
-        previous_rotations = current_rotations
+                if velocity > velocity_limits[axis_index]:
+                    # Add axis name to violations dict
+                    axis_name = 'Axis {}'.format(axis_index + 1)
+                    if axis_name not in violations:
+                        violations[axis_name] = []
+                    # Add time to violations dict
+                    # print axis_name, command_frame, displacement_time, displacement, velocity, velocity_limits[axis_index]
+                    violations[axis_name].append(command_frame)
+        previous_frame = command_frame
+        previous_axes = command_axes
 
     # Format a warning
     warning_params = []
@@ -2641,19 +2632,19 @@ def _check_velocity_of_axes(robot, command_dicts):
     axes = violations.keys()
     if axes:
         axes.sort()
-        for axis in axes:
+        for axis_name in axes:
             # Check if the axis key has values
-            times = violations[axis]
+            times = violations[axis_name]
             time_ranges = general_utils.list_as_range_strings(times)
             time_ranges_formatted = '\n'.join('\t{}'.format(time_range) for time_range in time_ranges)
-            warning_params.append(axis)
+            warning_params.append(axis_name)
             warning_params.append(time_ranges_formatted)
         # Create warning
         warning = 'WARNING!\n' \
                   'Velocity limits have been violated!\n' \
                   'See the following frames:\n'
         warning_params.insert(0, warning)
-        return '\n'.join(warning_params)
+        return '\n'.join(warning_params) + '\n'
     else:
         return ''
 
@@ -2776,7 +2767,7 @@ def _get_frames_using_keyframes_only(robot, animation_settings):
     return frames
 
 
-def _sample_frames_for_commands(robot, frames, user_options):
+def _sample_frames(robot, frames, user_options):
     """
     Sample robot commands using a list of frames and user options.
     :param robot:
@@ -2907,15 +2898,14 @@ def _get_selected_robot_name():
     """
     robots = get_robot_roots()
     if not robots:
-        message = 'Nothing Selected; ' \
+        warning = 'Nothing Selected; ' \
                   'Select a valid robot to export; ' \
                   'no program written'
-        pm.warning(message)
-        return
+        raise Exception(warning)
     if len(robots) > 1:
-        message = 'Too many robots selected; ' \
+        warning = 'Too many robots selected; ' \
                   'select a single robot to export'
-        pm.warning(message)
+        raise Exception(warning)
     robot = robots[0]
     return robot
 

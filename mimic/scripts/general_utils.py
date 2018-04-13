@@ -123,7 +123,9 @@ def num_to_str(num, include_sign=False, precision=6, padding=0):
     elif num == 9E9:
         return '9E9'
     else:
-        num = abs(num) if num == 0 else round(num, precision)  # remove '-' sign
+        num = round(num, precision)
+        if num == 0:
+            num = abs(num)  # remove '-' sign
         num_string = '{:.{precision}f}'.format(num, precision=precision)
         if include_sign:
             if num >= 0:
