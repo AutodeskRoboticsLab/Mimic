@@ -31,18 +31,20 @@ def load_mimic_plugins(plugin_file_names):
     :return:
     """
     # Check to see if each plug-in is loaded
-    for script in plugin_file_names:
+    for plugin_file_name in plugin_file_names:
         # If the plug-in is not loaded:
-        if not pm.pluginInfo(script, query=True, loaded=True):
+        if not pm.pluginInfo(plugin_file_name, query=True, loaded=True):
             try:
                 # Try loading it (and turn on autoload)
-                pm.loadPlugin(script)
-                pm.pluginInfo(script, autoload=True)
-                # print '{} Plug-in loaded'.format(script)
-                continue
-            except Exception as e:
-                warning = 'Could not load plugin {}: {}'.format(script, e)
-                raise Exception(warning)
+                pm.loadPlugin(plugin_file_name)
+                pm.pluginInfo(plugin_file_name, autoload=True)
+                print '{} Plug-in loaded'.format(plugin_file_name)
+                # continue
+            except:
+                pass
+                # warning = 'Could not load plugin {}: {}'.format(script, e)
+                # pm.warning(warning)
+                # raise Exception(warning)
         # If it's already loaded:
         # print '{} Plug-in already loaded'.format(script)
 
