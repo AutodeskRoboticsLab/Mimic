@@ -57,7 +57,7 @@ def confirm_requirements_exist():
         'plug-ins',
         'shelves',
         'scripts',
-        'LICENSE.md',
+        'docs/LICENSE.md',
         'mimic.mod',
     ]
     dir_mimic = general_utils.get_mimic_dir()
