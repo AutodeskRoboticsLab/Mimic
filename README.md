@@ -24,8 +24,17 @@ macOS   ~/Library/Preferences/Autodesk/maya/modules
 Windows ~/Documents/maya/modules
 ```
 
-*See [troubleshooting](mimic/docs/troubleshooting.md) if you have trouble
-installing Mimic!*
+- *If the `modules` directory above does not exist, create it.*
+- *If you're using Maya 2017 update 3 or earlier, you must
+  [manually load the Mimic shelf](https://youtu.be/bc3SqEXcE5Q?t=1m46s).*
+- *If you're running Windows and downloaded a release and/or rigs archive,
+  confirm that it isn't "blocked" before unzipping and installing it (right click
+  the archive, select Properties, check Unblock if necessary).*
+- *If you cloned this repository, download the latest robot rigs from
+  [releases](https://github.com/AutodeskRoboticsLab/Mimic/releases). Once you do,
+  replace the directory mimic/rigs with the one you downloaded after unzipping it.*
+- *See [troubleshooting](mimic/docs/troubleshooting.md) if you have trouble 
+  using or installing Mimic.*
 
 You can find tutorials, videos, and other media on our
 [website](https://www.mimicformaya.com/) and textual documentation in
@@ -76,13 +85,13 @@ You may also contact us at [mimic@autodesk.com](mailto:mimic@autodesk.com).
 *Mimic was born at the Autodesk Robotics Lab 2018.* It is now developed
 and contributed to by a community of animators, designers, engineers, architects,
 programmers, and more.
-See [AUTHORS](AUTHORS.md) for details.
+See [AUTHORS](mimic/docs/AUTHORS.md) for details.
 
 
 ### License
 
 Mimic is licensed under the MIT license.
-See [LICENSE](LICENSE.md) for details.
+See [LICENSE](mimic/docs/LICENSE.md) for details.
 
 
 ### Notes
