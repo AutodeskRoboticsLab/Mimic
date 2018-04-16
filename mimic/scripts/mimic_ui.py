@@ -52,13 +52,13 @@ def build_mimic_ui():
     animate_tab_layout = build_animate_tab(mimic_tab_layout)
     program_tab_layout = build_program_tab(mimic_tab_layout)
     setup_tab_layout = build_setup_tab(mimic_tab_layout)
-    # external_tab_layout = build_external_tab(mimic_tab_layout)
+    external_tab_layout = build_external_tab(mimic_tab_layout)
     prefs_tab_layout = build_prefs_tab(mimic_win)
 
     tabs = [(animate_tab_layout, "Animate"),
             (program_tab_layout, "Program"),
             (setup_tab_layout, "Setup"),
-            # (external_tab_layout, "External"),
+            (external_tab_layout, "External"),
             (prefs_tab_layout, "Prefs")]
 
     assign_tabs(tabs, mimic_tab_layout)
