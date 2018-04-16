@@ -62,7 +62,7 @@ def confirm_requirements_exist():
     ]
     dir_mimic = general_utils.get_mimic_dir()
     for requirement in requirements:
-        if '.' in requirement:  # not a directory (.md, .mod)
+        if '.mod' in requirement:  # not a directory (.md, .mod)
             parent = os.path.abspath(os.path.join(dir_mimic, os.pardir))
             path = '{}/{}'.format(parent, requirement)
         else:
