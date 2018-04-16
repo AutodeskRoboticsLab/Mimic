@@ -17,6 +17,7 @@ import general_utils
 import mimic_config
 import mimic_program
 import mimic_utils
+import mimic_external_axes
 from postproc import postproc_config
 from postproc import postproc_setup
 from postproc import postproc_options
@@ -24,6 +25,7 @@ from postproc import postproc_options
 reload(mimic_utils)
 reload(mimic_config)
 reload(mimic_program)
+reload(mimic_external_axes)
 reload(general_utils)
 reload(postproc_setup)
 reload(postproc_config)
@@ -925,21 +927,54 @@ def _build_add_external_axis_frame(parent_layout):
                  columnAttach=[(1, 'both', -1),
                                (2, 'both', 0),
                                (3, 'both', 0)])
-    pm.text(label='Description: ')
+    pm.text(label='Axis Name: ')
     pm.textField('t_externalAxisDescriptionText',
-                 text='',
+                 pht='axisName',
                  font=FONT)
-
-    pm.setParent('..')
+    pm.setParent('..')  
     pm.separator(height=3, style='none')
+
+
+    def __set_limit_display_units(*args):
+		if 'translate' in args[0]:
+
+			pm.textField('t_externalAxisLimitMin',
+    					  edit=True,
+    					  pht='mm')
+			pm.textField('t_externalAxisLimitMax',
+    					  edit=True,
+    					  pht='mm')
+			pm.textField('t_externalAxisVelocityLimit',
+		                 edit=True,
+		                 pht='mm/s')
+		else:
+			pm.textField('t_externalAxisLimitMin',
+    					  edit=True,
+    					  pht='deg')
+			pm.textField('t_externalAxisLimitMax',
+    					  edit=True,
+    					  pht='deg')
+			pm.textField('t_externalAxisVelocityLimit',
+		                 edit=True,
+		                 pht='deg/s')
+    
+    pm.optionMenu('axisNumberMenu',
+                  label='Axis Number:',
+                  height=18)
+    
+    axis_number_list = [i+1 for i in range(6)]
+    for axis_number in axis_number_list:
+        pm.menuItem(label=axis_number)
+    
+    pm.separator(height=3, style='none')
+    
+    pm.optionMenu('drivingAttributeMenu',
+                  label='Driving Attribute:',
+                  height=18,
+                  changeCommand=__set_limit_display_units)
 
     driving_attributes = ['translateX', 'translateY', 'translateZ',
                           'rotateX', 'rotateY', 'rotateZ']
-
-    pm.optionMenu('drivingAttributeMenu',
-                  label='Driving Attribute:',
-                  height=18)
-
     for attr in driving_attributes:
         pm.menuItem(label=attr)
 
@@ -948,40 +983,46 @@ def _build_add_external_axis_frame(parent_layout):
     pm.rowLayout(numberOfColumns=3,
                  adjustableColumn=3,
                  columnAttach=(1, 'left', -1),
-                 columnWidth=[(1, 110), (2, 50), (3, 50)],
+                 columnWidth=[(1, 80), (2, 65), (3, 65)],
                  height=20)
-    pm.text(label='Axis Position Limits:')
+    pm.text(label='Position Limits:')
+
+
 
     pm.textField('t_externalAxisLimitMin',
-                 pht='Min')
+                 pht='mm')
 
     pm.textField('t_externalAxisLimitMax',
-                 pht='Max')
+                 pht='mm')
 
     pm.setParent('..')
 
     pm.rowLayout(numberOfColumns=2,
                  adjustableColumn=2,
                  columnAttach=(1, 'left', -1),
-                 columnWidth=[(1, 110)],
+                 columnWidth=[(1, 80)],
                  height=20)
-    pm.text(label='Axis Velocity Limit:')
+    pm.text(label='Velocity Limit:')
 
     pm.textField('t_externalAxisVelocityLimit',
-                 pht='Max Velocity')
-
+                 pht='mm/s')
     pm.setParent('..')
 
-    '''
     pm.rowLayout(numberOfColumns=1)
-    pm.checkBox('cb_lockOtherAttrs', label="Lock Other Axis Attributes", value=1)
+    pm.checkBox('cb_attachRobotToController',
+    			label="Attach robot to controller", value=0)
     pm.setParent('..')
-    '''
+    
+    pm.rowLayout(numberOfColumns=1)
+    pm.checkBox('cb_ignoreExternalAxis',
+    			label="Ignore in prostprocessor", value=0)
+    pm.setParent('..')
+
     pm.separator(height=4, style='none')
 
     pm.setParent(add_external_axis_col)
 
-    pm.button('Add Axis', height=25)
+    pm.button('Add Axis', height=25, c=mimic_external_axes.add_external_axis)
     pm.separator(height=5, style='none')
 
     pm.setParent(parent_layout)
@@ -1026,7 +1067,7 @@ def _build_external_axes_tab(parent_layout):
                                                adj=True,
                                                width=100)
     _build_add_external_axis_frame(external_axes_tab_layout)
-    _build_external_axis_tools_frame(external_axes_tab_layout)
+    # _build_external_axis_tools_frame(external_axes_tab_layout)
     _build_edit_axes_frame(external_axes_tab_layout)
 
     pm.setParent(parent_layout)

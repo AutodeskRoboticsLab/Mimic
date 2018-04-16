@@ -982,6 +982,7 @@ def attach_tool_controller(*args):
     if not sel:
         pm.warning('Nothing selected; ' \
                    'select a valid robot control and tool controller')
+        return
     if not robot:
         pm.warning('No robot selected; ' \
                    'select a valid robot')
