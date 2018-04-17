@@ -1027,7 +1027,7 @@ def _build_add_external_axis_frame(parent_layout):
 
     pm.setParent(parent_layout)
 
-
+'''
 def _build_external_axis_tools_frame(parent_layout):
     external_axis_tools_frame = pm.frameLayout(label="External Axis Tools",
                                                collapsable=True)
@@ -1043,20 +1043,29 @@ def _build_external_axis_tools_frame(parent_layout):
 
     pm.separator(height=5, style='none')
     pm.setParent(parent_layout)
+'''
 
-
-def _build_edit_axes_frame(parent_layout):
+def _build_axis_info_frame(parent_layout):
     # Axis Info
-    pm.frameLayout(label="Edit Axes",
+    pm.frameLayout(label="Axis Info",
                    height=195,
                    collapsable=True)
     pm.columnLayout(adj=True, columnAttach=('both', 5))
 
-    pm.textScrollList('tsl_externalAxes', height=85)
-    # pm.setParent('..')
+    pm.textScrollList('tsl_externalAxes',
+                      allowMultiSelection=False,
+                      height=85)
 
+    pm.gridLayout(nc=2, cw=109, ch=25)
     pm.button(label='List Axes',
-              annotation='Lists all external axes on selected robot')
+              annotation='Lists all external axes on selected robot',
+              command=mimic_external_axes.list_axes)
+    pm.button(label='Deselect',
+              annotation='Deselects all axes in list above',
+              command=mimic_external_axes.deselect_external_axis)
+
+    pm.setParent('..')
+
     pm.button(label='Remove Axis',
               annotation='Removes selected axis from robot')
     pm.setParent(parent_layout)
@@ -1068,7 +1077,7 @@ def _build_external_axes_tab(parent_layout):
                                                width=100)
     _build_add_external_axis_frame(external_axes_tab_layout)
     # _build_external_axis_tools_frame(external_axes_tab_layout)
-    _build_edit_axes_frame(external_axes_tab_layout)
+    _build_axis_info_frame(external_axes_tab_layout)
 
     pm.setParent(parent_layout)
     return external_axes_tab_layout

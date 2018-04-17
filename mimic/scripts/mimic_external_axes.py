@@ -19,11 +19,69 @@ import mimic_config
 import mimic_program
 import mimic_utils
 
-
 reload(mimic_utils)
 reload(mimic_config)
 reload(mimic_program)
 reload(general_utils)
+
+
+def get_external_axes(robot, only_active=False):
+	"""
+	Gets all external axes assigned to the given robot
+	:param robot: string, name of selected robot
+	:param only_active: bool, if True, removes axes marked as "ignore"
+	:return robots_external_axes: list, names of all external axes on robot
+	"""
+	target_CTRL = robot + '|robot_GRP|target_CTRL' 
+
+	# Find all attributes on the target_CTRL marked as 'externalAxis'
+	robots_external_axes = pm.listAttr(target_CTRL, category='externalAxis')
+
+	# Remove parent attribute designation 'externalAxis_' from each axis name
+	for i, axis_name in enumerate(robots_external_axes):
+		robots_external_axes[i] = axis_name.replace('externalAxis_','')
+	
+	# If only_active is True, remove axes marked as "Ignore"
+	if only_active:
+		active_external_axes = [x for x in robots_external_axes if not pm.getAttr(target_CTRL + '.' + x + '_ignore')]
+
+		robots_external_axes = active_external_axes
+
+	return robots_external_axes
+
+
+def _check_external_axis_name(robot, axis_name):
+	"""
+	Determines if external axis name is unique
+	:param robot: string, name of robot
+	:return:
+	"""
+
+	# Check that axis name isn't already taken
+	robots_external_axes = get_external_axes(robot)
+	for axis in robots_external_axes:
+		if axis == axis_name:
+			pm.error('Mimic: external axis name \'{}\' is taken; '\
+					 'axis name must be unique'.format(axis_name))
+
+
+def _check_external_axis_number(robot, axis_number):
+	"""
+	Determines if external axis number is unique
+	:param robot: string, name of robot
+	:return:
+	"""
+
+	# Check that axis name isn't already taken
+	robots_external_axes = get_external_axes(robot)
+
+	target_CTRL = robot + '|robot_GRP|target_CTRL' 
+	for axis_name in robots_external_axes:
+		current_axis_number = pm.getAttr('{}.{}_axisNumber'.format(target_CTRL,
+														   axis_name))
+		if current_axis_number == axis_number:
+			pm.error('Mimic: external axis number {} is taken; '\
+					 'axis number must be unique'.format(axis_number))
 
 
 def _check_external_axis_params(external_axis_params):
@@ -127,16 +185,16 @@ def _get_external_axis_params():
 def _get_selection_input():
 
     sel = pm.ls(selection=True, type='transform')
-    robot = mimic_utils.get_robot_roots()
+    robots = mimic_utils.get_robot_roots()
 
     # Exception handling
     if not sel:
         pm.error('Nothing selected; ' \
                    'select a valid robot control and external axis controller')
-    if not robot:
+    if not robots:
         pm.error('No robot selected; ' \
                  'select a valid robot')
-    if len(robot) > 1:
+    if len(robots) > 1:
         pm.error('Too many robots selected; ' \
                  'select a single robot')
     if len(sel) > 2:
@@ -148,15 +206,37 @@ def _get_selection_input():
                  'select a single robot control, ' \
                  'and single tool control')
 
-    robot_CTRL = '{}|robot_GRP|target_CTRL'.format(robot[0])
-
     # find which selected object is the external axis controller
     if not mimic_utils.get_robot_roots(0, [sel[0]]):
         external_axis_CTRL = sel[0]
     else:
         external_axis_CTRL = sel[1]
 
-    return robot_CTRL, external_axis_CTRL
+    robot = robots[0]
+    return robot, external_axis_CTRL
+
+
+def _attach_robot_to_external_axis(robot, external_axis_CTRL):
+	"""
+	Parent Constrains the input robot's local_CTRL to the input external
+	axis controller. This is primarily used for attaching robots to linear
+	sliders
+	:param robot: string, name pointing to selected robot
+	:param external_axis_CTRL: string, name pointing to selected external
+	axis ctrl
+	:return:
+	"""
+
+	# Create parent constraint between robot base's local control and
+	# external axis control
+	local_CTRL = robot + '|robot_GRP|local_CTRL'
+	pm.parentConstraint(external_axis_CTRL,
+						local_CTRL,
+						maintainOffset=True,
+						name='localCTRL_externalAxisCTRL_parentConstraint')
+
+	# Hide robot's local_CTRL
+	pm.setAttr(local_CTRL + '.v', 0)
 
 
 def add_external_axis(*args):
@@ -175,24 +255,32 @@ def add_external_axis(*args):
 
 
 	# Get and check the proper controllers from viewport selection
-	robot_CTRL, external_axis_CTRL = _get_selection_input()
+	robot, external_axis_CTRL = _get_selection_input()
+
+	target_CTRL = '{}|robot_GRP|target_CTRL'.format(robot)
+
+	# Ensure axis name is unique
+	_check_external_axis_name(robot, axis_name)
+
+	# Check that the external axis number is unique
+	_check_external_axis_number(robot, axis_number)
 
 	# Add attributes to robots
 	# Parent Attrubute
 	parent_attribute = 'externalAxis_{}'.format(axis_name)
-	pm.addAttr(robot_CTRL,
+	pm.addAttr(target_CTRL,
 			   longName=parent_attribute,
 			   niceName='External Axis: {}'.format(axis_name),
 			   numberOfChildren=6,
 			   category='externalAxis',
 			   attributeType='compound')
 	# Define 6 children of the External Axis parent attribute
-	pm.addAttr(robot_CTRL,
+	pm.addAttr(target_CTRL,
 			   longName=axis_name + '_position',
 			   niceName='Position',
 			   keyable=False, attributeType='float',
 			   parent=parent_attribute)
-	pm.addAttr(robot_CTRL,
+	pm.addAttr(target_CTRL,
 			   longName=axis_name + '_axisNumber',
 			   niceName='Axis Number',
 			   keyable=False,
@@ -201,25 +289,25 @@ def add_external_axis(*args):
 			   maxValue=6,
 			   defaultValue=1,
 			   parent=parent_attribute)
-	pm.addAttr(robot_CTRL,
+	pm.addAttr(target_CTRL,
 			   longName=axis_name + '_axisMin',
 		       niceName='Min',
 		       keyable=False,
 		       attributeType='float',
 		       parent=parent_attribute)
-	pm.addAttr(robot_CTRL,
+	pm.addAttr(target_CTRL,
 			   longName=axis_name + '_axisMax',
 			   niceName='Max',
 			   keyable=False,
 			   attributeType='float',
 			   parent=parent_attribute)
-	pm.addAttr(robot_CTRL,
+	pm.addAttr(target_CTRL,
 			   longName=axis_name + '_maxVelocity',
 			   niceName='Max Velocity',
 			   keyable=False,
 			   attributeType='float',
 			   parent=parent_attribute)
-	pm.addAttr(robot_CTRL,
+	pm.addAttr(target_CTRL,
 			   longName=axis_name + '_ignore',
 			   niceName='Ignore',
 			   keyable=False,
@@ -227,14 +315,13 @@ def add_external_axis(*args):
 			   parent=parent_attribute)
 
 	# Set all External Axis attributes accordingly
-	axis_parent_attribute = robot_CTRL + '.' + axis_name
+	axis_parent_attribute = target_CTRL + '.' + axis_name
 	pm.setAttr(axis_parent_attribute + '_axisNumber', axis_number, lock=True)
 	pm.setAttr(axis_parent_attribute + '_axisMin', position_limit_min)
 	pm.setAttr(axis_parent_attribute + '_axisMax', position_limit_max)
 	pm.setAttr(axis_parent_attribute + '_maxVelocity', velocity_limit)
 	pm.setAttr(axis_parent_attribute + '_ignore', ingnore_in_postproc)
 
-	print 'Mimic: external axis {} added successfully'.format(axis_name)
 
 	# Connect position attribute to driving attribute
 	driving_attribute_name = external_axis_CTRL + '.' + driving_attribute
@@ -244,3 +331,46 @@ def add_external_axis(*args):
 	
 	# If attach to robot is true, parent the robot's local control to the 
 	# external axis controller
+	if attach_robot_to_external:
+		_attach_robot_to_external_axis(robot, external_axis_CTRL)
+
+	# Select the robot's target/tool controller
+	tool_CTRL = robot + '|robot_GRP|tool_CTRL'
+	if pm.objExists(tool_CTRL):
+		pm.select(tool_CTRL)
+	else:
+		pm.select(target_CTRL)
+
+
+	pm.headsUpMessage('Mimic: external axis {} added successfully'
+					  .format(axis_name))
+
+
+def clear_external_axis_list(*args):
+	# Clear previus UI list
+	pm.textScrollList('tsl_externalAxes', edit=True, removeAll=True)
+
+
+def deselect_external_axis(*args):
+	# Clear previus UI list
+	pm.textScrollList('tsl_externalAxes', edit=True, deselectAll=True)
+
+
+def list_axes(*args):
+	# Clear previus UI list
+	clear_external_axis_list()
+
+	# Check viewport selection for a single robot
+	robots = mimic_utils.get_robot_roots()
+	if not mimic_utils.check_robot_selection(number_of_robots=1):
+		pm.error('Mimic: must select exactly one robot')
+
+	robot = robots[0]
+
+	# Get list of all external axes on robot
+	robots_external_axes = get_external_axes(robot)
+	
+	# Update Mimic UI with list of external axes
+	for axis in robots_external_axes:
+		pm.textScrollList('tsl_externalAxes', edit=True, append=axis)
+	
