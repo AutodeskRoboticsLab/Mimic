@@ -915,7 +915,8 @@ def build_setup_tab(parent_layout):
 
 # EXTERNAL TAB
 def _build_add_external_axis_frame(parent_layout):
-    add_external_axis_frame = pm.frameLayout(label="Add External Axis",
+    add_external_axis_frame = pm.frameLayout('add_external_axis_frame',
+    										 label="Add External Axis",
                                              collapsable=True)
     add_external_axis_col = pm.columnLayout(adj=True, columnAttach=('both', 5))
     pm.separator(height=5, style='none')
@@ -939,21 +940,21 @@ def _build_add_external_axis_frame(parent_layout):
 		if 'translate' in args[0]:
 
 			pm.textField('t_externalAxisLimitMin',
-    					  edit=True,
-    					  pht='mm')
+    					 edit=True,
+    					 pht='mm')
 			pm.textField('t_externalAxisLimitMax',
-    					  edit=True,
-    					  pht='mm')
+    					 edit=True,
+    					 pht='mm')
 			pm.textField('t_externalAxisVelocityLimit',
 		                 edit=True,
 		                 pht='mm/s')
 		else:
 			pm.textField('t_externalAxisLimitMin',
-    					  edit=True,
-    					  pht='deg')
+    					 edit=True,
+    					 pht='deg')
 			pm.textField('t_externalAxisLimitMax',
-    					  edit=True,
-    					  pht='deg')
+    					 edit=True,
+    					 pht='deg')
 			pm.textField('t_externalAxisVelocityLimit',
 		                 edit=True,
 		                 pht='deg/s')
@@ -986,7 +987,6 @@ def _build_add_external_axis_frame(parent_layout):
                  columnWidth=[(1, 80), (2, 65), (3, 65)],
                  height=20)
     pm.text(label='Position Limits:')
-
 
 
     pm.textField('t_externalAxisLimitMin',
@@ -1022,7 +1022,11 @@ def _build_add_external_axis_frame(parent_layout):
 
     pm.setParent(add_external_axis_col)
 
-    pm.button('Add Axis', height=25, c=mimic_external_axes.add_external_axis)
+    pm.button('b_add_Axis',
+    		  label='Add Axis',
+    		  height=25,
+  			  backgroundColor=[.361, .361, .361],
+    		  command=mimic_external_axes.add_external_axis)
     pm.separator(height=5, style='none')
 
     pm.setParent(parent_layout)
@@ -1054,17 +1058,24 @@ def _build_axis_info_frame(parent_layout):
 
     pm.textScrollList('tsl_externalAxes',
                       allowMultiSelection=False,
-                      height=85)
+                      height=85,
+                      selectCommand=mimic_external_axes.axis_selected)
 
     pm.gridLayout(nc=2, cw=109, ch=25)
     pm.button(label='List Axes',
               annotation='Lists all external axes on selected robot',
               command=mimic_external_axes.list_axes)
+
+    pm.button(label='Clear List',
+              annotation='Clears list above',
+              command=mimic_external_axes.clear_external_axis_list)
+
+    pm.setParent('..')
+
     pm.button(label='Deselect',
               annotation='Deselects all axes in list above',
               command=mimic_external_axes.deselect_external_axis)
-
-    pm.setParent('..')
+    pm.separator(height=10, style='out')
 
     pm.button(label='Remove Axis',
               annotation='Removes selected axis from robot')

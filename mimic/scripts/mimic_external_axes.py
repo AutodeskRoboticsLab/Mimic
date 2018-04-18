@@ -50,6 +50,64 @@ def get_external_axes(robot, only_active=False):
 	return robots_external_axes
 
 
+def get_external_axis_info(robot, external_axis):
+	"""
+	Get's all of the external axis settings for the input external_axis
+	:param robot: string, name of robot
+	:param external_axis: string, name of external axis
+	"""
+
+	external_axis_info = {}
+
+	axis_attribute_name = '{}|robot_GRP|target_CTRL.{}'.format(robot,
+														external_axis) 
+
+	external_axis_info['Robot Name'] = robot
+	external_axis_info['Axis Name'] = external_axis
+	external_axis_info['Axis Number'] = pm.getAttr(axis_attribute_name
+													+ '_axisNumber')
+	
+	driving_attr_CTRL, driving_attr_name = _get_axis_connections(axis_attribute_name)
+
+	external_axis_info['Driving Controller'] = driving_attr_CTRL
+	external_axis_info['Driving Attribute'] = driving_attr_name
+	external_axis_info['Position Limit Min'] = pm.getAttr(
+													axis_attribute_name
+													+ '_axisMin') 
+	external_axis_info['Position Limit Max'] = pm.getAttr(
+													axis_attribute_name
+													+ '_axisMax')
+	external_axis_info['Velocity Limit'] = pm.getAttr(axis_attribute_name
+													+ '_maxVelocity')
+	external_axis_info['Ignore'] = pm.getAttr(axis_attribute_name
+													+ '_ignore')
+
+	return external_axis_info
+
+
+def _get_axis_connections(axis_attribute_name):
+
+	driving_attribute = pm.listConnections(axis_attribute_name
+										   + '_position',
+										   plugs=True,
+										   s=True)[0]
+
+	driving_attr_CTRL, driving_attr_name = driving_attribute.split('.')
+
+	# If the driving attribute is a 'rotate' attribute, there will be a unit 
+	# conversion node between the driving attribute and the external axis
+	# position attribute, so we iterate once more to get the actual driving
+	# controller and attribute
+	if 'unitConversion' in driving_attr_CTRL:
+		driving_attribute = pm.listConnections(driving_attr_CTRL
+											   + '.input',
+											   plugs=True,
+											   s=True)[0]
+		driving_attr_CTRL, driving_attr_name = driving_attribute.split('.')
+
+	return driving_attr_CTRL, driving_attr_name
+
+
 def _check_external_axis_name(robot, axis_name):
 	"""
 	Determines if external axis name is unique
@@ -349,11 +407,13 @@ def add_external_axis(*args):
 def clear_external_axis_list(*args):
 	# Clear previus UI list
 	pm.textScrollList('tsl_externalAxes', edit=True, removeAll=True)
+	reset_external_axis_UI()
 
 
 def deselect_external_axis(*args):
-	# Clear previus UI list
+	# Clear UI list selection
 	pm.textScrollList('tsl_externalAxes', edit=True, deselectAll=True)
+	reset_external_axis_UI()
 
 
 def list_axes(*args):
@@ -372,5 +432,109 @@ def list_axes(*args):
 	
 	# Update Mimic UI with list of external axes
 	for axis in robots_external_axes:
-		pm.textScrollList('tsl_externalAxes', edit=True, append=axis)
+		append_string = robot + ': ' + axis
+		pm.textScrollList('tsl_externalAxes', edit=True, append=append_string)
+
+
+
+def update_external_axis_UI(axis_info):
+
+	# Change frame name from "Add" to "Update"
+	pm.frameLayout('add_external_axis_frame',
+				   edit=True,
+				   label="Update External Axis")
+
+	# Update axis parameters
+	pm.textField('t_externalAxisDescriptionText',
+                 edit=True,
+                 text=axis_info['Axis Name'],
+                 editable=False)
+	pm.optionMenu('axisNumberMenu',
+				  edit=True,
+				  value=str(axis_info['Axis Number']))
+	pm.optionMenu('drivingAttributeMenu',
+				  edit=True,
+				  value=axis_info['Driving Attribute'])
+
+	pm.textField('t_externalAxisLimitMin',
+				 edit=True,
+				 text=str(axis_info['Position Limit Min']))
+	pm.textField('t_externalAxisLimitMax',
+				 edit=True,
+				 text=str(axis_info['Position Limit Max']))
+	pm.textField('t_externalAxisVelocityLimit',
+				 edit=True,
+				 text=str(axis_info['Velocity Limit']))
+	pm.checkBox('cb_ignoreExternalAxis',
+				edit=True,
+				value=axis_info['Ignore'])	
 	
+	# Change "Add Axis" button to "Update Axis"
+	# Change background color of button
+	pm.button('b_add_Axis',
+			  edit=True,
+			  label='Update Axis',
+			  backgroundColor=[.7, .7, .7],
+			  #command=mimic_external_axes.update_external_axis
+			  )
+
+
+def reset_external_axis_UI():
+	pm.frameLayout('add_external_axis_frame',
+				   edit=True,
+				   label="Add External Axis")
+
+	# Update axis parameters
+	pm.textField('t_externalAxisDescriptionText',
+                 edit=True,
+                 text='',
+                 editable=True)
+	pm.optionMenu('axisNumberMenu',
+				  edit=True,
+				  value='1')
+	pm.optionMenu('drivingAttributeMenu',
+				  edit=True,
+				  value='translateX')
+
+	pm.textField('t_externalAxisLimitMin',
+				 edit=True,
+				 text='')
+	pm.textField('t_externalAxisLimitMax',
+				 edit=True,
+				 text='')
+	pm.textField('t_externalAxisVelocityLimit',
+				 edit=True,
+				 text='')
+	pm.checkBox('cb_ignoreExternalAxis',
+				edit=True,
+				value=0)	
+	
+	# Change "Add Axis" button to "Update Axis"
+	# Change background color of button
+	pm.button('b_add_Axis',
+			  edit=True,
+			  label='Add Axis',
+			  backgroundColor=[.361, .361, .361],
+			  command=add_external_axis)	
+
+
+def axis_selected(*args):
+
+	# Get the selected item from the Mimic UI
+	selection = pm.textScrollList('tsl_externalAxes',
+								  selectItem=True,
+								  query=True)[0]
+
+	# Split the selection into the robot's name and the external axis name
+	robot, axis_name = selection.split(': ')
+
+	# Get selected axis' settings
+	axis_info = get_external_axis_info(robot, axis_name)
+
+	# Switch Mimic UI to Update External Axis Mode and populate it with the
+	# selected axis' info
+	update_external_axis_UI(axis_info)
+
+	# Select the external axis controller in the viewport
+	axis_CTRL = axis_info['Driving Controller']
+	pm.select(axis_CTRL)
