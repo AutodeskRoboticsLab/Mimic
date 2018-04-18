@@ -17,7 +17,6 @@ import general_utils
 import mimic_config
 import mimic_program
 import mimic_utils
-import mimic_external_axes
 from postproc import postproc_config
 from postproc import postproc_setup
 from postproc import postproc_options
@@ -25,7 +24,6 @@ from postproc import postproc_options
 reload(mimic_utils)
 reload(mimic_config)
 reload(mimic_program)
-reload(mimic_external_axes)
 reload(general_utils)
 reload(postproc_setup)
 reload(postproc_config)
@@ -1022,7 +1020,7 @@ def _build_add_external_axis_frame(parent_layout):
 
     pm.setParent(add_external_axis_col)
 
-    pm.button('Add Axis', height=25, c=mimic_external_axes.add_external_axis)
+    pm.button('Add Axis', height=25,) # c=mimic_external_axes.add_external_axis)
     pm.separator(height=5, style='none')
 
     pm.setParent(parent_layout)
