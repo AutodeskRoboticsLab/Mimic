@@ -141,7 +141,7 @@ def param_is_numeric(p):
     """
     Test whether any parameter is numeric; functionally, determines if any
     parameter is convertible to a float.
-    :param p:
+    :param p: An input parameter
     :return:
     """
     try:
@@ -149,6 +149,19 @@ def param_is_numeric(p):
         return True
     except ValueError:
         return False
+
+
+def param_is_numeric_and_simple(p):
+    """
+    Test whether a parameter is numeric and, if it is a string, that it doesn't
+    contain scientific or uncommon notation.
+    :param p: An input parameter
+    :return:
+    """
+    if isinstance(p, str):
+        return str_is_numeric(p)
+    else:
+        return param_is_numeric(p)
 
 
 def str_is_numeric(s):

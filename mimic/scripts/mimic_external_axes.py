@@ -25,17 +25,17 @@ reload(mimic_program)
 reload(general_utils)
 
 
-def get_external_axis_names(robot, only_active=False):
+def get_external_axis_names(robot_name, only_active=False):
     """
     Gets all external axes assigned to the given robot
-    :param robot: string, name of selected robot
+    :param robot_name: string, name of selected robot
     :param only_active: bool, if True, removes axes marked as "ignore"
     :return robots_external_axes: list, names of all external axes on robot
     """
-    target_CTRL = robot + '|robot_GRP|target_CTRL'
+    target_ctrl_path = _get_target_ctrl_path(robot_name)
 
     # Find all attributes on the target_CTRL marked as 'externalAxis'
-    robot_external_axis_names = pm.listAttr(target_CTRL, category='externalAxis')
+    robot_external_axis_names = pm.listAttr(target_ctrl_path, category='externalAxis')
 
     # Remove parent attribute designation 'externalAxis_' from each axis name
     for i, axis_name in enumerate(robot_external_axis_names):
@@ -43,7 +43,8 @@ def get_external_axis_names(robot, only_active=False):
 
     # If only_active is True, remove axes marked as "Ignore"
     if only_active:
-        active_external_axes = [x for x in robot_external_axis_names if not pm.getAttr(target_CTRL + '.' + x + '_ignore')]
+        active_external_axes = [x for x in robot_external_axis_names if
+                                not pm.getAttr(target_ctrl_path + '.' + x + '_ignore')]
 
         robot_external_axis_names = active_external_axes
 
@@ -95,6 +96,15 @@ def get_external_axis_info_simple(robot_name, external_axis_name, frame=None):
 
 
 # ------------------
+
+
+def _get_target_ctrl_path(robot_name):
+    """
+    Get the target_CTRL path.
+    :param robot_name: string, name of robot
+    :return:
+    """
+    return '{}|robot_GRP|target_CTRL'.format(robot_name)
 
 
 def _get_attribute_value(attribute_path, frame=None):
@@ -338,6 +348,10 @@ def _get_external_axis_params():
 
 
 def _get_selection_input():
+    """
+
+    :return:
+    """
     sel = pm.ls(selection=True, type='transform')
     robots = mimic_utils.get_robot_roots()
 
@@ -397,6 +411,11 @@ def _attach_robot_to_external_axis(robot, external_axis_CTRL):
 
 
 def add_external_axis(*args):
+    """
+    Add an external axis to Mimic.
+    :param args:
+    :return:
+    """
     # Get the External Axis' parameters from the Mimic UI
     external_axis_params = _get_external_axis_params()
 
@@ -502,6 +521,11 @@ def add_external_axis(*args):
 
 
 def update_external_axis(*args):
+    """
+    Update external axis in Mimic.
+    :param args:
+    :return:
+    """
     # Get the selected item from the Mimic UI
     selection = pm.textScrollList('tsl_externalAxes',
                                   selectItem=True,
@@ -572,13 +596,21 @@ def update_external_axis(*args):
 
 
 def clear_external_axis_list(*args):
-    # Clear previus UI list
+    """
+    Clear previous UI list
+    :param args:
+    :return:
+    """
     pm.textScrollList('tsl_externalAxes', edit=True, removeAll=True)
     reset_external_axis_UI()
 
 
 def deselect_external_axis(*args):
-    # Clear UI list selection
+    """
+    Clear UI list selection
+    :param args:
+    :return:
+    """
     pm.textScrollList('tsl_externalAxes', edit=True, deselectAll=True)
     reset_external_axis_UI()
 
@@ -617,6 +649,11 @@ def remove_external_axis(*args):
 
 
 def list_axes(*args):
+    """
+
+    :param args:
+    :return:
+    """
     # Clear previus UI list
     clear_external_axis_list()
 
@@ -640,6 +677,11 @@ def list_axes(*args):
 
 
 def update_external_axis_UI(axis_info):
+    """
+
+    :param axis_info:
+    :return:
+    """
     # Change frame name from "Add" to "Update"
     pm.frameLayout('add_external_axis_frame',
                    edit=True,
@@ -680,6 +722,10 @@ def update_external_axis_UI(axis_info):
 
 
 def reset_external_axis_UI():
+    """
+
+    :return:
+    """
     pm.frameLayout('add_external_axis_frame',
                    edit=True,
                    label="Add External Axis")
@@ -719,6 +765,11 @@ def reset_external_axis_UI():
 
 
 def axis_selected(*args):
+    """
+
+    :param args:
+    :return:
+    """
     # Get the selected item from the Mimic UI
     selection = pm.textScrollList('tsl_externalAxes',
                                   selectItem=True,
