@@ -408,7 +408,7 @@ def confirm_path_exists(path):
     :param path:
     :return:
     """
-    # TODO: Unclear usage
+    # TODO: Unclear where this is used and why
     if os.path.exists(path):
         return path
     else:

@@ -160,23 +160,23 @@ TEMPLATES = {
 
 # COMMANDS
 MOTION_COMMAND = 'motion_command'
+_motion_command_fields = [
+    postproc.AXES,
+    postproc.EXTERNAL_AXES,
+    postproc.POSE,
+    postproc.CONFIGURATION
+]
 MotionCommand = namedtuple(
-    MOTION_COMMAND, [
-        postproc.AXES,
-        postproc.EXTERNAL_AXES,
-        postproc.POSE,
-        postproc.CONFIGURATION
-    ]
+    MOTION_COMMAND, _motion_command_fields
 )
 
 IO_COMMAND = 'io_command'
+_io_command_fields = [
+    postproc.DIGITAL_OUTPUT,
+    postproc.ANALOG_OUTPUT
+]
 IOCommand = namedtuple(
-    IO_COMMAND, [
-        postproc.DIGITAL_OUTPUT,
-        postproc.DIGITAL_INPUT,
-        postproc.ANALOG_OUTPUT,
-        postproc.ANALOG_INPUT
-    ]
+    IO_COMMAND, _io_command_fields
 )
 
 
@@ -262,19 +262,17 @@ class SimpleRAPIDProcessor(postproc.PostProcessor):
         :return:
         """
         # Try to get a MotionCommand
-        keys = ['Axes', 'ExternalAxes', 'Pose', 'DigitalOutput']
         params = []
-        for key in keys:
-            param = params_dict[key] if key in params_dict else None
+        for field in _motion_command_fields:
+            param = params_dict[field] if field in params_dict else None
             params.append(param)
         if params.count(None) != len(params):
             return MotionCommand(*params)
         else:
             # Try to get an IO command
-            keys = ['DigitalOutput', 'DigitalInput', 'AnalogOutput', 'AnalogInput']
             params = []
-            for key in keys:
-                param = params_dict[key] if key in params_dict else None
+            for field in _io_command_fields:
+                param = params_dict[field] if field in params_dict else None
                 params.append(param)
             if params.count(None) != len(params):
                 return IOCommand(*params)
@@ -293,6 +291,7 @@ class SimpleRAPIDProcessor(postproc.PostProcessor):
             use_nonlinear_motion=True,
             use_linear_motion=False,
             include_axes=True,
+            include_external_axes=True,
             include_pose=False
         )
 
@@ -319,7 +318,8 @@ def _process_motion_command(command, opts):  # Implement in base class!
             else:
                 target_data.extend(rapid_config.DEFAULT_CONF)
             if command.external_axes is not None:
-                target_data.extend(command.external_axes)
+                external_axes = [axis if axis is not None else '9E9' for axis in command.external_axes]
+                target_data.extend(external_axes)
             else:
                 target_data.extend(rapid_config.DEFAULT_EXAX)
 
@@ -333,7 +333,8 @@ def _process_motion_command(command, opts):  # Implement in base class!
             target_data_type = JOINTTARGET
             target_data.extend(command.axes)
             if command.external_axes is not None:
-                target_data.extend(command.external_axes)
+                external_axes = [axis if axis is not None else '9E9' for axis in command.external_axes]
+                target_data.extend(external_axes)
             else:
                 target_data.extend(rapid_config.DEFAULT_EXAX)
 
@@ -347,7 +348,8 @@ def _process_motion_command(command, opts):  # Implement in base class!
             else:
                 target_data.extend(rapid_config.DEFAULT_CONF)
             if command.external_axes is not None:
-                target_data.extend(command.external_axes)
+                external_axes = [axis if axis is not None else '9E9' for axis in command.external_axes]
+                target_data.extend(external_axes)
             else:
                 target_data.extend(rapid_config.DEFAULT_EXAX)
         else:
@@ -407,6 +409,14 @@ def _process_io_command(command, opts):
                     STRUCTURES[io_type],
                     TEMPLATES[io_type])
                 io_data.append(formatted_io)
+        # if command.analog_outputs is not None:
+        #     io_type = ANALOG_OUT
+        #     for io in command.analog_outputs:
+        #         formatted_io = postproc.fill_template(
+        #             io,
+        #             STRUCTURES[io_type],
+        #             TEMPLATES[io_type])
+        #         io_data.append(formatted_io)
 
     if io_data:
         formatted_ios = '\n'.join(io_data)

@@ -19,6 +19,7 @@ import os
 import re
 import string
 import itertools
+import math
 
 import mimic_config
 
@@ -223,19 +224,185 @@ def matrix_multiply_3x3(a, b):
     return result
 
 
-def matrix_get_3x3_from_4x4(matrix):
+def matrix_multiply(a, b):
     """
-    Extract the coordinate vectors from an input matrix [1, 16]
-    :param matrix:
+    Multiply a matrix of any dimension by another matrix of any dimension.
+    :param a: Matrix as list of list
+    :param b: Matrix as list of list
     :return:
     """
-    output = []
-    for i in range(3):
-        vector = []
-        for j in range(3):
-            vector.append(matrix[i][j])
-        output.append(vector)
-    return output
+    return [[sum(_a * _b for _a, _b in zip(a_row, b_col)) for b_col in zip(*b)] for a_row in a]
+
+
+def matrix_compose_4x4(rotation, translation):
+    """
+    Compose a 4x4 matrix using rotations and translation.
+    :param rotation: 3x3 matrix (list of list)
+    :param translation: list
+    :return:
+    """
+    r = range(4)
+    m = [[0 for _ in r] for _ in r]
+    three = range(3)
+    for i in three:
+        for j in three:
+            m[i][j] = rotation[i][j]
+        m[i][3] = translation[i]
+    return m
+
+
+def matrix_get_translation(m):
+    """
+    Get translation component of a 4x4 matrix.
+    :param m: Matrix
+    :return:
+    """
+    r = range(3)
+    return [m[i][3] for i in r]
+
+
+def matrix_get_rotations(m):
+    """
+    Get rotational component of a 4x4 matrix.
+    :param m: Matrix
+    :return:
+    """
+    r = range(3)
+    return [[m[i][j] for i in r] for j in r]
+
+
+def matrix_decompose_4x4(m):
+    """
+    Decompose a 4x4 matrix into its rotation and translation components.
+    :param m: Matrix
+    :return:
+    """
+    translation = matrix_get_translation(m)
+    rotations = matrix_get_rotations(m)
+    return translation, rotations
+
+
+def matrix_decompose_4x4_completely(m):
+    """
+    Decompose and flatten 4x4 matrix into its rotation and translation components.
+    :param m: Matrix
+    :return:
+    """
+    translation, rotations = matrix_decompose_4x4(m)
+    [translation.extend(rotation) for rotation in rotations]
+    return translation
+
+
+def matrix_print(m, name=None):
+    """
+    Format a matrix of any dimension and print it.
+    :param m: Matrix
+    :param name: Name of the matrix to print as well.
+    :return:
+    """
+    col_params = []
+    for row in m:
+        row_params = []
+        for param in row:
+            num_string = num_to_str(
+                param,
+                include_sign=False,
+                precision=3,
+                padding=10)
+            row_params.append(num_string)
+        row_string = ''.join(row_params)
+        col_params.append(row_string)
+    col_string = '\n'.join(col_params)
+    if name is not None:
+        col_string = '{}:\n{}\n'.format(name, col_string)
+    print col_string
+
+
+def matrix_transpose(m):
+    """
+    Transpose a matrix.
+    :param m:
+    :return:
+    """
+    return map(list,zip(*m))
+
+
+def matrix_get_minor(m, i, j):
+    """
+    Get minor of a matrix.
+    :param m:
+    :param i:
+    :param j:
+    :return:
+    """
+    return [row[:j] + row[j+1:] for row in (m[:i]+m[i+1:])]
+
+
+def matrix_get_determinant(m):
+    """
+    Get the determinant of a matrix.
+    :param m:
+    :return:
+    """
+    # base case for 2x2 matrix
+    if len(m) == 2:
+        return m[0][0]*m[1][1]-m[0][1]*m[1][0]
+
+    determinant = 0
+    for c in range(len(m)):
+        determinant += ((-1)**c)*m[0][c] * matrix_get_determinant(matrix_get_minor(m, 0, c))
+    return determinant
+
+
+def matrix_get_inverse(m):
+    """
+    Get inverse of a matrix.
+    :param m:
+    :return:
+    """
+    determinant = matrix_get_determinant(m)
+    #special case for 2x2 matrix:
+    if len(m) == 2:
+        return [[m[1][1]/determinant, -1*m[0][1]/determinant],
+                [-1*m[1][0]/determinant, m[0][0]/determinant]]
+
+    #find matrix of cofactors
+    cofactors = []
+    for r in range(len(m)):
+        cofactorRow = []
+        for c in range(len(m)):
+            minor = matrix_get_minor(m, r, c)
+            cofactorRow.append(((-1)**(r+c)) * matrix_get_determinant(minor))
+        cofactors.append(cofactorRow)
+    cofactors = matrix_transpose(cofactors)
+    for r in range(len(cofactors)):
+        for c in range(len(cofactors)):
+            cofactors[r][c] = cofactors[r][c]/determinant
+    return cofactors
+
+
+def normalize_vector(v):
+    """
+    Normalize a vector
+    :param v: Vector to normalize
+    :return:
+    """
+    n = math.sqrt(sum(math.pow(param, 2) for param in v))
+    return [param / n for param in v]
+
+
+def normalize_vectors_of_4x4_matrix(m):
+    """
+    Normalize the upper left 3x3 section of a matrix
+    :param m:
+    :return:
+    """
+    r = range(3)
+    normalized_vectors = [normalize_vector(v[:3]) for v in m[:3]]
+    for i in r:
+        for j in r:
+            m[i][j] = normalized_vectors[i][j]
+    return m
 
 
 def transpose_list(l):
