@@ -474,7 +474,7 @@ def _build_general_settings_tab(parent_layout):
                  height=20)
     pm.text(label='Output name:')
     pm.textField('t_outputFileName',
-                 placeholderText=postproc_config.DEFAULT_OUTPUT_NAME,
+                 text=postproc_config.DEFAULT_OUTPUT_NAME,
                  font=FONT)
 
     pm.setParent('..')
@@ -486,7 +486,7 @@ def _build_general_settings_tab(parent_layout):
                  height=20)
     pm.text(label='Template name:')
     pm.textField('t_templateFileName',
-                 placeholderText=postproc_config.DEFAULT_TEMPLATE_NAME,
+                 text=postproc_config.DEFAULT_TEMPLATE_NAME,
                  font=FONT)
 
     pm.setParent('..')
@@ -746,7 +746,7 @@ def _build_position_limits_tab(parent_layout):
         # Axis 1 Min limit
         pm.textField("t_A{}Min".format(i + 1),
                      font=FONT,
-                     pht='Min',
+                     placeholderText='Min',
                      width=cell_width,
                      changeCommand='import pymel.core as pm; ' \
                                    'import mimic_utils; ' \
@@ -757,7 +757,7 @@ def _build_position_limits_tab(parent_layout):
         set_focus_count = ((i + 1) % 6) + 1
         pm.textField("t_A{}Max".format(i + 1),
                      font=FONT,
-                     pht='Max',
+                     placeholderText='Max',
                      width=cell_width,
                      changeCommand='import pymel.core as pm; ' \
                                    'import mimic_utils; ' \
@@ -769,6 +769,7 @@ def _build_position_limits_tab(parent_layout):
 
     pm.setParent(position_limits_tab)
 
+    '''
     # Set up external axis limits UI
     pm.columnLayout(adj=True, columnAttach=('both', 5))
     pm.separator(height=5, style='none')
@@ -785,7 +786,7 @@ def _build_position_limits_tab(parent_layout):
         # External Axis 1 Min limit
         pm.textField("t_E{}Min".format(i + 1),
                      font=FONT,
-                     pht='Min',
+                     placeholderText='Min',
                      enable=False,
                      width=cell_width,
                      changeCommand='import pymel.core as pm; ' \
@@ -795,7 +796,7 @@ def _build_position_limits_tab(parent_layout):
         set_focus_count = ((i + 1) % 6) + 1
         pm.textField("t_E{}Max".format(i + 1),
                      font=FONT,
-                     pht='Max',
+                     placeholderText='Max',
                      enable=False,
                      width=cell_width,
                      changeCommand='import pymel.core as pm; ' \
@@ -803,6 +804,7 @@ def _build_position_limits_tab(parent_layout):
                      .format(set_focus_count, i + 1))
 
         pm.setParent('..')
+	'''
 
     pm.setParent(parent_layout)
 
@@ -831,7 +833,7 @@ def _build_velocity_limits_tab(parent_layout):
         # Axis 1 Min limit
         pm.textField("t_A{}vel".format(i + 1),
                      font=FONT,
-                     pht='deg/sec',
+                     placeholderText='deg/sec',
                      width=2 * cell_width,
                      enable=False,
                      changeCommand='import pymel.core as pm; ' \
@@ -842,6 +844,7 @@ def _build_velocity_limits_tab(parent_layout):
 
     pm.setParent(velocity_limits_tab)
 
+    '''
     # Set up external axis velocity limits tab
     pm.columnLayout(adj=True, columnAttach=('both', 5))
     pm.separator(height=5, style='none')
@@ -858,7 +861,7 @@ def _build_velocity_limits_tab(parent_layout):
         # Axis 1 Min limit
         pm.textField("t_A{}vel".format(i + 1),
                      font=FONT,
-                     pht='',
+                     placeholderText='',
                      width=2 * cell_width,
                      enable=False,
                      changeCommand='import pymel.core as pm; ' \
@@ -866,6 +869,7 @@ def _build_velocity_limits_tab(parent_layout):
                                    'pm.setFocus("t_E{}vel"); ' \
                      .format(set_focus_count))
         pm.setParent('..')
+	'''
 
     pm.setParent(parent_layout)
 
@@ -930,7 +934,7 @@ def _build_add_external_axis_frame(parent_layout):
                                (3, 'both', 0)])
     pm.text(label='Axis Name: ')
     pm.textField('t_externalAxisDescriptionText',
-                 pht='axisName',
+                 placeholderText='axisName',
                  font=FONT)
     pm.setParent('..')  
     pm.separator(height=3, style='none')
@@ -941,23 +945,23 @@ def _build_add_external_axis_frame(parent_layout):
 
 			pm.textField('t_externalAxisLimitMin',
     					 edit=True,
-    					 pht='mm')
+    					 placeholderText='mm')
 			pm.textField('t_externalAxisLimitMax',
     					 edit=True,
-    					 pht='mm')
+    					 placeholderText='mm')
 			pm.textField('t_externalAxisVelocityLimit',
 		                 edit=True,
-		                 pht='mm/s')
+		                 placeholderText='mm/s')
 		else:
 			pm.textField('t_externalAxisLimitMin',
     					 edit=True,
-    					 pht='deg')
+    					 placeholderText='deg')
 			pm.textField('t_externalAxisLimitMax',
     					 edit=True,
-    					 pht='deg')
+    					 placeholderText='deg')
 			pm.textField('t_externalAxisVelocityLimit',
 		                 edit=True,
-		                 pht='deg/s')
+		                 placeholderText='deg/s')
     
     pm.optionMenu('axisNumberMenu',
                   label='Axis Number:',
@@ -990,10 +994,10 @@ def _build_add_external_axis_frame(parent_layout):
 
 
     pm.textField('t_externalAxisLimitMin',
-                 pht='mm')
+                 placeholderText='mm')
 
     pm.textField('t_externalAxisLimitMax',
-                 pht='mm')
+                 placeholderText='mm')
 
     pm.setParent('..')
 
@@ -1005,7 +1009,7 @@ def _build_add_external_axis_frame(parent_layout):
     pm.text(label='Velocity Limit:')
 
     pm.textField('t_externalAxisVelocityLimit',
-                 pht='mm/s')
+                 placeholderText='mm/s')
     pm.setParent('..')
 
     pm.rowLayout(numberOfColumns=1)
@@ -1078,7 +1082,8 @@ def _build_axis_info_frame(parent_layout):
     pm.separator(height=10, style='out')
 
     pm.button(label='Remove Axis',
-              annotation='Removes selected axis from robot')
+              annotation='Removes selected axis from robot',
+              command=mimic_external_axes.remove_external_axis)
     pm.setParent(parent_layout)
 
 
@@ -1166,7 +1171,7 @@ def _build_hotkeys_frame(parent_layout):
         toggle_mode_key = ' key'
 
     pm.text(label='Toggle IK/FK:')
-    pm.textField("t_toggleIkFk", font=FONT, pht=toggle_mode_key)
+    pm.textField("t_toggleIkFk", font=FONT, placeholderText=toggle_mode_key)
 
     pm.button(label='Create',
               width=45,
@@ -1204,7 +1209,7 @@ def _build_hotkeys_frame(parent_layout):
         key_IkFk_key = ' key'
 
     pm.text(label='Key IK/FK:')
-    pm.textField("t_keyIkFk", font=FONT, pht=key_IkFk_key)
+    pm.textField("t_keyIkFk", font=FONT, placeholderText=key_IkFk_key)
 
     pm.button(label='Create',
               width=45,
