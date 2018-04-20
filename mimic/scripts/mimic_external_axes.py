@@ -516,6 +516,7 @@ def add_external_axis(*args):
     else:
         pm.select(target_CTRL)
 
+    list_axes()  
     pm.headsUpMessage('External axis \'{}\' added successfully to {}'
                       .format(axis_name, robot))
 
@@ -657,23 +658,48 @@ def list_axes(*args):
     # Clear previus UI list
     clear_external_axis_list()
 
-    # Check viewport selection for a single robot
-    robots = mimic_utils.get_robot_roots()
-    if not mimic_utils.check_robot_selection(number_of_robots=1):
-        raise MimicError('Must select exactly one robot')
+    # Check viewport robot selection
+    # If robots are selected, list all external axes on selected robots
+    selected_robots = mimic_utils.get_robot_roots()
+    if selected_robots:
+        robots = selected_robots
+    # If no robots are selected, list all axes in the scene
+    else:
+        robots_in_scene = mimic_utils.get_robot_roots(all_robots=True)
+        # If there are no robots in the scene, raise an exception
+        if not robots_in_scene:
+            raise MimicError('No robots in scene')
+        else:
+            robots = robots_in_scene
 
-    robot = robots[0]
+    # Keep track of selected robots without axes for a heads-up message
+    selected_robots_without_axes=[]
 
-    # Get list of all external axes on robot
-    robots_external_axes = get_external_axis_names(robot)
+    # For each robots, get a list of all its external axes
+    for robot in robots:   
+        robots_external_axes = get_external_axis_names(robot)
 
-    if not robots_external_axes:
-        pm.headsUpMessage('{} has no External Axes'.format(robot))
+        # If we're only looking at selected robots, check if each selected
+        # robot has external axes. If not, add it to a list to display in
+        # a heads up message
+        if selected_robots:
+            if not robots_external_axes:
+                selected_robots_without_axes.append(robot)
 
-    # Update Mimic UI with list of external axes
-    for axis in robots_external_axes:
-        append_string = robot + ': ' + axis
-        pm.textScrollList('tsl_externalAxes', edit=True, append=append_string)
+        # Update Mimic UI with list of external axes
+        for axis in robots_external_axes:
+            append_string = robot + ': ' + axis
+            pm.textScrollList('tsl_externalAxes',
+                              edit=True,
+                              append=append_string)
+
+    if selected_robots_without_axes:
+        robot_list_str = ''
+        for each in selected_robots_without_axes:
+            robot_list_str += each + ', '
+
+        pm.headsUpMessage('{} has no External Axes'
+                          .format(robot_list_str))
 
 
 def update_external_axis_UI(axis_info):

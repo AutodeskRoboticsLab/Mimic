@@ -1056,13 +1056,13 @@ def _build_external_axis_tools_frame(parent_layout):
 def _build_axis_info_frame(parent_layout):
     # Axis Info
     pm.frameLayout(label="Axis Info",
-                   height=195,
+                   #height=215,
                    collapsable=True)
     pm.columnLayout(adj=True, columnAttach=('both', 5))
 
     pm.textScrollList('tsl_externalAxes',
                       allowMultiSelection=False,
-                      height=85,
+                      height=185,
                       selectCommand=mimic_external_axes.axis_selected)
 
     pm.gridLayout(nc=2, cw=109, ch=25)
