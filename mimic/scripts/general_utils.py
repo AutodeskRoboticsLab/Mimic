@@ -220,23 +220,6 @@ def matrix_multiply_1xm_nxm(a, b):
     return result
 
 
-def matrix_multiply_3x3(a, b):
-    """
-    Multiply a 3x3 matrix by another 3x3 matrix.
-    :param a: 3x3 matrix
-    :param b: 3x3 matrix
-    :return:
-    """
-    # Initialize output 3x3 matrix
-    result = [[0 for _ in range(3)] for _ in range(3)]
-    for i in range(3):
-        for j in range(3):
-            for k in range(3):
-                # Perform matrix computation
-                result[i][j] += a[i][k]*b[k][j]
-    return result
-
-
 def matrix_multiply(a, b):
     """
     Multiply a matrix of any dimension by another matrix of any dimension.
@@ -337,7 +320,7 @@ def matrix_transpose(m):
     :param m:
     :return:
     """
-    return map(list,zip(*m))
+    return map(list, zip(*m))
 
 
 def matrix_get_minor(m, i, j):
@@ -348,7 +331,7 @@ def matrix_get_minor(m, i, j):
     :param j:
     :return:
     """
-    return [row[:j] + row[j+1:] for row in (m[:i]+m[i+1:])]
+    return [row[:j] + row[j + 1:] for row in (m[:i] + m[i + 1:])]
 
 
 def matrix_get_determinant(m):
@@ -359,11 +342,11 @@ def matrix_get_determinant(m):
     """
     # base case for 2x2 matrix
     if len(m) == 2:
-        return m[0][0]*m[1][1]-m[0][1]*m[1][0]
+        return m[0][0] * m[1][1] - m[0][1] * m[1][0]
 
     determinant = 0
     for c in range(len(m)):
-        determinant += ((-1)**c)*m[0][c] * matrix_get_determinant(matrix_get_minor(m, 0, c))
+        determinant += ((-1) ** c) * m[0][c] * matrix_get_determinant(matrix_get_minor(m, 0, c))
     return determinant
 
 
@@ -374,23 +357,23 @@ def matrix_get_inverse(m):
     :return:
     """
     determinant = matrix_get_determinant(m)
-    #special case for 2x2 matrix:
+    # special case for 2x2 matrix:
     if len(m) == 2:
-        return [[m[1][1]/determinant, -1*m[0][1]/determinant],
-                [-1*m[1][0]/determinant, m[0][0]/determinant]]
+        return [[m[1][1] / determinant, -1 * m[0][1] / determinant],
+                [-1 * m[1][0] / determinant, m[0][0] / determinant]]
 
-    #find matrix of cofactors
+    # find matrix of cofactors
     cofactors = []
     for r in range(len(m)):
         cofactorRow = []
         for c in range(len(m)):
             minor = matrix_get_minor(m, r, c)
-            cofactorRow.append(((-1)**(r+c)) * matrix_get_determinant(minor))
+            cofactorRow.append(((-1) ** (r + c)) * matrix_get_determinant(minor))
         cofactors.append(cofactorRow)
     cofactors = matrix_transpose(cofactors)
     for r in range(len(cofactors)):
         for c in range(len(cofactors)):
-            cofactors[r][c] = cofactors[r][c]/determinant
+            cofactors[r][c] = cofactors[r][c] / determinant
     return cofactors
 
 
@@ -402,20 +385,6 @@ def normalize_vector(v):
     """
     n = math.sqrt(sum(math.pow(param, 2) for param in v))
     return [param / n for param in v]
-
-
-def normalize_vectors_of_4x4_matrix(m):
-    """
-    Normalize the upper left 3x3 section of a matrix
-    :param m:
-    :return:
-    """
-    r = range(3)
-    normalized_vectors = [normalize_vector(v[:3]) for v in m[:3]]
-    for i in r:
-        for j in r:
-            m[i][j] = normalized_vectors[i][j]
-    return m
 
 
 def transpose_list(l):
