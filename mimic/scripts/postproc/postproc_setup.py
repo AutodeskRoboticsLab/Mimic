@@ -9,6 +9,9 @@ import postproc_config
 from ABB.RAPID.rapid \
     import SimpleRAPIDProcessor \
     as __SimpleRAPIDProcessor
+from FANUC.KAREL.karel \
+    import SimpleKARELProcessor \
+    as __SimpleKARELProcessor
 from KUKA.EntertainTech.entertaintech \
     import SimpleEntertainTechProcessor \
     as __SimpleEntertainTechProcessor
@@ -19,6 +22,7 @@ from KUKA.KRL.krl \
 # Add your processor to private list here:
 __supported_processors = [
     __SimpleRAPIDProcessor,
+    __SimpleKARELProcessor,
     __SimpleKRLProcessor,
     __SimpleEntertainTechProcessor
 ]
