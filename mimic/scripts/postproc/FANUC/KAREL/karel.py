@@ -54,12 +54,15 @@ STRUCTURES = {
 
 # TEMPLATES
 __joints_template = \
-    '[' \
-    '[{}, {}, {}, {}, {}, {}]' \
-    ']'
+    '\tP[{}]' \
+    '{{' \
+    'GP1: UF:1, UT:1, ' \
+    'J1={} deg, J2={} deg, J3={} deg, ' \
+    'J4={} deg, J5={} deg, J6={} deg' \
+    '}};'
 
 __move_joints_template = \
-    '  MOVE JOINTS? {}'
+    '\t{}:J P[{}] {} {};'
 
 TEMPLATES = {
     JOINTS: __joints_template,
@@ -68,11 +71,10 @@ TEMPLATES = {
 
 # COMMANDS
 MOTION_COMMAND = 'motion_command'
+_motion_index = 'motion_index'
 _motion_command_fields = [
-    postproc.AXES,
-    postproc.EXTERNAL_AXES,
-    postproc.POSE,
-    postproc.CONFIGURATION
+    _motion_index,
+    postproc.AXES
 ]
 MotionCommand = namedtuple(
     MOTION_COMMAND, _motion_command_fields
@@ -97,6 +99,7 @@ class SimpleKARELProcessor(postproc.PostProcessor):
 
         # Initialize internal parameters
         self.supported_options = self._set_supported_options()
+        self.counter = 0
 
     def _process_program(self, processed_commands, opts):  # Implement in base class!
         """
@@ -106,9 +109,14 @@ class SimpleKARELProcessor(postproc.PostProcessor):
         :return:
         """
         # Get program structure and template
-        formatted_commands = '\n'.join(processed_commands)
+        processed_motion_data = [c[0] for c in processed_commands]
+        processed_target_data = [c[1] for c in processed_commands]
+        formatted_motion_commands = '\n'.join(processed_motion_data)
+        formatted_target_commands = '\n'.join(processed_target_data)
         program_template = self._read_program_template()  # don't overwrite original
-        return program_template.format(formatted_commands)
+        return program_template.format(
+            formatted_motion_commands,
+            formatted_target_commands)
 
     @staticmethod
     def _process_command(command, opts):
@@ -122,8 +130,7 @@ class SimpleKARELProcessor(postproc.PostProcessor):
         if not opts.Ignore_motion and command_type == MOTION_COMMAND:
             return _process_motion_command(command, opts)
 
-    @staticmethod
-    def _format_command(params_dict):
+    def _format_command(self, params_dict):
         """
         Processor-specific function. Certain types of commands are very specific
         to the processor in use or application, such as EntertainTech, requiring
@@ -145,6 +152,8 @@ class SimpleKARELProcessor(postproc.PostProcessor):
             param = params_dict[field] if field in params_dict else None
             params.append(param)
         if params.count(None) != len(params):
+            self.counter += 1  # 1-indexed
+            params.insert(0, self.counter)
             return MotionCommand(*params)
 
     @staticmethod
@@ -194,9 +203,16 @@ def _process_motion_command(command, opts):  # Implement in base class!
         STRUCTURES[target_data_type],
         TEMPLATES[target_data_type])
 
+    motion_data = [
+        target_data[0],  # motion_index
+        target_data[0],  # motion_index
+        '100%' if target_data[0] == 1 else karel_config.DEFAULT_TIME,
+        karel_config.DEFAULT_APPROXIMATION
+    ]
     # Structure and format motion command
-    formatted_motion = postproc.fill_template(
-        formatted_target_data,
+    formatted_motion_data = postproc.fill_template(
+        motion_data,
         STRUCTURES[motion_type],
         TEMPLATES[motion_type])
-    return formatted_motion
+
+    return formatted_motion_data, formatted_target_data

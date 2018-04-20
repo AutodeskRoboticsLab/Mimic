@@ -3,7 +3,7 @@
 ### SimpleKARELProcessor
 
 The SimpleKARELProcessor is a Post Processor for Mimic designed to program FANUC
-robots using the KAREL programming language and TXT output file extension. No
+robots using the KAREL programming language and ls output file extension. No
 installation options are required for use of this package. This processor IS NOT
 time-based.
 
@@ -11,7 +11,7 @@ time-based.
 Name: SimpleKARELProcessor
 Robot type: FANUC
 Processor language: KAREL
-Output file extension: txt
+Output file extension: ls
 Required installation options: None
 Time-based: False
 ```
@@ -27,7 +27,7 @@ This package contains the following directories and/or files:
     |-- karel.md
     |-- karel.py
     |-- karel_config.py
-    |-- template.txt
+    |-- template.ls
 ```
 
 
@@ -65,7 +65,7 @@ User parameters can be found in the following files:
 
 ```
 karel_config.py
-template.txt
+template.ls
 ```
 
 This package comes with a functional default program that must be modified to
