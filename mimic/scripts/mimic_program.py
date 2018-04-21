@@ -298,9 +298,10 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
     """
     # Check to see if the user has elected to ignore warnings
     ignore_warnings = postproc_settings['Ignore Warnings']
+    warning = ''  # Temporary holder
 
     # Check if limits have been exceeded (i.e. velocity, acceleration)
-    if user_options.Include_axes:
+    if user_options.Include_axes and not user_options.Ignore_motion:
         command_dicts = _check_command_rotations(robot, animation_settings, command_dicts)
         warning = _check_velocity_of_axes(robot, command_dicts, animation_settings['Framerate'])
         if warning != '':
@@ -310,7 +311,7 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
             if not ignore_warnings:
                 raise Exception(warning)
 
-    if user_options.Include_external_axes:
+    if user_options.Include_external_axes and not user_options.Ignore_motion:
         # TODO: Implement velocity check for external axes
         # warning = _check_velocity_of_external_axes(robot, command_dicts, animation_settings['Framerate'])
         # if warning != '':
@@ -321,7 +322,7 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
         #         raise Exception(warning)
         pass
 
-    if user_options.Include_pose:
+    if user_options.Include_pose and not user_options.Ignore_motion:
         # TODO: Implement velocity check for poses
         # warning = _check_velocity_of_pose(robot, command_dicts, animation_settings['Framerate'])
         # if warning != '':
@@ -331,6 +332,11 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
         #     if not ignore_warnings:
         #         raise Exception(warning)
         pass
+
+    # If all checks passed then we don't have any warnings...
+    if warning == '':
+        no_warning = 'All checks passed!\n'
+        pm.scrollField(OUTPUT_WINDOW_NAME, insertText=no_warning, edit=True)
 
 
 def _check_velocity_of_axes(robot, command_dicts, framerate):
@@ -546,8 +552,8 @@ def _sample_frames_get_command_dicts(robot_name, frames, animation_settings, use
                 command_dict[postproc.EXTERNAL_AXES] = postproc.ExternalAxes(*external_axes)
                 pass
             if user_options.Include_configuration:
-                # TODO: Implement configurations
-                # configuration = None
+                # TODO: Finish implementing configurations
+                # configuration = _sample_frame_get_configuration(robot_name, frame)
                 # command_dict[postproc.CONFIGURATION] = postproc.Configuration(*configuration)
                 pass
         # Get IO parameters
@@ -627,12 +633,6 @@ def _sample_frame_get_pose(robot_name, frame):
     general_utils.matrix_print([tcp_translation], 'tcp_translation')
     general_utils.matrix_print([base_translation], 'base_translation')
 
-    # Translate the TCP, reset the base
-    tcp_translation = [tcp_translation[i] - base_translation[i] for i in range(3)]
-
-    # Create zero translation (origin) to serve as temporary base for rotations
-    zero_translation = [0 for _ in range(3)]
-
     # ROTATIONS
 
     # Get TCP rotation with respect to Maya's world frame
@@ -645,16 +645,16 @@ def _sample_frame_get_pose(robot_name, frame):
     base_rotation = general_utils.matrix_get_rotations(_base_matrix)
     general_utils.matrix_print(base_rotation, 'base_rotation')
 
-    # Invert the base rotation matrix
-    base_rotation_inverse = general_utils.matrix_get_inverse(base_rotation)
-    general_utils.matrix_print(base_rotation_inverse, 'base_rotation_inverse')
-
     # TRANSFORMATIONS
 
     # Compose 4x4 matrices using the rotation and translation from the above
     tcp_matrix_4x4 = general_utils.matrix_compose_4x4(tcp_rotation, tcp_translation)
-    base_matrix_4x4 = general_utils.matrix_compose_4x4(base_rotation_inverse, zero_translation)
+    base_matrix_4x4 = general_utils.matrix_compose_4x4(base_rotation, base_translation)
     general_utils.matrix_print(tcp_matrix_4x4, 'tcp_matrix_4x4')
+    general_utils.matrix_print(base_matrix_4x4, 'base_matrix_4x4')
+
+    # Invert the base matrix
+    base_matrix_4x4 = general_utils.matrix_get_inverse(base_matrix_4x4)
     general_utils.matrix_print(base_matrix_4x4, 'base_matrix_4x4')
 
     # Get pose itself
@@ -667,34 +667,32 @@ def _sample_frame_get_pose(robot_name, frame):
     initial_translation = general_utils.matrix_get_translation(initial_pose_matrix)
     initial_rotations = general_utils.matrix_get_rotations(initial_pose_matrix)
 
-    # Translate the TCP
-    initial_translation = [initial_translation[i] + base_translation[i] for i in range(3)]
-
     # Rearrange from Maya CS (mcs) to Robot CS (rcs)
     indices = [2, 0, 1]
     new_translation = [initial_translation[i] * 10 for i in indices]  # cm to mm
-    new_rotation = [[initial_rotations[i][j] for i in indices] for j in indices]
+    new_rotation = [[initial_rotations[i][j] for j in indices] for i in indices]
 
     # Define rotation matrix and convert the rotations based robot type
+    # Based on the orientation of the coordinate frame of the mounting flange
     # TODO: Integrate this with rigs, unclear and shouldn't be hardcoded
     robot_type = mimic_utils.get_robot_type(robot_name)
     if robot_type == 'ABB':
-        conversion_matrix = [
+        conversion_rotation = [
             [0, 0, -1],
             [0, 1, 0],
             [1, 0, 0]
         ]
-    elif robot_type == 'KUKA':
-        conversion_matrix = [
-            [0, -1, 0],
-            [0, 0, 1],
-            [-1, 0, 0]
-        ]
+    # elif robot_type == 'KUKA':
+    #     conversion_rotation = [
+    #         [0, -1, 0],
+    #         [0, 0, 1],
+    #         [-1, 0, 0]
+    #     ]
     else:
         raise Exception('Robot type not supported for Pose movement')
 
     # Perform the conversion operation itself
-    converted_rotation = general_utils.matrix_multiply(conversion_matrix, new_rotation)
+    converted_rotation = general_utils.matrix_multiply(conversion_rotation, new_rotation)
     general_utils.matrix_print(converted_rotation, 'converted_rotation')
 
     # Compose pose
@@ -734,3 +732,14 @@ def _sample_frame_get_external_axes(robot_name, frame):
             external_axes[axis_index] = position
     # Return an ordered list of Nones and/or positions
     return external_axes
+
+
+def _sample_frame_get_configuration(robot_name, frame):
+    """
+    Get robot Configuration from an animation frame.
+    :param robot_name:
+    :param frame:
+    :return:
+    """
+    # TODO: Implementation of this!
+    pass

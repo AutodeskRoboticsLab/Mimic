@@ -418,7 +418,8 @@ def _convert_pose(pose):
     i_vector = [pose.pose_ix, pose.pose_iy, pose.pose_iz]
     j_vector = [pose.pose_jx, pose.pose_jy, pose.pose_jz]
     k_vector = [pose.pose_kx, pose.pose_ky, pose.pose_kz]
-    a, b, c = transforms.euler_rpw_by_vectors(i_vector, j_vector, k_vector)
+    m = [i_vector, j_vector, k_vector]
+    a, b, c = transforms.euler_angles_by_matrix(m)
     return [pose.pose_x, pose.pose_y, pose.pose_z, a, b, c]
 
 
@@ -429,6 +430,6 @@ def _convert_configuration(configuration):
     :return:
     """
     # TODO: Calculate S, T using configuration!
-    s = configuration.configuration_1
-    t = configuration.configuration_2
+    s = 0
+    t = 0
     return [s, t]

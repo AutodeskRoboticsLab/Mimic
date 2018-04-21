@@ -115,58 +115,66 @@ def quaternion_by_vectors(x, y, z):
     return [q1, q2, q3, q4]
 
 
-def euler_rpw_by_vectors(x, y, z):
+def matrix_by_euler_angles(a, b, c):
     """
-    Computes euler angles (degrees) from vectors (x, y', z")
-    :param x: Vector
-    :param y: Vector
-    :param z: Vector
+    Computes a matrix from Euler angles
+    :param a: Rotation X
+    :param b: Rotation Y
+    :param c: Rotation Z
     :return:
     """
-    x_x = x[0]
-    # x_y = x[1]
-    # x_z = x[2]
-    y_x = y[0]
-    # y_y = y[1]
-    # y_z = y[2]
-    z_x = z[0]
-    z_y = z[1]
-    z_z = z[2]
-
-    euler_angles = [
-        -math.atan2(z_y, z_z),
-        math.atan2(z_x, math.sqrt(math.pow(x_x, 2) + math.pow(y_x, 2))),
-        -math.atan2(y_x, x_x)
+    _a = a * math.pi / -180
+    _b = b * math.pi / -180
+    _c = c * math.pi / -180
+    ca = math.cos(_a)
+    sa = math.sin(_a)
+    cb = math.cos(_b)
+    sb = math.sin(_b)
+    cc = math.cos(_c)
+    sc = math.sin(_c)
+    x = [
+        ca * cb,
+        sa * cc + ca * sb * sc,
+        sa * sc - ca * sb * cc
     ]
-    # Convert to degrees
-    return [math.degrees(euler) for euler in euler_angles]
+    y = [
+        -sa * cb,
+        ca * cc - sa * sb * sc,
+        ca * sc + sa * sb * cc
+    ]
+    z = [
+        sb,
+        -cb * sc,
+        cb * cc
+    ]
+    return [x, y, z]
 
 
-def euler_wpr_by_vectors(x, y, z):
+def euler_angles_by_matrix(m):
     """
-    Computes euler angles (degrees) from vectors (z, y', x")
-    :param x: Vector
-    :param y: Vector
-    :param z: Vector
+    Computes Euler angles from a rotation matrix.
+    :param m:
     :return:
     """
-    x_x = x[0]
-    x_y = x[1]
-    x_z = x[2]
-    # y_x = y[0]
-    # y_y = y[1]
-    y_z = y[2]
-    # z_x = z[0]
-    # z_y = z[1]
-    z_z = z[2]
-
-    euler_angles = [
-        math.atan2(y_z, z_z),
-        math.atan2(-x_z, math.sqrt(math.pow(y_z, 2) + math.pow(z_z, 2))),
-        math.atan2(x_y, x_x)
-    ]
-    # Convert to degrees
-    return [math.degrees(euler) for euler in euler_angles]
+    sb = m[2][0]
+    if 1 - sb * sb < 0:
+        cb = 0
+    else:
+        cb = math.sqrt(1 - sb * sb)
+    ca = m[0][0]
+    sa = -m[1][0]
+    cc = m[2][2]
+    sc = -m[2][1]
+    if abs(m[0][0]) < 1E-7 and abs(m[1][0]) < 1E-7:
+        cc = m[1][1]
+        sc = m[1][2]
+    _a = math.atan2(sa, ca)
+    _b = math.atan2(sb, cb)
+    _c = math.atan2(sc, cc)
+    a = _a * -180 / math.pi
+    b = _b * -180 / math.pi
+    c = _c * -180 / math.pi
+    return a, b, c
 
 
 def vector_normalize(v):

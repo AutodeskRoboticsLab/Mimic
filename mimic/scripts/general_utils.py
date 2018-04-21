@@ -109,17 +109,18 @@ def get_rigs_names(rigs):
     return names
 
 
-def num_to_str(num, include_sign=False, precision=6, padding=0):
+def num_to_str(num, include_sign=False, precision=6, padding=0, simplify_ints=False):
     """
     Converts a number to a string with several.
     :param num: Number to convert to string.
     :param include_sign: If True, include '+' when positive.
     :param precision: Degree of precision for decimal.
     :param padding: Number of characters to use for left-padding.
+    :param simplify_ints: Simplify (round) integers if possible.
     :return:
     """
     if num == 'infinity':
-        raise ValueError('Invalid number')
+        raise ValueError('Invalid number: ' + num)
     elif isinstance(num, str):
         return num
     elif num == 9E9:
@@ -128,6 +129,11 @@ def num_to_str(num, include_sign=False, precision=6, padding=0):
         num = round(num, precision)
         if num == 0:
             num = abs(num)  # remove '-' sign
+        simplified = False
+        if simplify_ints:
+            if num_is_int(num):
+                num = int(num)
+                precision = 0
         num_string = '{:.{precision}f}'.format(num, precision=precision)
         if include_sign:
             if num >= 0:
@@ -135,6 +141,15 @@ def num_to_str(num, include_sign=False, precision=6, padding=0):
         if padding > 0:
             num_string = '{0:>{padding}}'.format(num_string, padding=padding)
         return num_string
+
+
+def num_is_int(num):
+    """
+    Check whether a number is an integer.
+    :param num:
+    :return:
+    """
+    return float(num).is_integer()
 
 
 def param_is_numeric(p):
@@ -244,6 +259,7 @@ def matrix_compose_4x4(rotation, translation):
         for j in three:
             m[i][j] = rotation[i][j]
         m[i][3] = translation[i]
+    m[3][3] = 1
     return m
 
 
@@ -264,7 +280,7 @@ def matrix_get_rotations(m):
     :return:
     """
     r = range(3)
-    return [[m[i][j] for i in r] for j in r]
+    return [[m[i][j] for j in r] for i in r]
 
 
 def matrix_decompose_4x4(m):
