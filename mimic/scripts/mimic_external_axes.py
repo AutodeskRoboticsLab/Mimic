@@ -283,6 +283,21 @@ def _check_external_axis_params(external_axis_params):
         raise MimicError('{} must be float(s)'.format(non_float_params))
 
 
+def _check_if_robot_is_attached_to_externa_axis(robot_name):
+    """
+    Checks if the robot is attached to an external axis controller
+    :param robot_name: name of the robot being checked
+    :return: bool, True if robot is attached
+    to an external axis, False if otherwise
+    """
+    if pm.objExists('{}|robot_GRP|local_CTRL|' \
+                    'localCTRL_externalAxisCTRL_parentConstraint'
+                    .format(robot_name)):
+        return True
+    else:
+        return False
+
+
 def _filter_external_axis_name(axis_name):
     """
     Axis name must be formatted to match Maya's attribute name requirements
@@ -407,7 +422,79 @@ def _attach_robot_to_external_axis(robot, external_axis_CTRL):
     pm.setAttr(local_CTRL + '.v', 0)
 
 
-# def _set_external_axis_CTRL_limits():
+def _set_external_axis_CTRL_limits(external_axis_CTRL, external_axis_params):
+    """
+    Sets the selected external axis controller translation or rotation limits
+    :param external_axis_CTRL: string, name of external axis controller
+    :param external_axis_params: dict, axis parameters set by the user in the 
+    Mimic UI
+    :return:
+    """
+    driving_attribute = external_axis_params['Driving Attribute']
+    position_limit_min = external_axis_params['Position Limit Min']
+    position_limit_max = external_axis_params['Position Limit Max']
+    velocity_limit = external_axis_params['Velocity Limit']
+
+    # Break down driving attribute into transform and axis companents
+    # 'translateX' becomes 'translate', 'X'
+    driving_transformation = driving_attribute[:-1]
+    driving_axis = driving_attribute[-1]
+
+    # Prep transformation string for Maya's limit attributes
+    if 'translate' in driving_attribute:
+        driving_attribute_trunc = 'Trans'
+    else:
+        driving_attribute_trunc = 'Rot'
+
+    pm.setAttr('{}.min{}{}LimitEnable'.format(external_axis_CTRL,
+                                              driving_attribute_trunc,
+                                              driving_axis),
+               True)
+
+    pm.setAttr('{}.min{}{}Limit'.format(external_axis_CTRL,
+                                        driving_attribute_trunc,
+                                        driving_axis),
+               position_limit_min)
+
+    pm.setAttr('{}.max{}{}LimitEnable'.format(external_axis_CTRL,
+                                              driving_attribute_trunc,
+                                              driving_axis),
+               True)
+
+    pm.setAttr('{}.max{}{}Limit'.format(external_axis_CTRL,
+                                        driving_attribute_trunc,
+                                        driving_axis),
+               position_limit_max)
+
+
+def _disable_external_axis_CTRL_limits(external_axis_CTRL, driving_attribute):
+    """
+    Disables the axis limits for the input controller.
+    :param external_axis_CTRL: string, name of external axis controller
+    :param driving_attribute: string, driving attribute e.g. 'rotateX'
+    :return:
+    """    
+
+    # Break down driving attribute into transform and axis companents
+    # 'translateX' becomes 'translate', 'X'
+    driving_transformation = driving_attribute[:-1]
+    driving_axis = driving_attribute[-1]
+
+    # Prep transformation string for Maya's limit attributes
+    if 'translate' in driving_attribute:
+        driving_attribute_trunc = 'Trans'
+    else:
+        driving_attribute_trunc = 'Rot'
+
+    pm.setAttr('{}.min{}{}LimitEnable'.format(external_axis_CTRL,
+                                              driving_attribute_trunc,
+                                              driving_axis),
+               False)
+
+    pm.setAttr('{}.max{}{}LimitEnable'.format(external_axis_CTRL,
+                                              driving_attribute_trunc,
+                                              driving_axis),
+               False)
 
 
 def add_external_axis(*args):
@@ -438,6 +525,14 @@ def add_external_axis(*args):
 
     # Check that the external axis number is unique
     _check_external_axis_number(robot, axis_number)
+
+    # If attach to robot is true, parent the robot's local control to the
+    # external axis controller
+    if attach_robot_to_external:
+        if _check_if_robot_is_attached_to_externa_axis(robot):
+            raise MimicError('{} is already attached to an external ' \
+                             'axis controller'.format(robot))
+        _attach_robot_to_external_axis(robot, external_axis_CTRL)
 
     # Add attributes to robots
     # Parent Attrubute
@@ -503,11 +598,7 @@ def add_external_axis(*args):
                    destination_attribute_name)
 
     # Set the External Axis control limits
-    # _set_external_axis_CTRL_limits():
-    # If attach to robot is true, parent the robot's local control to the
-    # external axis controller
-    if attach_robot_to_external:
-        _attach_robot_to_external_axis(robot, external_axis_CTRL)
+    _set_external_axis_CTRL_limits(external_axis_CTRL, external_axis_params)
 
     # Select the robot's target/tool controller
     tool_CTRL = robot + '|robot_GRP|tool_CTRL'
@@ -559,6 +650,10 @@ def update_external_axis(*args):
     # If attach to robot is true, parent the robot's local control to the
     # external axis controller
     if attach_robot_to_external:
+        # Check if the robot is already attached to an external axis controller
+        if _check_if_robot_is_attached_to_externa_axis(robot):
+            raise MimicError('{} is already attached to an external ' \
+                             'axis controller'.format(robot))
         # Get and check the proper controllers from viewport selection
         _, external_axis_CTRL = _get_selection_input()
         _attach_robot_to_external_axis(robot, external_axis_CTRL)
@@ -578,6 +673,14 @@ def update_external_axis(*args):
         pm.disconnectAttr(old_driving_attribute_path, destination_attribute_name)
         pm.connectAttr(new_driving_attribute_path, destination_attribute_name)
 
+    # Update the external axis' position/rotation limits
+    # Find the original driving attribute and disable it's axis limits
+    _disable_external_axis_CTRL_limits(external_axis_CTRL,
+                                       old_driving_attribute)
+    _set_external_axis_CTRL_limits(external_axis_CTRL, external_axis_params)
+
+
+    # Set all appropriate attributes on the robot
     pm.setAttr(axis_parent_attribute + '_axisNumber', lock=False)
     pm.setAttr(axis_parent_attribute + '_axisNumber', axis_number, lock=True)
     pm.setAttr(axis_parent_attribute + '_axisMin', position_limit_min)
@@ -585,12 +688,8 @@ def update_external_axis(*args):
     pm.setAttr(axis_parent_attribute + '_maxVelocity', velocity_limit)
     pm.setAttr(axis_parent_attribute + '_ignore', ingnore_in_postproc)
 
-    # Select the robot's target/tool controller
-    tool_CTRL = robot + '|robot_GRP|tool_CTRL'
-    if pm.objExists(tool_CTRL):
-        pm.select(tool_CTRL)
-    else:
-        pm.select(target_CTRL)
+    # Select the external axis
+    pm.select(external_axis_CTRL)
 
     pm.headsUpMessage('{}: Axis \'{}\' successfully updated'
                       .format(robot, axis_name))
@@ -619,7 +718,8 @@ def deselect_external_axis(*args):
 def remove_external_axis(*args):
     """
     Removes external axis from the robot it's attached to by deleting all of
-    its attributes. The axis controller and models are preserved. This function just breaks the connection between the robot and the axis
+    its attributes. The axis controller and models are preserved.
+    This function just breaks the connection between the robot and the axis
     :param *args: required by Maya UI
     :return:
     """
@@ -642,9 +742,16 @@ def remove_external_axis(*args):
     pm.textScrollList('tsl_externalAxes',
                       edit=True,
                       removeItem=selection)
-    if not pm.textScrollList('tsl_externalAxes', query=True, numberOfItems=True):
+    if not pm.textScrollList('tsl_externalAxes',
+                             query=True,
+                             numberOfItems=True):
         reset_external_axis_UI()
 
+    if _check_if_robot_is_attached_to_externa_axis(robot):
+        pm.delete('{}|robot_GRP|local_CTRL|' \
+                    'localCTRL_externalAxisCTRL_parentConstraint'
+                    .format(robot))
+        pm.setAttr('{}|robot_GRP|local_CTRL.visibility'.format(robot), 1)
     pm.headsUpMessage('External Axis \'{}\' removed successfully from {}'
                       .format(axis_name, robot))
 

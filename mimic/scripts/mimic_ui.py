@@ -725,23 +725,28 @@ def _build_tool_setup_frame(parent_layout):
     pm.setParent(parent_layout)
 
 
-def _build_position_limits_tab(parent_layout):
-    position_limits_tab = pm.rowColumnLayout(numberOfColumns=2)
+def _build_axis_limits_frame(parent_layout):
+    limits_frame = pm.frameLayout(label="Axis Limits", collapsable=True)
+
+    limits_frame_cols = pm.rowColumnLayout(numberOfColumns=2)
 
     # Input text field width for all axis limits
-    cell_width = 37
+    cell_width = 50
 
     # Set up primary axis limits UI
-    pm.columnLayout(adj=True, columnAttach=('both', 5))
+    pm.columnLayout(adj=True, columnAttach=('left', 5))
+    pm.separator(height=5, style='none')
+
+    pm.text('      Position:', align='center')
     pm.separator(height=5, style='none')
 
     for i in range(6):
         # Axis 1 Limit row
         pm.rowLayout(numberOfColumns=3,
-                     columnAttach=(1, 'left', 3),
+                     columnAttach=(1, 'left', 0),
                      columnWidth=[(2, cell_width), (3, cell_width)],
                      height=20)
-        pm.text(label='A{}:'.format(i + 1))
+        pm.text(label='A{}: '.format(i + 1))
 
         # Axis 1 Min limit
         pm.textField("t_A{}Min".format(i + 1),
@@ -767,59 +772,16 @@ def _build_position_limits_tab(parent_layout):
 
         pm.setParent('..')
 
-    pm.setParent(position_limits_tab)
-
-    '''
-    # Set up external axis limits UI
-    pm.columnLayout(adj=True, columnAttach=('both', 5))
-    pm.separator(height=5, style='none')
-
-    for i in range(6):
-        # External Axis 1 Limit row
-        pm.rowLayout(numberOfColumns=3,
-                     columnAttach=(1, 'left', 3),
-                     columnWidth=[(2, cell_width), (3, cell_width)],
-                     height=20)
-        pm.text(label='E{}:'.format(i + 1),
-                enable=False)
-
-        # External Axis 1 Min limit
-        pm.textField("t_E{}Min".format(i + 1),
-                     font=FONT,
-                     placeholderText='Min',
-                     enable=False,
-                     width=cell_width,
-                     changeCommand='import pymel.core as pm; ' \
-                                   'pm.setFocus("t_E{}Max"); ' \
-                     .format(i + 1, i + 1))
-        # Extarnal Axis 1 Max limit
-        set_focus_count = ((i + 1) % 6) + 1
-        pm.textField("t_E{}Max".format(i + 1),
-                     font=FONT,
-                     placeholderText='Max',
-                     enable=False,
-                     width=cell_width,
-                     changeCommand='import pymel.core as pm; ' \
-                                   'pm.setFocus("t_E{}Min"); ' \
-                     .format(set_focus_count, i + 1))
-
-        pm.setParent('..')
-	'''
-
-    pm.setParent(parent_layout)
-
-    return position_limits_tab
-
-
-def _build_velocity_limits_tab(parent_layout):
-    velocity_limits_tab = pm.rowColumnLayout(numberOfColumns=2)
+    pm.setParent(limits_frame_cols)
 
     # Set up primary axis velocity limts tab
-    pm.columnLayout(adj=True, columnAttach=('both', 5))
+    pm.columnLayout(adj=True, columnAttach=('right', 5))
+    pm.separator(height=5, style='none')
+    pm.text('Velocity:', align='center')
     pm.separator(height=5, style='none')
 
     # Input text field width for all axis limits
-    cell_width = 37
+    cell_width = 40
 
     for i in range(6):
         # Axis 1 Limit row
@@ -827,8 +789,6 @@ def _build_velocity_limits_tab(parent_layout):
                      columnAttach=(1, 'left', 3),
                      columnWidth=[(2, 2 * cell_width)],
                      height=20)
-        pm.text(label='A{}:'.format(i + 1), enable=False)
-
         set_focus_count = ((i + 1) % 6) + 1
         # Axis 1 Min limit
         pm.textField("t_A{}vel".format(i + 1),
@@ -842,59 +802,15 @@ def _build_velocity_limits_tab(parent_layout):
                      .format(set_focus_count))
         pm.setParent('..')
 
-    pm.setParent(velocity_limits_tab)
+    pm.setParent(limits_frame)
 
-    '''
-    # Set up external axis velocity limits tab
-    pm.columnLayout(adj=True, columnAttach=('both', 5))
-    pm.separator(height=5, style='none')
-
-    for i in range(6):
-        # External Axis 1 Limit row
-        pm.rowLayout(numberOfColumns=2,
-                     columnAttach=(1, 'left', 3),
-                     columnWidth=[(2, 2 * cell_width)],
-                     height=20)
-        pm.text(label='E{}:'.format(i + 1), enable=False)
-
-        set_focus_count = ((i + 1) % 6) + 1
-        # Axis 1 Min limit
-        pm.textField("t_A{}vel".format(i + 1),
-                     font=FONT,
-                     placeholderText='',
-                     width=2 * cell_width,
-                     enable=False,
-                     changeCommand='import pymel.core as pm; ' \
-                                   'import mimic_utils; ' \
-                                   'pm.setFocus("t_E{}vel"); ' \
-                     .format(set_focus_count))
-        pm.setParent('..')
-	'''
-
-    pm.setParent(parent_layout)
-
-    return velocity_limits_tab
-
-
-def _build_axis_limits_frame(parent_layout):
-    limits_frame = pm.frameLayout(label="Axis Limits", collapsable=True)
-    limits_tab_layout = pm.tabLayout()
-
-    position_limits_tab = _build_position_limits_tab(limits_tab_layout)
-    velocity_limits_tab = _build_velocity_limits_tab(limits_frame)
-
-    tabs = [(position_limits_tab, 'Postition'),
-            (velocity_limits_tab, 'Velocity')]
-
-    assign_tabs(tabs, limits_tab_layout)
-
-    pm.columnLayout()
+    pm.columnLayout(adj=True, columnAttach=('both', 3))
     pm.gridLayout(nc=2, cw=114, ch=25)
     pm.button(label='Get Axis Limits', command=mimic_utils.get_axis_limits)
     pm.button(label='Set Axis Limits', command=mimic_utils.set_axis_limits)
 
     pm.setParent('..')
-    pm.button(label='Clear', width=228, command=mimic_utils.clear_limits_ui)
+    pm.button(label='Clear', width=218, command=mimic_utils.clear_limits_ui)
 
     pm.setParent(parent_layout)
 
