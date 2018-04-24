@@ -1048,12 +1048,13 @@ def build_external_tab(parent_layout):
                               (external_tabs_layout, "right", 0)])
 
     external_axes_tab_layout = _build_external_axes_tab(external_tabs_layout)
-    io_tab_layout = _build_io_tab(external_tabs_layout)
-    comms_tab_layout = _build_comms_tab(external_tabs_layout)
+    # io_tab_layout = _build_io_tab(external_tabs_layout)
+    # comms_tab_layout = _build_comms_tab(external_tabs_layout)
 
     tabs = [[external_axes_tab_layout, 'External Axes'],
-            [io_tab_layout, 'IOs'],
-            [comms_tab_layout, 'Comms']]
+            # [io_tab_layout, 'IOs'],
+            # [comms_tab_layout, 'Comms']
+            ]
 
     assign_tabs(tabs, external_tabs_layout)
 
