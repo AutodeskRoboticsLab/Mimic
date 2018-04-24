@@ -422,7 +422,24 @@ def _attach_robot_to_external_axis(robot, external_axis_CTRL):
     pm.setAttr(local_CTRL + '.v', 0)
 
 
-def _set_external_axis_CTRL_limits(external_axis_CTRL, external_axis_params):
+def _enable_external_axis_limits(external_axis_CTRL, driving_attribute_trunc, driving_axis, enable=True):
+    """
+    Enables/Disables external axis' limit controls
+    """
+
+    pm.setAttr('{}.min{}{}LimitEnable'.format(external_axis_CTRL,
+                                              driving_attribute_trunc,
+                                              driving_axis),
+               enable)
+
+
+    pm.setAttr('{}.max{}{}LimitEnable'.format(external_axis_CTRL,
+                                              driving_attribute_trunc,
+                                              driving_axis),
+               enable)
+
+
+def _set_external_axis_CTRL_limits(robot_name, external_axis_CTRL, external_axis_params):
     """
     Sets the selected external axis controller translation or rotation limits
     :param external_axis_CTRL: string, name of external axis controller
@@ -430,6 +447,8 @@ def _set_external_axis_CTRL_limits(external_axis_CTRL, external_axis_params):
     Mimic UI
     :return:
     """
+    
+    axis_name = external_axis_params['Axis Name']
     driving_attribute = external_axis_params['Driving Attribute']
     position_limit_min = external_axis_params['Position Limit Min']
     position_limit_max = external_axis_params['Position Limit Max']
@@ -437,7 +456,6 @@ def _set_external_axis_CTRL_limits(external_axis_CTRL, external_axis_params):
 
     # Break down driving attribute into transform and axis companents
     # 'translateX' becomes 'translate', 'X'
-    driving_transformation = driving_attribute[:-1]
     driving_axis = driving_attribute[-1]
 
     # Prep transformation string for Maya's limit attributes
@@ -446,38 +464,41 @@ def _set_external_axis_CTRL_limits(external_axis_CTRL, external_axis_params):
     else:
         driving_attribute_trunc = 'Rot'
 
-    pm.setAttr('{}.min{}{}LimitEnable'.format(external_axis_CTRL,
-                                              driving_attribute_trunc,
-                                              driving_axis),
-               True)
+    # Define external axis' attribute path on robot
+    external_axis_min_limit_path = '{}|robot_GRP|target_CTRL.{}_axisMin' \
+								   .format(robot_name, axis_name)
 
-    pm.setAttr('{}.min{}{}Limit'.format(external_axis_CTRL,
-                                        driving_attribute_trunc,
-                                        driving_axis),
-               position_limit_min)
+    external_axis_max_limit_path = '{}|robot_GRP|target_CTRL.{}_axisMax' \
+								   .format(robot_name, axis_name)
 
-    pm.setAttr('{}.max{}{}LimitEnable'.format(external_axis_CTRL,
-                                              driving_attribute_trunc,
-                                              driving_axis),
-               True)
+    # Enable the external axis controllers' limits and connect them to the 
+    # position attribute on the target controller
+    _enable_external_axis_limits(external_axis_CTRL,
+    							 driving_attribute_trunc,
+    							 driving_axis,
+    							 enable=True)
 
-    pm.setAttr('{}.max{}{}Limit'.format(external_axis_CTRL,
-                                        driving_attribute_trunc,
-                                        driving_axis),
-               position_limit_max)
+    pm.connectAttr(external_axis_min_limit_path,
+				   '{}.min{}{}Limit'.format(external_axis_CTRL,
+											driving_attribute_trunc,
+											driving_axis))
 
+    pm.connectAttr(external_axis_max_limit_path,
+				   '{}.max{}{}Limit'.format(external_axis_CTRL,
+											driving_attribute_trunc,
+                                        	driving_axis))
+	
 
-def _disable_external_axis_CTRL_limits(external_axis_CTRL, driving_attribute):
+def _clear_external_axis_CTRL_limits(robot_name, external_axis_CTRL, driving_attribute, axis_name):
     """
     Disables the axis limits for the input controller.
     :param external_axis_CTRL: string, name of external axis controller
     :param driving_attribute: string, driving attribute e.g. 'rotateX'
     :return:
     """    
-
+    
     # Break down driving attribute into transform and axis companents
     # 'translateX' becomes 'translate', 'X'
-    driving_transformation = driving_attribute[:-1]
     driving_axis = driving_attribute[-1]
 
     # Prep transformation string for Maya's limit attributes
@@ -485,17 +506,29 @@ def _disable_external_axis_CTRL_limits(external_axis_CTRL, driving_attribute):
         driving_attribute_trunc = 'Trans'
     else:
         driving_attribute_trunc = 'Rot'
+    
+    # Define external axis' attribute path on robot
+    external_axis_min_limit_path = '{}|robot_GRP|target_CTRL.{}_axisMin' \
+                                   .format(robot_name, axis_name)
 
-    pm.setAttr('{}.min{}{}LimitEnable'.format(external_axis_CTRL,
-                                              driving_attribute_trunc,
-                                              driving_axis),
-               False)
+    external_axis_max_limit_path = '{}|robot_GRP|target_CTRL.{}_axisMax' \
+                                   .format(robot_name, axis_name)
 
-    pm.setAttr('{}.max{}{}LimitEnable'.format(external_axis_CTRL,
-                                              driving_attribute_trunc,
-                                              driving_axis),
-               False)
+    _enable_external_axis_limits(external_axis_CTRL,
+                                 driving_attribute_trunc,
+                                 driving_axis,
+                                 enable=False)
 
+    pm.disconnectAttr(external_axis_min_limit_path,
+                      '{}.min{}{}Limit'.format(external_axis_CTRL,
+                                               driving_attribute_trunc,
+                                               driving_axis))
+
+    pm.disconnectAttr(external_axis_max_limit_path,
+                      '{}.max{}{}Limit'.format(external_axis_CTRL,
+                                               driving_attribute_trunc,
+                                               driving_axis))
+		
 
 def add_external_axis(*args):
     """
@@ -583,6 +616,12 @@ def add_external_axis(*args):
                attributeType='bool',
                parent=parent_attribute)
 
+    # If the driving attribute is a translate attribute, we convert the user
+    # input from millimeters to Maya's default unit of centimeters
+    if 'translate' in driving_attribute:
+        position_limit_min = position_limit_min/10
+        position_limit_max = position_limit_max/10
+
     # Set all External Axis attributes accordingly
     axis_parent_attribute = target_CTRL + '.' + axis_name
     pm.setAttr(axis_parent_attribute + '_axisNumber', axis_number, lock=True)
@@ -598,7 +637,9 @@ def add_external_axis(*args):
                    destination_attribute_name)
 
     # Set the External Axis control limits
-    _set_external_axis_CTRL_limits(external_axis_CTRL, external_axis_params)
+    _set_external_axis_CTRL_limits(robot,
+								   external_axis_CTRL,
+								   external_axis_params)
 
     # Select the robot's target/tool controller
     tool_CTRL = robot + '|robot_GRP|tool_CTRL'
@@ -673,12 +714,22 @@ def update_external_axis(*args):
         pm.disconnectAttr(old_driving_attribute_path, destination_attribute_name)
         pm.connectAttr(new_driving_attribute_path, destination_attribute_name)
 
-    # Update the external axis' position/rotation limits
-    # Find the original driving attribute and disable it's axis limits
-    _disable_external_axis_CTRL_limits(external_axis_CTRL,
-                                       old_driving_attribute)
-    _set_external_axis_CTRL_limits(external_axis_CTRL, external_axis_params)
+        # Update the external axis' position/rotation limits
+        # Find the original driving attribute and disable it's axis limits
+        _clear_external_axis_CTRL_limits(robot,
+    									 external_axis_CTRL,
+                                         old_driving_attribute,
+                                         axis_name)
 
+        _set_external_axis_CTRL_limits(robot,
+                                       external_axis_CTRL,
+                                       external_axis_params)
+
+    # If the driving attribute is a translate attribute, we convert the user
+    # input from millimeters to Maya's default unit of centimeters
+    if 'translate' in driving_attribute:
+        position_limit_min = position_limit_min/10
+        position_limit_max = position_limit_max/10
 
     # Set all appropriate attributes on the robot
     pm.setAttr(axis_parent_attribute + '_axisNumber', lock=False)
@@ -736,6 +787,23 @@ def remove_external_axis(*args):
 
     parent_attribute = '{}.externalAxis_{}'.format(target_CTRL, axis_name)
 
+    # Remove connections between the axis controller and the robot
+    external_axis_attribute_path = target_CTRL + '.' + axis_name
+    external_axis_CTRL, driving_attribute = _get_external_axis_connections(
+                                            external_axis_attribute_path)
+    driving_axis = driving_attribute[-1]
+    # Prep transformation string for Maya's limit attributes
+    if 'translate' in driving_attribute:
+        driving_attribute_trunc = 'Trans'
+    else:
+        driving_attribute_trunc = 'Rot'
+    _enable_external_axis_limits(external_axis_CTRL,
+                                 driving_attribute_trunc,
+                                 driving_axis,
+                                 enable=False)
+
+
+    # Delete External Axis attribute on the robot controller
     pm.deleteAttr(parent_attribute)
 
     # Clear the axis from the Mimic UI selection and reset the UI
@@ -752,6 +820,7 @@ def remove_external_axis(*args):
                     'localCTRL_externalAxisCTRL_parentConstraint'
                     .format(robot))
         pm.setAttr('{}|robot_GRP|local_CTRL.visibility'.format(robot), 1)
+
     pm.headsUpMessage('External Axis \'{}\' removed successfully from {}'
                       .format(axis_name, robot))
 
@@ -832,12 +901,20 @@ def update_external_axis_UI(axis_info):
                   edit=True,
                   value=axis_info['Driving Attribute'])
 
+    # If the driving attribute is a translate attribute, we convert the user
+    # input from millimeters to Maya's default unit of centimeters
+    position_limit_min = axis_info['Position Limit Min']
+    position_limit_max = axis_info['Position Limit Max']
+    if 'translate' in axis_info['Driving Attribute']:
+        position_limit_min = position_limit_min*10
+        position_limit_max = position_limit_max*10
+
     pm.textField('t_externalAxisLimitMin',
                  edit=True,
-                 text=str(axis_info['Position Limit Min']))
+                 text=str(position_limit_min))
     pm.textField('t_externalAxisLimitMax',
                  edit=True,
-                 text=str(axis_info['Position Limit Max']))
+                 text=str(position_limit_max))
     pm.textField('t_externalAxisVelocityLimit',
                  edit=True,
                  text=str(axis_info['Velocity Limit']))

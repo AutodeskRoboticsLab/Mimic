@@ -867,7 +867,7 @@ def _build_add_external_axis_frame(parent_layout):
     					 placeholderText='mm')
 			pm.textField('t_externalAxisVelocityLimit',
 		                 edit=True,
-		                 placeholderText='mm/s')
+		                 placeholderText='m/s')
 		else:
 			pm.textField('t_externalAxisLimitMin',
     					 edit=True,
@@ -925,7 +925,7 @@ def _build_add_external_axis_frame(parent_layout):
     pm.text(label='Velocity Limit:')
 
     pm.textField('t_externalAxisVelocityLimit',
-                 placeholderText='mm/s')
+                 placeholderText='m/s')
     pm.setParent('..')
 
     pm.rowLayout(numberOfColumns=1)
