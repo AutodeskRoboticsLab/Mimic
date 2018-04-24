@@ -12,7 +12,7 @@ DEFAULT_TOOL = 'tool0'
 DEFAULT_WOBJ = 'wobj0'
 DEFAULT_SPEED = 'v100'
 DEFAULT_ZONE = 'z0'
-DEFAULT_EXAX = [9E9, 9E9, 9E9, 9E9, 9E9, 9E9]
+DEFAULT_EXAX = ['9E9', '9E9', '9E9', '9E9', '9E9', '9E9']
 DEFAULT_CONF = [0, 0, 0, 0]
 
 # Default program

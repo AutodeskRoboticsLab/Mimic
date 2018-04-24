@@ -21,6 +21,7 @@ import mimic_utils
 from postproc import postproc
 from postproc import postproc_setup
 from postproc import postproc_options
+import mimic_external_axes
 
 
 OUTPUT_WINDOW_NAME = 'programOutputScrollField'
@@ -54,12 +55,18 @@ def save_program(*args):
     _check_command_dicts(command_dicts, *program_settings)
 
     # Continue to save program:
+    _process_program(command_dicts, *program_settings)
 
-    robot = program_settings[0]
-    # animation_settings = program_settings[1]
-    postproc_settings = program_settings[2]
-    user_options = program_settings[3]
 
+def _process_program(command_dicts, robot, animation_settings, postproc_settings, user_options):
+    """
+    Process a command dictionary as a program using the selected post processor.
+    :param robot: Name of the robot
+    :param animation_settings: User-defined animation settings.
+    :param animation_settings: User-defined program settings.
+    :param user_options: User-defined postproc options.
+    :return:
+    """
     # Get the selected post processor
     processor_type = postproc_settings['Processor Type']
     processor = postproc_setup.POST_PROCESSORS[processor_type]()
@@ -259,7 +266,7 @@ def _get_settings_for_postproc(robot):
 def _get_command_dicts(robot, animation_settings, postproc_settings, user_options):
     """
     Get robot commands from animation and options.
-    :param robot:
+    :param robot: Name of the robot
     :param animation_settings: User-defined animation settings.
     :param animation_settings: User-defined program settings.
     :param user_options: User-defined postproc options.
@@ -279,7 +286,7 @@ def _get_command_dicts(robot, animation_settings, postproc_settings, user_option
         pass
 
     # Get commands from sampled frames
-    command_dicts = _sample_frames(robot, frames, user_options)
+    command_dicts = _sample_frames_get_command_dicts(robot, frames, animation_settings, user_options)
     return command_dicts
 
 
@@ -291,9 +298,10 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
     """
     # Check to see if the user has elected to ignore warnings
     ignore_warnings = postproc_settings['Ignore Warnings']
+    warning = ''  # Temporary holder
 
     # Check if limits have been exceeded (i.e. velocity, acceleration)
-    if user_options.Include_axes:
+    if user_options.Include_axes and not user_options.Ignore_motion:
         command_dicts = _check_command_rotations(robot, animation_settings, command_dicts)
         warning = _check_velocity_of_axes(robot, command_dicts, animation_settings['Framerate'])
         if warning != '':
@@ -303,7 +311,18 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
             if not ignore_warnings:
                 raise Exception(warning)
 
-    if user_options.Include_pose:
+    if user_options.Include_external_axes and not user_options.Ignore_motion:
+        # TODO: Implement velocity check for external axes
+        # warning = _check_velocity_of_external_axes(robot, command_dicts, animation_settings['Framerate'])
+        # if warning != '':
+        #     # Print this one always
+        #     warning += '\n'
+        #     pm.scrollField(OUTPUT_WINDOW_NAME, insertText=warning, edit=True)
+        #     if not ignore_warnings:
+        #         raise Exception(warning)
+        pass
+
+    if user_options.Include_pose and not user_options.Ignore_motion:
         # TODO: Implement velocity check for poses
         # warning = _check_velocity_of_pose(robot, command_dicts, animation_settings['Framerate'])
         # if warning != '':
@@ -314,6 +333,11 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
         #         raise Exception(warning)
         pass
 
+    # If all checks passed then we don't have any warnings...
+    if warning == '':
+        no_warning = 'All checks passed!\n'
+        pm.scrollField(OUTPUT_WINDOW_NAME, insertText=no_warning, edit=True)
+
 
 def _check_velocity_of_axes(robot, command_dicts, framerate):
     """
@@ -322,35 +346,37 @@ def _check_velocity_of_axes(robot, command_dicts, framerate):
     [0, 1, 2, 3] will be formatted '0-3'.
     :param robot: name string of the selected robot
     :param command_dicts: A list of list of robot axes
-    :param command_dicts: Maya animation framerate (fps)
+    :param framerate: Maya animation framerate (fps)
     :return:
     """
+    frames = [c['Frame'] for c in command_dicts]
+    axes_at_each_frame = [c[postproc.AXES] for c in command_dicts]
     velocity_limits = mimic_utils.get_velocity_limits(robot)
+
     violations = {}
-
-    count = len(command_dicts)
-    previous_frame = 0
-    previous_axes = []
-
-    for command_index in range(count):
+    _previous_frame = 0
+    _previous_axes = []
+    for i in range(len(axes_at_each_frame)):
         # Get time and axes right now
-        command_frame = command_dicts[command_index]['Frame']
-        command_axes = command_dicts[command_index]['Axes']
-        if command_index > 0:  # skip zeroth
-            displacement_time = abs(command_frame - previous_frame) / framerate
-            for axis_index in range(6):
-                displacement = abs(command_axes[axis_index] - previous_axes[axis_index])
+        _current_frame = frames[i]
+        _current_axes = axes_at_each_frame[i]
+        if i > 0:  # skip zeroth
+            displacement_time = abs(_current_frame - _previous_frame) / framerate
+            for j in range(len(_current_axes)):
+                _previous_axis = _previous_axes[j]
+                _current_axis = _current_axes[j]
+                displacement = abs(_current_axis - _previous_axis)
                 velocity = displacement / displacement_time
                 # Check if a limit has been violated
-                if velocity > velocity_limits[axis_index]:
+                if velocity > velocity_limits[j]:
                     # Add axis name to violations dict
-                    axis_name = 'Axis {}'.format(axis_index + 1)
+                    axis_name = 'Axis {}'.format(j + 1)
                     if axis_name not in violations:
                         violations[axis_name] = []
                     # Add time to violations dict
-                    violations[axis_name].append(command_frame)
-        previous_frame = command_frame
-        previous_axes = command_axes
+                    violations[axis_name].append(_current_frame)
+        _previous_frame = _current_frame
+        _previous_axes = _current_axes
 
     # Format a warning
     warning_params = []
@@ -404,7 +430,7 @@ def _check_command_rotations(robot, animation_settings, command_dicts):
     # Get axes, if they exist
     command_axes = []
     for command_dict in command_dicts:
-        axes = command_dict['Axes'] if 'Axes' in command_dict else None
+        axes = command_dict[postproc.AXES] if postproc.AXES in command_dict else None
         command_axes.append(list(axes))
     # Make sure the user has selected use of axes
     if not all(x is None for x in command_axes):
@@ -435,7 +461,7 @@ def _check_command_rotations(robot, animation_settings, command_dicts):
                     pass
             # Replace the original commands with the new commands
             reconciled_axes = postproc.Axes(*command_axes[command_index])
-            command_dicts[command_index]['Axes'] = reconciled_axes
+            command_dicts[command_index][postproc.AXES] = reconciled_axes
     return command_dicts
 
 
@@ -493,11 +519,12 @@ def _get_frames_using_keyframes_only(robot, animation_settings):
     return frames
 
 
-def _sample_frames(robot, frames, user_options):
+def _sample_frames_get_command_dicts(robot_name, frames, animation_settings, user_options):
     """
     Sample robot commands using a list of frames and user options.
-    :param robot:
+    :param robot_name:
     :param frames:
+    :param animation_settings:
     :param user_options:
     :return:
     """
@@ -511,27 +538,45 @@ def _sample_frames(robot, frames, user_options):
         command_dict = {}
         # Add this frame number/step/index to the dictionary
         command_dict['Frame'] = frame
+        command_dict['Framerate'] = animation_settings['Framerate']
         # Get motion parameters
         if not user_options.Ignore_motion:
             if user_options.Include_axes:
-                axes = _sample_frame_get_axes(robot, frame)
-                command_dict['Axes'] = postproc.Axes(*axes)
+                axes = _sample_frame_get_axes(robot_name, frame)
+                command_dict[postproc.AXES] = postproc.Axes(*axes)
             if user_options.Include_pose:
-                pose = _sample_frame_get_pose(robot, frame)
-                command_dict['Pose'] = postproc.Pose(*pose)
+                pose = _sample_frame_get_pose(robot_name, frame)
+                command_dict[postproc.POSE] = postproc.Pose(*pose)
             if user_options.Include_external_axes:
-                # external_axes = None
-                # command_dict['External Axes'] = postproc.ExternalAxes(*external_axes)
+                external_axes = _sample_frame_get_external_axes(robot_name, frame)
+                command_dict[postproc.EXTERNAL_AXES] = postproc.ExternalAxes(*external_axes)
                 pass
             if user_options.Include_configuration:
-                # configuration = None
-                # command_dict['Configuration'] = postproc.Configuration(*configuration)
+                # TODO: Finish implementing configurations
+                # configuration = _sample_frame_get_configuration(robot_name, frame)
+                # command_dict[postproc.CONFIGURATION] = postproc.Configuration(*configuration)
                 pass
         # Get IO parameters
         if not user_options.Ignore_IOs:
             if user_options.Include_digital_outputs:
+                # TODO: Implement digital outputs
                 # digital_output = None
-                # command_dict['Digital Output'] = postproc.DigitalOutput(*digital_output)
+                # command_dict[postproc.DIGITAL_OUTPUT] = postproc.DigitalOutput(*digital_output)
+                pass
+            if user_options.Include_digital_inputs:
+                # TODO: Implement digital inputs
+                # digital_input = None
+                # command_dict[postproc.DIGITAL_INPUT'] = postproc.DigitalOutput(*digital_input)
+                pass
+            if user_options.Include_analog_outputs:
+                # TODO: Implement analog outputs
+                # analog_output = None
+                # command_dict[postproc.ANALOG_OUTPUT] = postproc.DigitalOutput(*analog_output)
+                pass
+            if user_options.Include_analog_inputs:
+                # TODO: Implement analog inputs
+                # analog_input = None
+                # command_dict[postproc.ANALOG_INPUT] = postproc.DigitalOutput(*analog_input)
                 pass
         command_dicts.append(command_dict)
     # Reset current frame (just in case)
@@ -539,16 +584,16 @@ def _sample_frames(robot, frames, user_options):
     return command_dicts
 
 
-def _sample_frame_get_axes(robot, frame):
+def _sample_frame_get_axes(robot_name, frame):
     """
     Get robot Axes from an animation frame.
-    :param robot:
-    :param frame:
+    :param robot_name: Name of the robot
+    :param frame: Frame to sample
     :return:
     """
     axes = []
     for i in range(6):
-        axis_name = '{}|robot_GRP|target_CTRL.axis{}'.format(robot, i + 1)
+        axis_name = '{}|robot_GRP|target_CTRL.axis{}'.format(robot_name, i + 1)
         axis = pm.getAttr(axis_name, time=frame)
         axes.append(axis)
     return axes
@@ -558,7 +603,7 @@ def _sample_frame_get_pose(robot_name, frame):
     """
     Get robot Pose from an animation frame.
     :param robot_name: Name of the robot
-    :param frame:
+    :param frame: Frame to sample
     :return:
     """
     # Set the time
@@ -575,45 +620,126 @@ def _sample_frame_get_pose(robot_name, frame):
     # Local Base Frame controller (circle control at base of the robot).
     base_name = pm.ls('{}|robot_GRP|local_CTRL'.format(robot_name))[0]
 
+    # Get name of the tcp and base
     world_matrix = '.worldMatrix'
-    tool_name_world_matrix = tool_name + world_matrix
+    tcp_name_world_matrix = tool_name + world_matrix
     base_name_world_matrix = base_name + world_matrix
 
-    # Get rotation with respect to Maya's world frame
-    tool_matrix = pm.getAttr(tool_name_world_matrix, time=frame)
-    base_matrix = pm.getAttr(base_name_world_matrix, time=frame)
-    tool_rotation = general_utils.matrix_get_3x3_from_4x4(tool_matrix)
-    base_rotation = general_utils.matrix_get_3x3_from_4x4(base_matrix)
+    # TRANSLATIONS
 
-    # Get translation per Maya's world frame
-    # pm.currentTime(frame)  # Must actually update the animation...
-    tool_translation = pm.xform(tool_name, query=True, rp=True, ws=True)
+    # Get translation with respect to Maya's world frame
+    tcp_translation = pm.xform(tool_name, query=True, rp=True, ws=True)
     base_translation = pm.xform(base_name, query=True, rp=True, ws=True)
+    general_utils.matrix_print([tcp_translation], 'tcp_translation')
+    general_utils.matrix_print([base_translation], 'base_translation')
 
-    # Get translation and rotation
-    pose_translation = [tool_translation[i] - base_translation[i] for i in range(3)]
-    pose_rotation = general_utils.matrix_multiply_3x3(tool_rotation, base_rotation)
+    # ROTATIONS
 
-    # Reorder position of parameters
-    order = [2, 0, 1]  # Indices to re-order; from Maya CS to Robot CS
-    reordered_translation = [pose_translation[i] * 10 for i in order]
-    reordered_rotation = [[pose_rotation[i][j] for j in order] for i in order]
+    # Get TCP rotation with respect to Maya's world frame
+    _tcp_matrix = pm.getAttr(tcp_name_world_matrix, time=frame)
+    tcp_rotation = general_utils.matrix_get_rotations(_tcp_matrix)
+    general_utils.matrix_print(tcp_rotation, 'tcp_rotation')
 
-    # Apply rotation depending on robot type
+    # Get Base rotation with respect to Maya's world frame
+    _base_matrix = pm.getAttr(base_name_world_matrix, time=frame)
+    base_rotation = general_utils.matrix_get_rotations(_base_matrix)
+    general_utils.matrix_print(base_rotation, 'base_rotation')
+
+    # TRANSFORMATIONS
+
+    # Compose 4x4 matrices using the rotation and translation from the above
+    tcp_matrix_4x4 = general_utils.matrix_compose_4x4(tcp_rotation, tcp_translation)
+    base_matrix_4x4 = general_utils.matrix_compose_4x4(base_rotation, base_translation)
+    general_utils.matrix_print(tcp_matrix_4x4, 'tcp_matrix_4x4')
+    general_utils.matrix_print(base_matrix_4x4, 'base_matrix_4x4')
+
+    # Invert the base matrix
+    base_matrix_4x4 = general_utils.matrix_get_inverse(base_matrix_4x4)
+    general_utils.matrix_print(base_matrix_4x4, 'base_matrix_4x4')
+
+    # Get pose itself
+    initial_pose_matrix = general_utils.matrix_multiply(base_matrix_4x4, tcp_matrix_4x4)
+    general_utils.matrix_print(initial_pose_matrix, 'initial_pose_matrix')
+
+    # CONVERSIONS
+
+    # Decompose the initial pose matrix
+    initial_translation = general_utils.matrix_get_translation(initial_pose_matrix)
+    initial_rotations = general_utils.matrix_get_rotations(initial_pose_matrix)
+
+    # Rearrange from Maya CS (mcs) to Robot CS (rcs)
+    indices = [2, 0, 1]
+    new_translation = [initial_translation[i] * 10 for i in indices]  # cm to mm
+    new_rotation = [[initial_rotations[i][j] for j in indices] for i in indices]
+
+    # Define rotation matrix and convert the rotations based robot type
+    # Based on the orientation of the coordinate frame of the mounting flange
     # TODO: Integrate this with rigs, unclear and shouldn't be hardcoded
     robot_type = mimic_utils.get_robot_type(robot_name)
     if robot_type == 'ABB':
-        conversion_matrix = [[0, 0, -1], [0, 1, 0], [1, 0, 0]]
-    elif robot_type == 'KUKA':
-        conversion_matrix = [[0, -1, 0], [0, 0, 1], [-1, 0, 0]]
+        conversion_rotation = [
+            [0, 0, -1],
+            [0, 1, 0],
+            [1, 0, 0]
+        ]
+    # elif robot_type == 'KUKA':
+    #     conversion_rotation = [
+    #         [0, -1, 0],
+    #         [0, 0, 1],
+    #         [-1, 0, 0]
+    #     ]
     else:
         raise Exception('Robot type not supported for Pose movement')
 
-    # Convert parameters from Maya-space to Robot-space
-    converted_rotation = general_utils.matrix_multiply_3x3(reordered_rotation, conversion_matrix)
-    converted_translation = general_utils.matrix_multiply_1xm_nxm([reordered_translation], reordered_rotation)[0]
+    # Perform the conversion operation itself
+    converted_rotation = general_utils.matrix_multiply(conversion_rotation, new_rotation)
+    general_utils.matrix_print(converted_rotation, 'converted_rotation')
 
-    pose = []
-    pose.extend(converted_translation)
-    [pose.extend(rotation) for rotation in converted_rotation]
+    # Compose pose
+    pose_matrix = general_utils.matrix_compose_4x4(converted_rotation, new_translation)
+    general_utils.matrix_print(pose_matrix, 'pose_matrix')
+
+    # Decompose pose as expected for output
+    pose = general_utils.matrix_decompose_4x4_completely(pose_matrix)
     return pose
+
+
+def _sample_frame_get_external_axes(robot_name, frame):
+    """
+    Get robot External Axes from an animation frame.
+    :param robot_name: Name of the robot
+    :param frame: Frame to sample
+    :return:
+    """
+    # Set up keys
+    key_ignore = 'Ignore'
+    key_axis_number = 'Axis Number'
+    key_position = 'Position'
+    # Create an list of Nones for initial external axes
+    external_axes = [None for _ in range(6)]
+    # Get all external axes for this robot
+    external_axis_names = mimic_external_axes.get_external_axis_names(robot_name)
+    # Get info dict for each of those external axes
+    for external_axis_name in external_axis_names:
+        info = mimic_external_axes.get_external_axis_info_simple(robot_name, external_axis_name, frame)
+        # Get values from info dict
+        ignore = info[key_ignore]
+        if not ignore:
+            # Put it in the right place
+            axis_number = info[key_axis_number]
+            axis_index = axis_number - 1
+            position = info[key_position]
+            external_axes[axis_index] = position
+    # Return an ordered list of Nones and/or positions
+    return external_axes
+
+
+def _sample_frame_get_configuration(robot_name, frame):
+    """
+    Get robot Configuration from an animation frame.
+    :param robot_name:
+    :param frame:
+    :return:
+    """
+    # TODO: Implementation of this!
+    pass

@@ -35,6 +35,9 @@ _fields = [
     'Ignore_IOs',
     'Process_IOs_first',
     'Include_digital_outputs',
+    'Include_digital_inputs',
+    'Include_analog_outputs',
+    'Include_analog_inputs',
     'Include_checksum',
 ]
 UserOptions = namedtuple(
@@ -53,7 +56,10 @@ def configure_user_options(
         include_configuration=False,
         ignore_ios=False,
         process_ios_first=False,
-        include_digital_output=False,
+        include_digital_outputs=False,
+        include_digital_inputs=False,
+        include_analog_outputs=False,
+        include_analog_inputs=False,
         include_checksum=False):
     """
     Configure user options. Defaults every parameter to False unless specified
@@ -68,7 +74,10 @@ def configure_user_options(
     :param include_configuration: Include configuration in command.
     :param ignore_ios: Ignore all IO commands.
     :param process_ios_first: Process IOs and append to output before motion.
-    :param include_digital_output: Include digital output in command.
+    :param include_digital_outputs: Include digital outputs in command.
+    :param include_digital_inputs: Include digital inputs in command.
+    :param include_analog_outputs: Include analog outputs in command.
+    :param include_analog_inputs: Include analog inputs in command.
     :param include_checksum: Include a CRC32 checksum in output.
     :return:
     """
@@ -83,7 +92,10 @@ def configure_user_options(
         Include_configuration=include_configuration,
         Ignore_IOs=ignore_ios,
         Process_IOs_first=process_ios_first,
-        Include_digital_outputs=include_digital_output,
+        Include_digital_outputs=include_digital_outputs,
+        Include_digital_inputs=include_digital_inputs,
+        Include_analog_outputs=include_analog_outputs,
+        Include_analog_inputs=include_analog_inputs,
         Include_checksum=include_checksum
     )
 

@@ -160,23 +160,23 @@ TEMPLATES = {
 
 # COMMANDS
 MOTION_COMMAND = 'motion_command'
+_motion_command_fields = [
+    postproc.AXES,
+    postproc.EXTERNAL_AXES,
+    postproc.POSE,
+    postproc.CONFIGURATION
+]
 MotionCommand = namedtuple(
-    MOTION_COMMAND, [
-        postproc.AXES,
-        postproc.EXTERNAL_AXES,
-        postproc.POSE,
-        postproc.CONFIGURATION
-    ]
+    MOTION_COMMAND, _motion_command_fields
 )
 
 IO_COMMAND = 'io_command'
+_io_command_fields = [
+    postproc.DIGITAL_OUTPUT,
+    postproc.ANALOG_OUTPUT
+]
 IOCommand = namedtuple(
-    IO_COMMAND, [
-        postproc.DIGITAL_OUTPUT,
-        postproc.DIGITAL_INPUT,
-        postproc.ANALOG_OUTPUT,
-        postproc.ANALOG_INPUT
-    ]
+    IO_COMMAND, _io_command_fields
 )
 
 
@@ -262,19 +262,17 @@ class SimpleRAPIDProcessor(postproc.PostProcessor):
         :return:
         """
         # Try to get a MotionCommand
-        keys = ['Axes', 'ExternalAxes', 'Pose', 'DigitalOutput']
         params = []
-        for key in keys:
-            param = params_dict[key] if key in params_dict else None
+        for field in _motion_command_fields:
+            param = params_dict[field] if field in params_dict else None
             params.append(param)
         if params.count(None) != len(params):
             return MotionCommand(*params)
         else:
             # Try to get an IO command
-            keys = ['DigitalOutput', 'DigitalInput', 'AnalogOutput', 'AnalogInput']
             params = []
-            for key in keys:
-                param = params_dict[key] if key in params_dict else None
+            for field in _io_command_fields:
+                param = params_dict[field] if field in params_dict else None
                 params.append(param)
             if params.count(None) != len(params):
                 return IOCommand(*params)
@@ -291,9 +289,11 @@ class SimpleRAPIDProcessor(postproc.PostProcessor):
             ignore_motion=True,
             use_motion_as_variables=True,
             use_nonlinear_motion=True,
-            use_linear_motion=False,
+            use_linear_motion=True,
             include_axes=True,
-            include_pose=False
+            include_external_axes=True,
+            include_pose=True,
+            include_configuration=True
         )
 
 
@@ -313,13 +313,23 @@ def _process_motion_command(command, opts):  # Implement in base class!
         if command.pose is not None:
             motion_type = MOVE_L
             target_data_type = ROBTARGET
-            target_data.extend(_convert_pose(command.pose))
+            pose = _convert_pose(command.pose)
+            params = [general_utils.num_to_str(p, include_sign=False, precision=3)
+                      for p in pose]
+            target_data.extend(params)
             if command.configuration is not None:
-                target_data.append(_convert_configuration(command.configuration))
+                configuration = _convert_configuration(command.configuration)
+                params = [general_utils.num_to_str(p, include_sign=False, precision=3, simplify_ints=True)
+                          for p in configuration]
+                target_data.extend(params)
             else:
                 target_data.extend(rapid_config.DEFAULT_CONF)
             if command.external_axes is not None:
-                target_data.extend(command.external_axes)
+                external_axes = [axis if axis is not None else '9E9'
+                                 for axis in command.external_axes]
+                params = [general_utils.num_to_str(p, include_sign=False, precision=3)
+                          for p in external_axes]
+                target_data.extend(params)
             else:
                 target_data.extend(rapid_config.DEFAULT_EXAX)
 
@@ -331,9 +341,16 @@ def _process_motion_command(command, opts):  # Implement in base class!
         if command.axes is not None:
             motion_type = MOVE_ABS_J
             target_data_type = JOINTTARGET
-            target_data.extend(command.axes)
+            axes = command.axes
+            params = [general_utils.num_to_str(p, include_sign=False, precision=3)
+                      for p in axes]
+            target_data.extend(params)
             if command.external_axes is not None:
-                target_data.extend(command.external_axes)
+                external_axes = [axis if axis is not None else '9E9'
+                                 for axis in command.external_axes]
+                params = [general_utils.num_to_str(p, include_sign=False, precision=3)
+                          for p in external_axes]
+                target_data.extend(params)
             else:
                 target_data.extend(rapid_config.DEFAULT_EXAX)
 
@@ -341,13 +358,23 @@ def _process_motion_command(command, opts):  # Implement in base class!
             motion_type = MOVE_J
             target_data_type = ROBTARGET
 
-            target_data.extend(_convert_pose(command.pose))
+            pose = _convert_pose(command.pose)
+            params = [general_utils.num_to_str(p, include_sign=False, precision=3)
+                      for p in pose]
+            target_data.extend(params)
             if command.configuration is not None:
-                target_data.extend(_convert_configuration(command.configuration))
+                configuration = _convert_configuration(command.configuration)
+                params = [general_utils.num_to_str(p, include_sign=False, precision=3, simplify_ints=True)
+                          for p in configuration]
+                target_data.extend(params)
             else:
                 target_data.extend(rapid_config.DEFAULT_CONF)
             if command.external_axes is not None:
-                target_data.extend(command.external_axes)
+                external_axes = [axis if axis is not None else '9E9'
+                                 for axis in command.external_axes]
+                params = [general_utils.num_to_str(p, include_sign=False, precision=3)
+                          for p in external_axes]
+                target_data.extend(params)
             else:
                 target_data.extend(rapid_config.DEFAULT_EXAX)
         else:
@@ -355,10 +382,6 @@ def _process_motion_command(command, opts):  # Implement in base class!
 
     else:  # User never supplied a motion type
         raise ValueError('Invalid motion type')
-
-    # Format parameters into string
-    target_data = [general_utils.num_to_str(d, include_sign=False, precision=3)
-                   for d in target_data]
 
     # Structure and format data, command
     formatted_target_data = postproc.fill_template(
@@ -407,6 +430,14 @@ def _process_io_command(command, opts):
                     STRUCTURES[io_type],
                     TEMPLATES[io_type])
                 io_data.append(formatted_io)
+        # if command.analog_outputs is not None:
+        #     io_type = ANALOG_OUT
+        #     for io in command.analog_outputs:
+        #         formatted_io = postproc.fill_template(
+        #             io,
+        #             STRUCTURES[io_type],
+        #             TEMPLATES[io_type])
+        #         io_data.append(formatted_io)
 
     if io_data:
         formatted_ios = '\n'.join(io_data)
@@ -436,99 +467,5 @@ def _convert_configuration(configuration):
     c1 = configuration.configuration_1
     c2 = configuration.configuration_2
     c3 = configuration.configuration_3
-    c4 = 0
+    c4 = 0  # unused
     return [c1, c2, c3, c4]
-
-# TODO: Consider the following structures instead:
-# POS = 'POS'
-# __pos_structure = namedtuple(
-#     POS, [
-#         __x,
-#         __y,
-#         __z
-#     ]
-# )
-#
-# ORIENT = 'ORIENT'
-# __orient_structure = namedtuple(
-#     ORIENT, [
-#         __q1,
-#         __q2,
-#         __q3,
-#         __q4
-#     ]
-# )
-#
-# CONFDATA = 'CONFDATA'
-# __confdata_structure = namedtuple(
-#     CONFDATA, [
-#         __c1,
-#         __c2,
-#         __c3,
-#         __c4
-#     ]
-# )
-#
-# ROBJOINT = 'ROBJOINT'
-# __robjoint_structure = namedtuple(
-#     ROBJOINT, [
-#         __a1,
-#         __a2,
-#         __a3,
-#         __a4,
-#         __a5,
-#         __a6,
-#     ]
-# )
-#
-# EXTJOINT = 'EXTJOINT'
-# __extjoint_structure = namedtuple(
-#     EXTJOINT, [
-#         __e1,
-#         __e2,
-#         __e3,
-#         __e4,
-#         __e5,
-#         __e6
-#     ]
-# )
-#
-# # DATA STRUCTURES
-# JOINTTARGET = 'JOINTTARGET'
-# __jointtarget_structure = namedtuple(
-#     JOINTTARGET, [
-#         ROBJOINT,
-#         EXTJOINT
-#     ]
-# )
-#
-# ROBTARGET = 'ROBTARGET'
-# __robtarget_structure = namedtuple(
-#     ROBTARGET, [
-#         POS,
-#         ORIENT,
-#         CONFDATA,
-#         EXTJOINT
-#     ]
-# )
-#
-# MOVE_L = 'MoveL'
-# __move_l_structure = namedtuple(
-#     MOVE_L, [
-#         __params
-#     ]
-# )
-#
-# MOVE_J = 'MoveJ'
-# __move_j_structure = namedtuple(
-#     MOVE_J, [
-#         __params
-#     ]
-# )
-#
-# MOVE_ABS_J = 'MoveAbsJ'
-# __move_abs_j_structure = namedtuple(
-#     MOVE_ABS_J, [
-#         __params
-#     ]
-# )

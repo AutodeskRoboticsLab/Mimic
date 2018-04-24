@@ -72,14 +72,16 @@ TEMPLATES = {
 
 # COMMANDS
 RECORDS_COMMAND = 'RECORDS_COMMAND'
-__time_index = 'time_index'
+_time_index = 'time_index'
+_records_command_fields = [
+    _time_index,
+    postproc.AXES,
+    postproc.EXTERNAL_AXES,
+    postproc.DIGITAL_OUTPUT,
+    postproc.ANALOG_OUTPUT
+]
 RecordsCommand = namedtuple(
-    RECORDS_COMMAND, [
-        __time_index,
-        postproc.AXES,
-        postproc.EXTERNAL_AXES,
-        postproc.DIGITAL_OUTPUT
-    ]
+    RECORDS_COMMAND, _records_command_fields
 )
 
 
@@ -101,8 +103,8 @@ class SimpleEntertainTechProcessor(postproc.PostProcessor):
 
         # Initialize internal parameters
         self.supported_options = self._set_supported_options()
-        self.time_step = entertaintech_config.DEFAULT_TIME_STEP
-        self.time_index = entertaintech_config.DEFAULT_START_TIME
+        # self.time_step = entertaintech_config.DEFAULT_TIME_STEP
+        # self.time_index = entertaintech_config.DEFAULT_START_TIME
 
     def _process_program(self, processed_commands, opts):  # Implement in base class!
         """
@@ -151,14 +153,17 @@ class SimpleEntertainTechProcessor(postproc.PostProcessor):
         :return:
         """
         # Try to get a RecordCommand
-        keys = ['Axes', 'ExternalAxes', 'DigitalOutput']
         params = []
-        for key in keys:
-            param = params_dict[key] if key in params_dict else None
+        for field in _records_command_fields:
+            if field == _time_index:  # Get the timestamp itself
+                param = params_dict['Frame'] / params_dict['Framerate']
+            else:
+                param = params_dict[field] if field in params_dict else None
             params.append(param)
+        print params
         if params.count(None) != len(params):
-            params.insert(0, self.time_index)  # Include current time-index
-            self.time_index += self.time_step  # Increment to next time-index
+            # params.insert(0, self.time_index)  # Include current time-index
+            # self.time_index += self.time_step  # Increment to next time-index
             return RecordsCommand(*params)
 
     @staticmethod
@@ -172,6 +177,7 @@ class SimpleEntertainTechProcessor(postproc.PostProcessor):
             ignore_motion=True,
             use_nonlinear_motion=True,
             include_axes=True,
+            include_external_axes=True,
             include_checksum=True
         )
 
@@ -184,29 +190,32 @@ def _process_records_command(command, opts):
     :return:
     """
     params = []
-    padding = 12
 
     # Add timestamp
-    timestamp = general_utils.num_to_str(command.time_index, include_sign=True, padding=padding)
+    timestamp_padding = 16
+    timestamp = general_utils.num_to_str(command.time_index, include_sign=True, padding=timestamp_padding)
     params.append(timestamp)
 
     # Add primary parameters
+    padding = 12
     if command.axes is not None:
         formatted_params = [general_utils.num_to_str(axis, include_sign=True, padding=padding)
                             for axis in command.axes]
         params.extend(formatted_params)
 
     if command.external_axes is not None:
+        external_axes = [axis for axis in command.external_axes if axis is not None]
         formatted_params = [general_utils.num_to_str(axis, include_sign=True, padding=padding)
-                            for axis in command.external_axes]
+                            for axis in external_axes]
         params.extend(formatted_params)
 
     if command.digital_output is not None:
-        formatted_params = [general_utils.num_to_str(digital_output.value, include_sign=True, padding=padding)
-                            for digital_output in command.digital_output]
+        digital_output = [io for io in command.digital_output if io is not None]
+        formatted_params = [general_utils.num_to_str(io.value, include_sign=True, padding=padding)
+                            for io in digital_output]
         params.extend(formatted_params)
 
-    template = ''.join([TEMPLATES[RECORDS] for param in params])
+    template = ''.join([TEMPLATES[RECORDS] for _ in params])
 
     # Structure and format data, command
     formatted_record = template.format(*params)
