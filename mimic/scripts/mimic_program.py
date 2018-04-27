@@ -550,12 +550,9 @@ def _sample_frames_get_command_dicts(robot_name, frames, animation_settings, use
             if user_options.Include_external_axes:
                 external_axes = _sample_frame_get_external_axes(robot_name, frame)
                 command_dict[postproc.EXTERNAL_AXES] = postproc.ExternalAxes(*external_axes)
-                pass
             if user_options.Include_configuration:
-                # TODO: Finish implementing configurations
-                # configuration = _sample_frame_get_configuration(robot_name, frame)
-                # command_dict[postproc.CONFIGURATION] = postproc.Configuration(*configuration)
-                pass
+                configuration = _sample_frame_get_configuration(robot_name, frame)
+                command_dict[postproc.CONFIGURATION] = postproc.Configuration(*configuration)
         # Get IO parameters
         if not user_options.Ignore_IOs:
             if user_options.Include_digital_outputs:
@@ -610,6 +607,7 @@ def _sample_frame_get_pose(robot_name, frame):
     # TODO: Implement this in parent function
     pm.currentTime(frame)
 
+    # tool_name = get_tool_name(robot_name)
     tool_name = '{}|robot_GRP|tool_CTRL'.format(robot_name)
     try:  # Try to grab the named tool
         tool_object = pm.ls(tool_name)[0]  # Try to get tool, may raise an exception
@@ -618,7 +616,7 @@ def _sample_frame_get_pose(robot_name, frame):
                     'axis1|axis2|axis3|axis4|axis5|axis6|tcp_GRP|tcp_HDL'.format(robot_name)
 
     # Local Base Frame controller (circle control at base of the robot).
-    base_name = pm.ls('{}|robot_GRP|local_CTRL'.format(robot_name))[0]
+    base_name = pm.ls(mimic_utils.get_local_ctrl_path(robot_name))[0]
 
     # Get name of the tcp and base
     world_matrix = '.worldMatrix'
@@ -630,36 +628,28 @@ def _sample_frame_get_pose(robot_name, frame):
     # Get translation with respect to Maya's world frame
     tcp_translation = pm.xform(tool_name, query=True, rp=True, ws=True)
     base_translation = pm.xform(base_name, query=True, rp=True, ws=True)
-    general_utils.matrix_print([tcp_translation], 'tcp_translation')
-    general_utils.matrix_print([base_translation], 'base_translation')
 
     # ROTATIONS
 
     # Get TCP rotation with respect to Maya's world frame
     _tcp_matrix = pm.getAttr(tcp_name_world_matrix, time=frame)
     tcp_rotation = general_utils.matrix_get_rotations(_tcp_matrix)
-    general_utils.matrix_print(tcp_rotation, 'tcp_rotation')
 
     # Get Base rotation with respect to Maya's world frame
     _base_matrix = pm.getAttr(base_name_world_matrix, time=frame)
     base_rotation = general_utils.matrix_get_rotations(_base_matrix)
-    general_utils.matrix_print(base_rotation, 'base_rotation')
 
     # TRANSFORMATIONS
 
     # Compose 4x4 matrices using the rotation and translation from the above
     tcp_matrix_4x4 = general_utils.matrix_compose_4x4(tcp_rotation, tcp_translation)
     base_matrix_4x4 = general_utils.matrix_compose_4x4(base_rotation, base_translation)
-    general_utils.matrix_print(tcp_matrix_4x4, 'tcp_matrix_4x4')
-    general_utils.matrix_print(base_matrix_4x4, 'base_matrix_4x4')
 
     # Invert the base matrix
     base_matrix_4x4 = general_utils.matrix_get_inverse(base_matrix_4x4)
-    general_utils.matrix_print(base_matrix_4x4, 'base_matrix_4x4')
 
     # Get pose itself
     initial_pose_matrix = general_utils.matrix_multiply(base_matrix_4x4, tcp_matrix_4x4)
-    general_utils.matrix_print(initial_pose_matrix, 'initial_pose_matrix')
 
     # CONVERSIONS
 
@@ -693,11 +683,9 @@ def _sample_frame_get_pose(robot_name, frame):
 
     # Perform the conversion operation itself
     converted_rotation = general_utils.matrix_multiply(conversion_rotation, new_rotation)
-    general_utils.matrix_print(converted_rotation, 'converted_rotation')
 
     # Compose pose
     pose_matrix = general_utils.matrix_compose_4x4(converted_rotation, new_translation)
-    general_utils.matrix_print(pose_matrix, 'pose_matrix')
 
     # Decompose pose as expected for output
     pose = general_utils.matrix_decompose_4x4_completely(pose_matrix)
@@ -741,5 +729,5 @@ def _sample_frame_get_configuration(robot_name, frame):
     :param frame:
     :return:
     """
-    # TODO: Implementation of this!
-    pass
+    configuration = mimic_utils.get_robot_configuration(robot_name, frame)
+    return configuration

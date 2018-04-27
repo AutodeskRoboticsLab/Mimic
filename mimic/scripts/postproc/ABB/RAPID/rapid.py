@@ -463,9 +463,9 @@ def _convert_configuration(configuration):
     :param configuration: Configuration tuple
     :return:
     """
-    # TODO: Calculate c1, c2, c3, c4 using configuration!
-    c1 = configuration.configuration_1
-    c2 = configuration.configuration_2
-    c3 = configuration.configuration_3
+    # TODO: This might not be correct!
+    c1 = not configuration.configuration_1
+    c2 = not configuration.configuration_2
+    c3 = not configuration.configuration_3
     c4 = 0  # unused
     return [c1, c2, c3, c4]

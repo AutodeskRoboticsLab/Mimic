@@ -33,8 +33,7 @@ def get_external_axis_names(robot_name, only_active=False):
     :return robots_external_axes: list, names of all external axes on robot
     """
 
-
-    target_ctrl_path = _get_target_ctrl_path(robot_name)
+    target_ctrl_path = mimic_utils.get_target_ctrl_path(robot_name)
 
     # Find all attributes on the target_CTRL categorized as 'externalAxis'
     robot_external_axis_names = pm.listAttr(target_ctrl_path,
@@ -105,28 +104,6 @@ def get_external_axis_info_simple(robot_name, external_axis_name, frame=None):
 # ------------------
 
 
-def _get_target_ctrl_path(robot_name):
-    """
-    Get the long name of input robot's target_CTRL transform.
-    :param robot_name: string, name of robot
-    :return:
-    """
-    return '{}|robot_GRP|target_CTRL'.format(robot_name)
-
-
-def _get_attribute_value(attribute_path, frame=None):
-    """
-    Get an attribute's value using its path and, optionally, a frame to sample.
-    :param attribute_path: string, attribute path using robot and attribute names
-    :param frame: optional frame parameter
-    :return:
-    """
-    if frame is None:
-        return pm.getAttr(attribute_path)
-    else:
-        return pm.getAttr(attribute_path, time=frame)
-
-
 def _get_external_axis_path(robot_name, external_axis_name):
     """
     Get the path for an external axis.
@@ -134,7 +111,7 @@ def _get_external_axis_path(robot_name, external_axis_name):
     :param external_axis_name: string, name of external axis
     :return:
     """
-    return '{}|robot_GRP|target_CTRL.{}'.format(robot_name, external_axis_name)
+    return '{}.{}'.format(mimic_utils.get_target_ctrl_path(robot_name), external_axis_name)
 
 
 def _get_external_axis_position(external_axis_path, frame=None):
@@ -145,7 +122,7 @@ def _get_external_axis_position(external_axis_path, frame=None):
     :return:
     """
     attribute_path = external_axis_path + '_position'
-    return _get_attribute_value(attribute_path, frame)
+    return mimic_utils.get_attribute_value(attribute_path, frame)
 
 
 def _get_external_axis_number(external_axis_path):
@@ -155,7 +132,7 @@ def _get_external_axis_number(external_axis_path):
     :return:
     """
     attribute_path = external_axis_path + '_axisNumber'
-    return _get_attribute_value(attribute_path)
+    return mimic_utils.get_attribute_value(attribute_path)
 
 
 def _get_external_axis_connections(axis_attribute_name):
@@ -201,7 +178,7 @@ def _get_external_axis_ignore(external_axis_path):
     :return:
     """
     attribute_path = external_axis_path + '_ignore'
-    return _get_attribute_value(attribute_path)
+    return mimic_utils.get_attribute_value(attribute_path)
 
 
 def _get_external_axis_limits_min(external_axis_path):
@@ -211,7 +188,7 @@ def _get_external_axis_limits_min(external_axis_path):
     :return:
     """
     attribute_path = external_axis_path + '_axisMin'
-    return _get_attribute_value(attribute_path)
+    return mimic_utils.get_attribute_value(attribute_path)
 
 
 def _get_external_axis_limits_max(external_axis_path):
@@ -221,7 +198,7 @@ def _get_external_axis_limits_max(external_axis_path):
     :return:
     """
     attribute_path = external_axis_path + '_axisMax'
-    return _get_attribute_value(attribute_path)
+    return mimic_utils.get_attribute_value(attribute_path)
 
 
 def _get_external_axis_velocity_limit(external_axis_path):
@@ -231,7 +208,7 @@ def _get_external_axis_velocity_limit(external_axis_path):
     :return:
     """
     attribute_path = external_axis_path + '_maxVelocity'
-    return _get_attribute_value(attribute_path)
+    return mimic_utils.get_attribute_value(attribute_path)
 
 
 # ------------------
@@ -314,7 +291,7 @@ def _check_if_robot_is_attached_to_externa_axis(robot_name):
     """
     if pm.objExists('{}|robot_GRP|local_CTRL|' \
                     'localCTRL_externalAxisCTRL_parentConstraint'
-                    .format(robot_name)):
+                            .format(robot_name)):
         return True
     else:
         return False
@@ -457,7 +434,6 @@ def _enable_external_axis_limits(external_axis_CTRL,
                                               driving_axis),
                enable)
 
-
     pm.setAttr('{}.max{}{}LimitEnable'.format(external_axis_CTRL,
                                               driving_attribute_trunc,
                                               driving_axis),
@@ -474,7 +450,7 @@ def _set_external_axis_CTRL_limits(robot_name,
     Mimic UI
     :return:
     """
-    
+
     axis_name = external_axis_params['Axis Name']
     driving_attribute = external_axis_params['Driving Attribute']
     position_limit_min = external_axis_params['Position Limit Min']
@@ -493,28 +469,28 @@ def _set_external_axis_CTRL_limits(robot_name,
 
     # Define external axis' attribute path on robot
     external_axis_min_limit_path = '{}|robot_GRP|target_CTRL.{}_axisMin' \
-								   .format(robot_name, axis_name)
+        .format(robot_name, axis_name)
 
     external_axis_max_limit_path = '{}|robot_GRP|target_CTRL.{}_axisMax' \
-								   .format(robot_name, axis_name)
+        .format(robot_name, axis_name)
 
     # Enable the external axis controllers' limits and connect them to the 
     # position attribute on the target controller
     _enable_external_axis_limits(external_axis_CTRL,
-    							 driving_attribute_trunc,
-    							 driving_axis,
-    							 enable=True)
+                                 driving_attribute_trunc,
+                                 driving_axis,
+                                 enable=True)
 
     pm.connectAttr(external_axis_min_limit_path,
-				   '{}.min{}{}Limit'.format(external_axis_CTRL,
-											driving_attribute_trunc,
-											driving_axis))
+                   '{}.min{}{}Limit'.format(external_axis_CTRL,
+                                            driving_attribute_trunc,
+                                            driving_axis))
 
     pm.connectAttr(external_axis_max_limit_path,
-				   '{}.max{}{}Limit'.format(external_axis_CTRL,
-											driving_attribute_trunc,
-                                        	driving_axis))
-	
+                   '{}.max{}{}Limit'.format(external_axis_CTRL,
+                                            driving_attribute_trunc,
+                                            driving_axis))
+
 
 def _clear_external_axis_CTRL_limits(robot_name,
                                      external_axis_CTRL,
@@ -525,8 +501,8 @@ def _clear_external_axis_CTRL_limits(robot_name,
     :param external_axis_CTRL: string, name of external axis controller
     :param driving_attribute: string, driving attribute e.g. 'rotateX'
     :return:
-    """    
-    
+    """
+
     # Break down driving attribute into transform and axis companents
     # 'translateX' becomes 'translate', 'X'
     driving_axis = driving_attribute[-1]
@@ -536,13 +512,13 @@ def _clear_external_axis_CTRL_limits(robot_name,
         driving_attribute_trunc = 'Trans'
     else:
         driving_attribute_trunc = 'Rot'
-    
+
     # Define external axis' attribute path on robot
     external_axis_min_limit_path = '{}|robot_GRP|target_CTRL.{}_axisMin' \
-                                   .format(robot_name, axis_name)
+        .format(robot_name, axis_name)
 
     external_axis_max_limit_path = '{}|robot_GRP|target_CTRL.{}_axisMax' \
-                                   .format(robot_name, axis_name)
+        .format(robot_name, axis_name)
 
     _enable_external_axis_limits(external_axis_CTRL,
                                  driving_attribute_trunc,
@@ -558,7 +534,7 @@ def _clear_external_axis_CTRL_limits(robot_name,
                       '{}.max{}{}Limit'.format(external_axis_CTRL,
                                                driving_attribute_trunc,
                                                driving_axis))
-		
+
 
 def add_external_axis(*args):
     """
@@ -649,8 +625,8 @@ def add_external_axis(*args):
     # If the driving attribute is a translate attribute, we convert the user
     # input from millimeters to Maya's default unit of centimeters
     if 'translate' in driving_attribute:
-        position_limit_min = position_limit_min/10
-        position_limit_max = position_limit_max/10
+        position_limit_min = position_limit_min / 10
+        position_limit_max = position_limit_max / 10
 
     # Set all External Axis attributes accordingly
     axis_parent_attribute = target_CTRL + '.' + axis_name
@@ -668,8 +644,8 @@ def add_external_axis(*args):
 
     # Set the External Axis control limits
     _set_external_axis_CTRL_limits(robot,
-								   external_axis_CTRL,
-								   external_axis_params)
+                                   external_axis_CTRL,
+                                   external_axis_params)
 
     # Select the robot's target/tool controller
     tool_CTRL = robot + '|robot_GRP|tool_CTRL'
@@ -678,7 +654,7 @@ def add_external_axis(*args):
     else:
         pm.select(target_CTRL)
 
-    list_axes()  
+    list_axes()
     pm.headsUpMessage('External axis \'{}\' added successfully to {}'
                       .format(axis_name, robot))
 
@@ -747,7 +723,7 @@ def update_external_axis(*args):
         # Update the external axis' position/rotation limits
         # Find the original driving attribute and disable it's axis limits
         _clear_external_axis_CTRL_limits(robot,
-    									 external_axis_CTRL,
+                                         external_axis_CTRL,
                                          old_driving_attribute,
                                          axis_name)
 
@@ -758,8 +734,8 @@ def update_external_axis(*args):
     # If the driving attribute is a translate attribute, we convert the user
     # input from millimeters to Maya's default unit of centimeters
     if 'translate' in driving_attribute:
-        position_limit_min = position_limit_min/10
-        position_limit_max = position_limit_max/10
+        position_limit_min = position_limit_min / 10
+        position_limit_max = position_limit_max / 10
 
     # Set all appropriate attributes on the robot
     pm.setAttr(axis_parent_attribute + '_axisNumber', lock=False)
@@ -820,7 +796,7 @@ def remove_external_axis(*args):
     # Remove connections between the axis controller and the robot
     external_axis_attribute_path = target_CTRL + '.' + axis_name
     external_axis_CTRL, driving_attribute = _get_external_axis_connections(
-                                            external_axis_attribute_path)
+        external_axis_attribute_path)
     driving_axis = driving_attribute[-1]
     # Prep transformation string for Maya's limit attributes
     if 'translate' in driving_attribute:
@@ -831,7 +807,6 @@ def remove_external_axis(*args):
                                  driving_attribute_trunc,
                                  driving_axis,
                                  enable=False)
-
 
     # Delete External Axis attribute on the robot controller
     pm.deleteAttr(parent_attribute)
@@ -847,8 +822,8 @@ def remove_external_axis(*args):
 
     if _check_if_robot_is_attached_to_externa_axis(robot):
         pm.delete('{}|robot_GRP|local_CTRL|' \
-                    'localCTRL_externalAxisCTRL_parentConstraint'
-                    .format(robot))
+                  'localCTRL_externalAxisCTRL_parentConstraint'
+                  .format(robot))
         pm.setAttr('{}|robot_GRP|local_CTRL.visibility'.format(robot), 1)
 
     pm.headsUpMessage('External Axis \'{}\' removed successfully from {}'
@@ -879,10 +854,10 @@ def list_axes(*args):
             robots = robots_in_scene
 
     # Keep track of selected robots without axes for a heads-up message
-    selected_robots_without_axes=[]
+    selected_robots_without_axes = []
 
     # For each robots, get a list of all its external axes
-    for robot in robots:   
+    for robot in robots:
         robots_external_axes = get_external_axis_names(robot)
 
         # If we're only looking at selected robots, check if each selected
@@ -936,8 +911,8 @@ def update_external_axis_UI(axis_info):
     position_limit_min = axis_info['Position Limit Min']
     position_limit_max = axis_info['Position Limit Max']
     if 'translate' in axis_info['Driving Attribute']:
-        position_limit_min = position_limit_min*10
-        position_limit_max = position_limit_max*10
+        position_limit_min = position_limit_min * 10
+        position_limit_max = position_limit_max * 10
 
     pm.textField('t_externalAxisLimitMin',
                  edit=True,

@@ -93,9 +93,7 @@ def confirm_requirements_exist():
                 assert any(os.path.isdir(subdir_path) for subdir_path in subdir_paths)
                 for subdir_path in subdir_paths:
                     try:
-                        print subdir_path
                         items = os.listdir(subdir_path)
-                        print items
                         assert any('.ma' in item for item in items)
                         continue
                     except OSError:  # not a directory (.md)

@@ -107,6 +107,97 @@ def check_robot_selection(number_of_robots=None):
     return True
 
 
+def get_selected_robot_name():
+    """
+    Get robot
+    :return:
+    """
+    robots = get_robot_roots(all_robots=False)
+    if len(robots) == 0:
+        warning = 'No robots selected!'
+        raise Exception(warning)
+    elif len(robots) > 1:
+        warning = 'Too many robots selected!'
+        raise Exception(warning)
+    robot = robots[0]
+    return robot
+
+
+def get_robot_configuration(robot_name, frame):
+    """
+    Get the configuration of this robot.
+    :param robot_name: string, name of robot
+    :param frame: int, frame parameter
+    :return:
+    """
+    target_ctrl_path = get_target_ctrl_path(robot_name)
+    attr = 'ikSolution'
+    configurations = []
+    for i in range(3):
+        index = i + 1
+        configuration_path = '{}.{}{}'.format(target_ctrl_path, attr, index)
+        configuration = get_attribute_value(configuration_path, frame)
+        configurations.append(configuration)
+    return configurations
+
+
+def get_robot_type(robot_name):
+    """
+    Get Type of robot
+    :param robot_name: string, name of robot
+    :return:
+    """
+    attr = 'robotType'
+    path = '{}.{}'.format(get_target_ctrl_path(robot_name), attr)
+    return get_attribute_value(path)
+
+
+def get_target_ctrl_path(robot_name):
+    """
+    Get the long name of input robot's target_CTRL transform.
+    :param robot_name: string, name of robot
+    :return:
+    """
+    return '{}|robot_GRP|target_CTRL'.format(robot_name)
+
+
+def get_local_ctrl_path(robot_name):
+    """
+    Get the long name of input robot's target_CTRL transform.
+    :param robot_name: string, name of robot
+    :return:
+    """
+    return '{}|robot_GRP|local_CTRL'.format(robot_name)
+
+
+def get_attribute_value(attribute_path, frame=None):
+    """
+    Get an attribute's value using its path and, optionally, a frame to sample.
+    :param attribute_path: string, attribute path using robot and attribute names
+    :param frame: optional frame parameter
+    :return:
+    """
+    if frame is None:
+        return pm.getAttr(attribute_path)
+    else:
+        return pm.getAttr(attribute_path, time=frame)
+
+
+def get_tool_path(robot_name):
+    """
+    Get path to robot tool
+    :param robot_name: string, name of robot
+    :return:
+    """
+    tool_name = get_target_ctrl_path(robot_name)
+    try:  # Try to grab the named tool
+        tool_object = pm.ls(tool_name)[0]  # Try to get tool, may raise an exception
+    except IndexError:  # No tool attached, use flange
+        tool_name = '{}|robot_GRP|robot_GEOM|Base|' \
+                    'axis1|axis2|axis3|axis4|axis5|axis6|tcp_GRP|tcp_HDL'.format(robot_name)
+    return tool_name
+
+
 def clear_limits_ui(*args):
     """
     Clears the axis limit fields in the Mimic UI.
@@ -2284,28 +2375,3 @@ def get_maya_framerate():
         framerate = 24.
 
     return framerate
-
-
-def get_selected_robot_name():
-    """
-    Get robot
-    :return:
-    """
-    robots = get_robot_roots(all_robots=False)
-    if len(robots) == 0:
-        warning = 'No robots selected!'
-        raise Exception(warning)
-    elif len(robots) > 1:
-        warning = 'Too many robots selected!'
-        raise Exception(warning)
-    robot = robots[0]
-    return robot
-
-
-def get_robot_type(robot_name):
-    """
-    Get Type of robot
-    :param robot_name:
-    :return:
-    """
-    return pm.getAttr('{}|robot_GRP|target_CTRL.robotType'.format(robot_name))

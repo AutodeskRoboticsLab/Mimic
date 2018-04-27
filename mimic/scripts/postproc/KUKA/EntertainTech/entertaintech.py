@@ -160,7 +160,6 @@ class SimpleEntertainTechProcessor(postproc.PostProcessor):
             else:
                 param = params_dict[field] if field in params_dict else None
             params.append(param)
-        print params
         if params.count(None) != len(params):
             # params.insert(0, self.time_index)  # Include current time-index
             # self.time_index += self.time_step  # Increment to next time-index
