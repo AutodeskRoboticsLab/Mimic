@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-External Axis Utily Functions.
+External Axis Utility Functions.
 """
 
 try:
@@ -32,10 +32,13 @@ def get_external_axis_names(robot_name, only_active=False):
     :param only_active: bool, if True, removes axes marked as "ignore"
     :return robots_external_axes: list, names of all external axes on robot
     """
+
+
     target_ctrl_path = _get_target_ctrl_path(robot_name)
 
-    # Find all attributes on the target_CTRL marked as 'externalAxis'
-    robot_external_axis_names = pm.listAttr(target_ctrl_path, category='externalAxis')
+    # Find all attributes on the target_CTRL categorized as 'externalAxis'
+    robot_external_axis_names = pm.listAttr(target_ctrl_path,
+                                            category='externalAxis')
 
     # Remove parent attribute designation 'externalAxis_' from each axis name
     for i, axis_name in enumerate(robot_external_axis_names):
@@ -53,9 +56,10 @@ def get_external_axis_names(robot_name, only_active=False):
 
 def get_external_axis_info(robot_name, external_axis_name):
     """
-    Get's all of the external axis settings for the input external_axis
+    Get's all of the external axis settings for the input external axis name
     :param robot_name: string, name of robot
     :param external_axis_name: string, name of external axis
+    :return info: dict, dictionary of input external axis setting
     """
 
     info = {}
@@ -68,12 +72,15 @@ def get_external_axis_info(robot_name, external_axis_name):
 
     driving_attr_ctrl, driving_attr_name = _get_external_axis_connections(external_axis_path)
     info['Driving Controller'] = driving_attr_ctrl
+
     info['Driving Attribute'] = driving_attr_name
 
     info['Position Limit Min'] = _get_external_axis_limits_min(external_axis_path)
+
     info['Position Limit Max'] = _get_external_axis_limits_max(external_axis_path)
 
     info['Velocity Limit'] = _get_external_axis_velocity_limit(external_axis_path)
+
     info['Ignore'] = _get_external_axis_ignore(external_axis_path)
 
     return info
@@ -85,7 +92,7 @@ def get_external_axis_info_simple(robot_name, external_axis_name, frame=None):
     :param robot_name: string, name of robot
     :param external_axis_name: string, name of external axis
     :param frame: optional frame parameter
-    :return:
+    :return info: dict, dictionary of input external axis' setting
     """
     info_simple = {}
     external_axis_path = _get_external_axis_path(robot_name, external_axis_name)
@@ -100,7 +107,7 @@ def get_external_axis_info_simple(robot_name, external_axis_name, frame=None):
 
 def _get_target_ctrl_path(robot_name):
     """
-    Get the target_CTRL path.
+    Get the long name of input robot's target_CTRL transform.
     :param robot_name: string, name of robot
     :return:
     """
@@ -134,6 +141,7 @@ def _get_external_axis_position(external_axis_path, frame=None):
     """
     Get the position of an external axis.
     :param external_axis_path: string, attribute path using robot and external axis names
+    :param frame: optional frame parameter
     :return:
     """
     attribute_path = external_axis_path + '_position'
@@ -151,11 +159,25 @@ def _get_external_axis_number(external_axis_path):
 
 
 def _get_external_axis_connections(axis_attribute_name):
+    """
+    Gets the input external axis' driving controller and driving attribute
+    by checking the connections on the axis' position attribute
+    :param axis_attribute_name: string, name of external axis
+    :return driving_atr_ctrl: string, name of external axis' assigned
+    controller
+    :return driving_attr_name: string, name of the attribute that's driving
+    the external axis' position value (e.g. 'translateX')
+    """
+
+    # Check the incomming connections on the external axis' position attribute
     driving_attribute = pm.listConnections(axis_attribute_name
                                            + '_position',
                                            plugs=True,
                                            s=True)[0]
 
+    # Split the driving attribute into its controller name and driving
+    # attribute name
+    # (e.g. 'axis_CTRL.translateX' becomes 'axis_CTRL' and 'translateX')
     driving_attr_ctrl, driving_attr_name = driving_attribute.split('.')
 
     # If the driving attribute is a 'rotate' attribute, there will be a unit
@@ -184,7 +206,7 @@ def _get_external_axis_ignore(external_axis_path):
 
 def _get_external_axis_limits_min(external_axis_path):
     """
-    Get the minimum limit for an external axis.
+    Get the minimum position limit for an external axis.
     :param external_axis_path: string, attribute path using robot and external axis names
     :return:
     """
@@ -194,7 +216,7 @@ def _get_external_axis_limits_min(external_axis_path):
 
 def _get_external_axis_limits_max(external_axis_path):
     """
-    Get the maximum limit for an external axis.
+    Get the maximum position limit for an external axis.
     :param external_axis_path: string, attribute path using robot and external axis names
     :return:
     """
@@ -422,7 +444,10 @@ def _attach_robot_to_external_axis(robot, external_axis_CTRL):
     pm.setAttr(local_CTRL + '.v', 0)
 
 
-def _enable_external_axis_limits(external_axis_CTRL, driving_attribute_trunc, driving_axis, enable=True):
+def _enable_external_axis_limits(external_axis_CTRL,
+                                 driving_attribute_trunc,
+                                 driving_axis,
+                                 enable=True):
     """
     Enables/Disables external axis' limit controls
     """
@@ -439,7 +464,9 @@ def _enable_external_axis_limits(external_axis_CTRL, driving_attribute_trunc, dr
                enable)
 
 
-def _set_external_axis_CTRL_limits(robot_name, external_axis_CTRL, external_axis_params):
+def _set_external_axis_CTRL_limits(robot_name,
+                                   external_axis_CTRL,
+                                   external_axis_params):
     """
     Sets the selected external axis controller translation or rotation limits
     :param external_axis_CTRL: string, name of external axis controller
@@ -489,7 +516,10 @@ def _set_external_axis_CTRL_limits(robot_name, external_axis_CTRL, external_axis
                                         	driving_axis))
 	
 
-def _clear_external_axis_CTRL_limits(robot_name, external_axis_CTRL, driving_attribute, axis_name):
+def _clear_external_axis_CTRL_limits(robot_name,
+                                     external_axis_CTRL,
+                                     driving_attribute,
+                                     axis_name):
     """
     Disables the axis limits for the input controller.
     :param external_axis_CTRL: string, name of external axis controller

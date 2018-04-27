@@ -616,13 +616,28 @@ def _build_program_settings_frame(parent_layout):
     program_settings_col = pm.columnLayout(adj=True, columnAttach=['both', 3])
 
     # Output options
-    pm.checkBox('cb_overwriteFile', label="Overwrite existing file", value=postproc_config.OPTS_OVERWRITE_EXISTING_FILE)
-    pm.checkBox('cb_ignoreWarnings', label="Ignore warnings", value=postproc_config.OPTS_IGNORE_WARNINGS)
+    pm.checkBox('cb_overwriteFile',
+                label="Overwrite existing file",
+                value=postproc_config.OPTS_OVERWRITE_EXISTING_FILE,
+                annotation='If checked, an existing file with the input ' \
+                           'output name will be overwritten')
+    pm.checkBox('cb_ignoreWarnings',
+                label="Ignore warnings",
+                value=postproc_config.OPTS_IGNORE_WARNINGS,
+                annotation='If checked, all warnings will be ignored and ' \
+                           'a program will be written')
     pm.separator(height=3, style='none')
 
     pm.separator(height=3, style='none')
-    pm.button('Check Program', command=mimic_program.check_program, height=25)
-    pm.button('Save Program', command=mimic_program.save_program, height=25)
+    pm.button('Check Program',
+              command=mimic_program.check_program,
+              height=25,
+              annotation='Evalutes if program violates any physical ' \
+                         'robot parameters like speed limits')
+    pm.button('Save Program',
+              command=mimic_program.save_program,
+              height=25,
+              annotation='Saves robot control program with input parameters')
     pm.separator(height=3, style='none')
 
     pm.setParent(parent_layout)
@@ -674,7 +689,8 @@ def _build_add_robot_frame(parent_layout):
     pm.button(label=' Add ',
               command=add_robot_command_string,
               width=45,
-              height=20)
+              height=20,
+              annotation='Imports selected robot into the scene')
 
     pm.setParent(add_robot_frame)
 
@@ -696,11 +712,14 @@ def _build_tool_setup_frame(parent_layout):
     pm.button(label='Attach',
               width=58,
               height=20,
-              command=mimic_utils.attach_tool_controller)
+              command=mimic_utils.attach_tool_controller,
+              annotation='Attaches selected tool controller to the ' \
+                         'selected robot')
     pm.button(label='Detach',
               width=58,
               height=20,
-              command=mimic_utils.detach_tool_controller)
+              command=mimic_utils.detach_tool_controller,
+              annotation='Detaches tool controller from robot')
     pm.setParent('..')
 
     pm.separator(height=3, style='none')
@@ -714,11 +733,15 @@ def _build_tool_setup_frame(parent_layout):
     pm.button(label='Attach',
               width=58,
               height=20,
-              command=mimic_utils.attach_tool_model)
+              command=mimic_utils.attach_tool_model,
+              annotation='Attaches selected tool model to the ' \
+                         'selected robot')
     pm.button(label='Detach',
               width=58,
               height=20,
-              command=mimic_utils.detach_tool_model)
+              command=mimic_utils.detach_tool_model,
+              annotation='Detaches selected tool model from its ' \
+                         'parent robot')
     pm.setParent('..')
 
     pm.separator(height=8, style='none')
@@ -806,11 +829,20 @@ def _build_axis_limits_frame(parent_layout):
 
     pm.columnLayout(adj=True, columnAttach=('both', 3))
     pm.gridLayout(nc=2, cw=114, ch=25)
-    pm.button(label='Get Axis Limits', command=mimic_utils.get_axis_limits)
-    pm.button(label='Set Axis Limits', command=mimic_utils.set_axis_limits)
+    pm.button(label='Get Axis Limits',
+              command=mimic_utils.get_axis_limits,
+              annotation='Gets axis limit values for selected robot and '\
+                         'prints them above')
+    pm.button(label='Set Axis Limits',
+              command=mimic_utils.set_axis_limits,
+              annotation='Sets selected robot\'s axis limit values to the '\
+                         'input values above')
 
     pm.setParent('..')
-    pm.button(label='Clear', width=218, command=mimic_utils.clear_limits_ui)
+    pm.button(label='Clear',
+              width=218,
+              command=mimic_utils.clear_limits_ui,
+              annotation='Clears the axis limits UI above')
 
     pm.setParent(parent_layout)
 
