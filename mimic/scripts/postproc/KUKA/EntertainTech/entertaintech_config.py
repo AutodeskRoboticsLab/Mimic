@@ -7,10 +7,6 @@ This module contains basic configuration parameters for SimpleEntertainTechProce
 # System parameters
 DEFAULT_FILE_EXTENSION = 'emily'
 
-# Default parameters
-DEFAULT_TIME_STEP = 0.012
-DEFAULT_START_TIME = 0.0
-
 # Default program
 DEFAULT_PROGRAM = \
     '[HEADER]\n' \
@@ -18,4 +14,3 @@ DEFAULT_PROGRAM = \
     '[RECORDS]\n' \
     '{}\n' \
     '[END]\n'
-

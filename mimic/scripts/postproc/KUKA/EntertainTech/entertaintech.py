@@ -103,8 +103,6 @@ class SimpleEntertainTechProcessor(postproc.PostProcessor):
 
         # Initialize internal parameters
         self.supported_options = self._set_supported_options()
-        # self.time_step = entertaintech_config.DEFAULT_TIME_STEP
-        # self.time_index = entertaintech_config.DEFAULT_START_TIME
 
     def _process_program(self, processed_commands, opts):  # Implement in base class!
         """
@@ -137,6 +135,7 @@ class SimpleEntertainTechProcessor(postproc.PostProcessor):
         if not opts.Ignore_motion and command_type == RECORDS_COMMAND:
             return _process_records_command(command, opts)
 
+    @staticmethod
     def _format_command(self, params_dict):
         """
         Processor-specific function. Certain types of commands are very specific
@@ -228,5 +227,6 @@ def get_checksum(s):
     :param s: Input string
     :return:
     """
+    # TODO: Couldn't reproduce CRC32 checksum in documentation?
     values = s.translate(None, string.whitespace)
     return binascii.crc32(values) & 0xffffffff
