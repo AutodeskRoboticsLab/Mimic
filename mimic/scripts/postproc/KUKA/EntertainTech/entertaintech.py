@@ -136,7 +136,7 @@ class SimpleEntertainTechProcessor(postproc.PostProcessor):
             return _process_records_command(command, opts)
 
     @staticmethod
-    def _format_command(self, params_dict):
+    def _format_command(params_dict):
         """
         Processor-specific function. Certain types of commands are very specific
         to the processor in use or application, such as EntertainTech, requiring
