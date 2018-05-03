@@ -155,7 +155,9 @@ class SimpleEntertainTechProcessor(postproc.PostProcessor):
         params = []
         for field in _records_command_fields:
             if field == _time_index:  # Get the timestamp itself
-                param = params_dict['Frame'] / params_dict['Framerate']
+                frame_number = params_dict['Frame']
+                frame_rate = params_dict['Framerate']
+                param = (frame_number / frame_rate) - (1 / frame_rate)
             else:
                 param = params_dict[field] if field in params_dict else None
             params.append(param)
