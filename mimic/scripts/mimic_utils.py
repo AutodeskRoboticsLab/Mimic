@@ -1147,7 +1147,7 @@ def attach_tool_controller(*args):
             pass
 
         pm.select('{}|robot_GRP|tool_CTRL'.format(robot[0]))
-
+        pm.headsUpMessage('Tool Controller attatched successfuly!')
     except:
         pm.warning('Error attaching tool controller')
 
@@ -1215,6 +1215,7 @@ def attach_tool_model(*args):
                 pm.select('{}|robot_GRP|tool_CTRL'.format(robot[0]))
             else:
                 pm.select('{}|robot_GRP|target_CTRL'.format(robot[0]))
+            pm.headsUpMessage('Tool Model attached successfuly!')
 
         except:
             pm.warning('Error attaching tool model {}'.format(tool_model))
@@ -1254,6 +1255,7 @@ def detach_tool_controller(*args):
                            lock=False)
                 pm.parent(sel, world=True, absolute=True)
                 tools = 1  # Our selection is a tool controller
+                pm.headsUpMessage('Tool Controller detached successfuly!')
 
     # If there were no tools in our selection, alert the user
     if not tools:
@@ -1285,6 +1287,7 @@ def detach_tool_model(*args):
                 except:
                     pm.warning('Couldn\'t remove tool model from robot')
                 tools = 1  # Our selection is a tool controller
+                pm.headsUpMessage('Tool Controller detached successfuly!')
 
     # If there were no tools in our selection, alert the user
     if not tools:
@@ -2375,3 +2378,8 @@ def get_maya_framerate():
         framerate = 24.
 
     return framerate
+
+
+
+class MimicError(Exception):
+    pass

@@ -52,10 +52,17 @@ def save_program(*args):
     # Check program, commands, raise exception on failure
     program_settings = _get_settings()
     command_dicts = _get_command_dicts(*program_settings)
-    _check_command_dicts(command_dicts, *program_settings)
+    warnings = _check_command_dicts(command_dicts, *program_settings)
 
     # Continue to save program:
     _process_program(command_dicts, *program_settings)
+
+    if warnings:
+        pm.headsUpMessage('Program exported with warnings; '\
+                          'See Mimic output window for details')
+    else:
+        pm.headsUpMessage('Program exported successfuly; '\
+                          'See Mimic output window for details')
 
 
 def _process_program(command_dicts, robot, animation_settings, postproc_settings, user_options):
@@ -216,6 +223,15 @@ def _get_settings_for_postproc(robot):
     template_filename = pm.textField('t_templateFileName', text=True, query=True)
     overwrite_option = pm.checkBox('cb_overwriteFile', value=True, query=True)
 
+    # Get time interval in seconds
+    animation_settings = _get_settings_for_animation(robot)
+    framerate = animation_settings['Framerate']
+    if time_interval_units == 'seconds':
+        sample_rate_sec = float(time_interval_value)
+    else:  # time_interval_units == 'frames'
+        sample_rate_sec = float(time_interval_value) / float(framerate)
+    time_interval_in_seconds = sample_rate_sec
+
     # Check for warnings
     if using_time_interval:
         # Confirm that the time interval is valid
@@ -253,6 +269,7 @@ def _get_settings_for_postproc(robot):
         'Using Keyframes Only': using_keyframes_only,
         'Time Interval Value': time_interval_value,
         'Time Interval Units': time_interval_units,
+        'Time Interval in Seconds': time_interval_in_seconds,
         'Ignore Warnings': ignore_warnings,
         'Processor Type': processor_type,
         'Output Directory': output_directory,
@@ -275,6 +292,7 @@ def _get_command_dicts(robot, animation_settings, postproc_settings, user_option
     # Determine sample mode
     using_sample_rate = postproc_settings['Using Time Interval']
     using_keyframes_only = postproc_settings['Using Keyframes Only']
+    time_interval_in_seconds = postproc_settings['Time Interval in Seconds']
 
     # Get frames to sample
     frames = []
@@ -286,7 +304,7 @@ def _get_command_dicts(robot, animation_settings, postproc_settings, user_option
         pass
 
     # Get commands from sampled frames
-    command_dicts = _sample_frames_get_command_dicts(robot, frames, animation_settings, user_options)
+    command_dicts = _sample_frames_get_command_dicts(robot, frames, animation_settings, time_interval_in_seconds, user_options)
     return command_dicts
 
 
@@ -294,7 +312,7 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
     """
     Check command dictionary for warnings.
     :param command_dicts:
-    :return:
+    :return: True if warning, False otherwise
     """
     # Check to see if the user has elected to ignore warnings
     ignore_warnings = postproc_settings['Ignore Warnings']
@@ -308,6 +326,7 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
             # Print this one always
             warning += '\n'
             pm.scrollField(OUTPUT_WINDOW_NAME, insertText=warning, edit=True)
+            pm.headsUpMessage('WARNINGS: See Mimic output window for details')
             if not ignore_warnings:
                 raise Exception(warning)
 
@@ -337,6 +356,10 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
     if warning == '':
         no_warning = 'All checks passed!\n'
         pm.scrollField(OUTPUT_WINDOW_NAME, insertText=no_warning, edit=True)
+        pm.headsUpMessage('All Checks Passed!')
+        return False
+    else:
+    	return True
 
 
 def _check_velocity_of_axes(robot, command_dicts, framerate):
@@ -519,7 +542,7 @@ def _get_frames_using_keyframes_only(robot, animation_settings):
     return frames
 
 
-def _sample_frames_get_command_dicts(robot_name, frames, animation_settings, user_options):
+def _sample_frames_get_command_dicts(robot_name, frames, animation_settings, time_interval_in_seconds, user_options):
     """
     Sample robot commands using a list of frames and user options.
     :param robot_name:
@@ -530,6 +553,8 @@ def _sample_frames_get_command_dicts(robot_name, frames, animation_settings, use
     """
     # Initialize output array.
     command_dicts = []
+    time_index_count = 0
+
     for frame in frames:
         # Set the background to the current frame
         # TODO: Implement this! This rocks:
@@ -539,6 +564,9 @@ def _sample_frames_get_command_dicts(robot_name, frames, animation_settings, use
         # Add this frame number/step/index to the dictionary
         command_dict['Frame'] = frame
         command_dict['Framerate'] = animation_settings['Framerate']
+        command_dict['Time Index'] = time_index_count * time_interval_in_seconds
+        time_index_count += 1
+
         # Get motion parameters
         if not user_options.Ignore_motion:
             if user_options.Include_axes:
@@ -576,6 +604,7 @@ def _sample_frames_get_command_dicts(robot_name, frames, animation_settings, use
                 # command_dict[postproc.ANALOG_INPUT] = postproc.DigitalOutput(*analog_input)
                 pass
         command_dicts.append(command_dict)
+
     # Reset current frame (just in case)
     pm.currentTime(frames[0])
     return command_dicts
@@ -731,3 +760,24 @@ def _sample_frame_get_configuration(robot_name, frame):
     """
     configuration = mimic_utils.get_robot_configuration(robot_name, frame)
     return configuration
+
+
+
+def _initialize_export_progress_bar(is_on=True):
+
+	pm.progressBar('pb_exportProgress', edit=True, progress=0)
+	pm.progressBar('pb_exportProgress', edit=True, visible=is_on)
+
+
+def _update_export_progress_bar(frame_range, frame_index):
+    if (frame_range == 0):
+        step = 0
+    else:
+        export_bar_range = 100
+        step = ((frame_index * export_bar_range) / frame_range)
+
+	pm.progressBar('pb_exportProgress', edit=True, step=10)
+
+
+
+

@@ -640,6 +640,10 @@ def _build_program_settings_frame(parent_layout):
               annotation='Saves robot control program with input parameters')
     pm.separator(height=3, style='none')
 
+    export_progress_bar = pm.progressBar('pb_exportProgress',
+                                         maxValue=100,
+                                         visible=0)
+
     pm.setParent(parent_layout)
 
 

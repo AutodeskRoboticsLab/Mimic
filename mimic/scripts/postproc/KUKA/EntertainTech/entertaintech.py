@@ -155,9 +155,8 @@ class SimpleEntertainTechProcessor(postproc.PostProcessor):
         params = []
         for field in _records_command_fields:
             if field == _time_index:  # Get the timestamp itself
-                frame_number = params_dict['Frame']
-                frame_rate = params_dict['Framerate']
-                param = (frame_number / frame_rate) - (1 / frame_rate)
+                time_index = params_dict['Time Index']
+                param = time_index
             else:
                 param = params_dict[field] if field in params_dict else None
             params.append(param)
@@ -197,7 +196,7 @@ def _process_records_command(command, opts):
     params.append(timestamp)
 
     # Add primary parameters
-    padding = 12
+    padding = 13
     if command.axes is not None:
         formatted_params = [general_utils.num_to_str(axis, include_sign=True, padding=padding)
                             for axis in command.axes]
