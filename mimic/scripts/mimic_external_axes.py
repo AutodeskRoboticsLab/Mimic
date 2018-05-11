@@ -122,7 +122,19 @@ def _get_external_axis_position(external_axis_path, frame=None):
     :return:
     """
     attribute_path = external_axis_path + '_position'
-    return mimic_utils.get_attribute_value(attribute_path, frame)
+    external_axis_position = mimic_utils.get_attribute_value(attribute_path, frame)
+
+    # If the axis' driving attribute is a translation, we need to convert from
+    # Maya's units (cm) to millimeters
+    driving_attribute = pm.listConnections(attribute_path,
+                                           plugs=True,
+                                           s=True)[0]
+    driving_attr_ctrl, driving_attr_name = driving_attribute.split('.')
+
+    if 'translate' in driving_attr_name:
+        external_axis_position = external_axis_position * 10
+
+    return external_axis_position
 
 
 def _get_external_axis_number(external_axis_path):
@@ -282,7 +294,7 @@ def _check_external_axis_params(external_axis_params):
         raise MimicError('{} must be float(s)'.format(non_float_params))
 
 
-def _check_if_robot_is_attached_to_externa_axis(robot_name):
+def _check_if_robot_is_attached_to_external_axis(robot_name):
     """
     Checks if the robot is attached to an external axis controller
     :param robot_name: name of the robot being checked
@@ -568,7 +580,7 @@ def add_external_axis(*args):
     # If attach to robot is true, parent the robot's local control to the
     # external axis controller
     if attach_robot_to_external:
-        if _check_if_robot_is_attached_to_externa_axis(robot):
+        if _check_if_robot_is_attached_to_external_axis(robot):
             raise MimicError('{} is already attached to an external ' \
                              'axis controller'.format(robot))
         _attach_robot_to_external_axis(robot, external_axis_CTRL)
@@ -698,7 +710,7 @@ def update_external_axis(*args):
     # external axis controller
     if attach_robot_to_external:
         # Check if the robot is already attached to an external axis controller
-        if _check_if_robot_is_attached_to_externa_axis(robot):
+        if _check_if_robot_is_attached_to_external_axis(robot):
             raise MimicError('{} is already attached to an external ' \
                              'axis controller'.format(robot))
         # Get and check the proper controllers from viewport selection
@@ -820,12 +832,16 @@ def remove_external_axis(*args):
                              numberOfItems=True):
         reset_external_axis_UI()
 
-    if _check_if_robot_is_attached_to_externa_axis(robot):
+    '''
+    # NEEDS Attention. This deletes parent constraint even if the axis
+    # being removed isn't the one the robot is attached to
+    if _check_if_robot_is_attached_to_external_axis(robot):
         pm.delete('{}|robot_GRP|local_CTRL|' \
                   'localCTRL_externalAxisCTRL_parentConstraint'
                   .format(robot))
         pm.setAttr('{}|robot_GRP|local_CTRL.visibility'.format(robot), 1)
-
+    '''
+    
     pm.headsUpMessage('External Axis \'{}\' removed successfully from {}'
                       .format(axis_name, robot))
 

@@ -196,7 +196,7 @@ def _process_records_command(command, opts):
     params.append(timestamp)
 
     # Add primary parameters
-    padding = 13
+    padding = 14
     if command.axes is not None:
         formatted_params = [general_utils.num_to_str(axis, include_sign=True, padding=padding)
                             for axis in command.axes]
