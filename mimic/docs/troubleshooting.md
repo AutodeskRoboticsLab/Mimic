@@ -32,10 +32,10 @@ receive and send a detailed description to us at [mimic@autodesk.com](mailto:mim
   
 - Confirm that the plugin has loaded properly, in Maya, check
   *Windows > Settings > Plug-in Manager* for the `REQUIRED_PLUGINS` listed in
-  *mimic_config.py*:
+  *mimic.py*:
 
     ```
-    REQUIRED_PLUGINS = [
+    required_plugins = [
         'robotAccumRot',
         'robotIK',
         'robotLimitRot',
