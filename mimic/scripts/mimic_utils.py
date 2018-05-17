@@ -2380,6 +2380,5 @@ def get_maya_framerate():
     return framerate
 
 
-
 class MimicError(Exception):
     pass

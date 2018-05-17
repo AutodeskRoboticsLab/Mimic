@@ -23,7 +23,6 @@ from postproc import postproc_setup
 from postproc import postproc_options
 import mimic_external_axes
 
-
 OUTPUT_WINDOW_NAME = 'programOutputScrollField'
 
 
@@ -58,10 +57,10 @@ def save_program(*args):
     _process_program(command_dicts, *program_settings)
 
     if warnings:
-        pm.headsUpMessage('Program exported with warnings; '\
+        pm.headsUpMessage('Program exported with warnings; ' \
                           'See Mimic output window for details')
     else:
-        pm.headsUpMessage('Program exported successfuly; '\
+        pm.headsUpMessage('Program exported successfuly; ' \
                           'See Mimic output window for details')
 
 
@@ -304,7 +303,8 @@ def _get_command_dicts(robot, animation_settings, postproc_settings, user_option
         pass
 
     # Get commands from sampled frames
-    command_dicts = _sample_frames_get_command_dicts(robot, frames, animation_settings, time_interval_in_seconds, user_options)
+    command_dicts = _sample_frames_get_command_dicts(robot, frames, animation_settings, time_interval_in_seconds,
+                                                     user_options)
     return command_dicts
 
 
@@ -359,7 +359,7 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
         pm.headsUpMessage('All Checks Passed!')
         return False
     else:
-    	return True
+        return True
 
 
 def _check_velocity_of_axes(robot, command_dicts, framerate):
@@ -762,7 +762,7 @@ def _sample_frame_get_configuration(robot_name, frame):
     return configuration
 
 
-
+'''
 def _initialize_export_progress_bar(is_on=True):
 
 	pm.progressBar('pb_exportProgress', edit=True, progress=0)
@@ -777,7 +777,4 @@ def _update_export_progress_bar(frame_range, frame_index):
         step = ((frame_index * export_bar_range) / frame_range)
 
 	pm.progressBar('pb_exportProgress', edit=True, step=10)
-
-
-
-
+'''

@@ -2,19 +2,44 @@
 
 ### Currently supported robots
 
-*Let us know if what you need isn't listed and we'll try to help!*
-
-Mimic currently supports the following robots:
-
 ```
-ABB
-|-- IRB-120
-|-- IRB-6700-205-280
-KUKA
-|-- AGILUS-R900
-|-- KR5-R1400
-|-- KR5-arc
-|-- KR60-3
+|-- ABB
+    |-- IRB 120-3-58
+    |-- IRB 1600-6-145
+    |-- IRB 1600-10-145
+    |-- IRB 4400-45-196
+    |-- IRB 4400-60-196
+    |-- IRB 4600-40-255
+    |-- IRB 6640-180-255
+    |-- IRB 6640-235-255
+    |-- IRB 6700-150-320
+    |-- IRB 6700-205-280
+|-- KUKA
+    |-- KL 100 6125
+    |-- KL 1500-3 6000
+    |-- KR 5 R1400
+    |-- KR 5-arc
+    |-- KR 6 R900 sixx
+    |-- KR 10 R900 sixx
+    |-- KR 10 R1100 sixx
+    |-- KR 16 R2010
+    |-- KR 16-arc HW
+    |-- KR 60-3
+    |-- KR 120 R2700 HA
+    |-- KR 150-2
+    |-- KR 200 L140-2
+    |-- KR 210-2
+    |-- KR 500-2
+    |-- KR 500-2 RC
+    |-- KR 600 R2830
+    |-- KR 1000 TITAN
+|-- Staubli
+    |-- RX160
+    |-- TX40
+    |-- TX60
+    |-- TX60L
+    |-- TX90
+    |-- TX90L
 ```
 
 *Get robot rigs from the latest

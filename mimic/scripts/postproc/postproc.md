@@ -6,11 +6,11 @@ Mimic currently supports the following post processors
 (see [postproc](mimic/scripts/postproc)):
 
 ```
-ABB
-|-- RAPID
-KUKA
-|-- EntertainTech *
-|-- KRL
+|-- ABB
+    |-- RAPID
+|-- KUKA
+    |-- EntertainTech *
+    |-- KRL
 ```
 
 \* *external installation option required*
@@ -57,8 +57,11 @@ should try to maintain organization).
 ```
 |-- postproc
     |-- __init__.py
+    |-- postproc.md
     |-- postproc.py
     |-- postproc_config.py
+    |-- postproc_options.py
+    |-- postproc_setup.py
     |-- <type of robot>
         |-- __init__.py
         |-- <type of processor>
@@ -82,6 +85,7 @@ The *postproc* directory also contains the files:
 - *postproc.py*, which contains PostProcessor object, datatypes, functions
 - *postproc_config.py*, which contains configuration parameters
 - *postproc_setup.py*, which contains configuration functions
+- *postproc_options.py*, which contains UserOptions functions
 
 
 ### Implementation

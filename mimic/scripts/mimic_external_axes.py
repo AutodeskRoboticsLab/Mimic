@@ -263,7 +263,7 @@ def _check_external_axis_number(robot_name, axis_number):
 def _check_external_axis_params(external_axis_params):
     """
     Check to ensure that user inputs proper value types for external axis
-    parametars
+    parameters.
     """
 
     # Make sure the following parameters have user inputs
@@ -841,7 +841,7 @@ def remove_external_axis(*args):
                   .format(robot))
         pm.setAttr('{}|robot_GRP|local_CTRL.visibility'.format(robot), 1)
     '''
-    
+
     pm.headsUpMessage('External Axis \'{}\' removed successfully from {}'
                       .format(axis_name, robot))
 

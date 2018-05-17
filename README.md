@@ -24,17 +24,17 @@ macOS   ~/Library/Preferences/Autodesk/maya/modules
 Windows ~/Documents/maya/modules
 ```
 
-- *If the `modules` directory above does not exist, create it.*
-- *If you're using Maya 2017 update 3 or earlier, you must
-  [manually load the Mimic shelf](https://youtu.be/bc3SqEXcE5Q?t=1m46s).*
-- *If you're running Windows and downloaded a release and/or rigs archive,
+- If the `modules` directory above does not exist, create it.
+- If you're using Maya 2017 update 3 or earlier, you must
+  [manually load the Mimic shelf](https://youtu.be/bc3SqEXcE5Q?t=1m46s).
+- If you're running Windows and downloaded a release and/or rigs archive,
   confirm that it isn't "blocked" before unzipping and installing it (right click
-  the archive, select Properties, check Unblock if necessary).*
-- *If you cloned this repository, download the latest robot rigs from
+  the archive, select Properties, check Unblock if necessary).
+- If you cloned this repository, download the latest robot rigs from
   [releases](https://github.com/AutodeskRoboticsLab/Mimic/releases). Once you do,
-  replace the directory mimic/rigs with the one you downloaded after unzipping it.*
-- *See [troubleshooting](mimic/docs/troubleshooting.md) if you have trouble 
-  using or installing Mimic.*
+  replace the directory mimic/rigs with the one you downloaded after unzipping it.
+- See [troubleshooting](mimic/docs/troubleshooting.md) if you have trouble 
+  using or installing Mimic.
 
 You can find tutorials, videos, and other media on our
 [website](https://www.mimicformaya.com/) and textual documentation in
@@ -49,25 +49,56 @@ You can find tutorials, videos, and other media on our
 Mimic currently supports the following robots (see [rigs](mimic/rigs)):
 
 ```
-ABB
-|-- IRB-120
-|-- IRB-6700-205-280
-KUKA
-|-- AGILUS-R900
-|-- KR5-R1400
-|-- KR5-arc
-|-- KR60-3
+|-- ABB
+    |-- IRB 120-3-58
+    |-- IRB 1600-6-145
+    |-- IRB 1600-10-145
+    |-- IRB 4400-45-196
+    |-- IRB 4400-60-196
+    |-- IRB 4600-40-255
+    |-- IRB 6640-180-255
+    |-- IRB 6640-235-255
+    |-- IRB 6700-150-320
+    |-- IRB 6700-205-280
+|-- KUKA
+    |-- KL 100 6125
+    |-- KL 1500-3 6000
+    |-- KR 5 R1400
+    |-- KR 5-arc
+    |-- KR 6 R900 sixx
+    |-- KR 10 R900 sixx
+    |-- KR 10 R1100 sixx
+    |-- KR 16 R2010
+    |-- KR 16-arc HW
+    |-- KR 60-3
+    |-- KR 120 R2700 HA
+    |-- KR 150-2
+    |-- KR 200 L140-2
+    |-- KR 210-2
+    |-- KR 500-2
+    |-- KR 500-2 RC
+    |-- KR 600 R2830
+    |-- KR 1000 TITAN
+|-- Staubli * 
+    |-- RX160
+    |-- TX40
+    |-- TX60
+    |-- TX60L
+    |-- TX90
+    |-- TX90L
 ```
+
+\* *post processor not yet supported*
 
 Mimic currently supports the following post processors
 (see [postproc](mimic/scripts/postproc)):
 
 ```
-ABB
-|-- RAPID
-KUKA
-|-- EntertainTech *
-|-- KRL
+|-- ABB
+    |-- RAPID
+|-- KUKA
+    |-- EntertainTech *
+    |-- KRL
 ```
 
 \* *external installation option required*
@@ -77,7 +108,7 @@ KUKA
 
 Help us out and contribute to this repository!
 You may submit an issue or open a pull request for any bugs or improvements to
-this software. See [devnotes](mimic/docs/devnotes.md) for programming guidelines.
+this software. See [contributing](mimic/docs/contributing.md) for programming guidelines.
 
 Join the our [slack channel](https://www.mimicformaya.com/#community-section)!
 You may also contact us at [mimic@autodesk.com](mailto:mimic@autodesk.com).

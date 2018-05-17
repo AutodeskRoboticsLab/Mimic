@@ -1,6 +1,6 @@
 # Mimic
 
-### Developer notes
+### Contributing
 
 The code in this repository was generally written and tested in Python 2.7.14.
 We have used a number of different coding styles, however in the interest of
@@ -41,7 +41,7 @@ structure. Note the use of `__init__.py` throughout this repository.
             |-- __init__.py
             |-- ...
         |-- ...
-     |-- ...
+    |-- ...
 ```
 
 

@@ -12,14 +12,6 @@ MIMIC_VERSION_MINOR = 0  # Must coincide with version in mimic.mod
 # Robots
 DEFAULT_ROBOT = ''  # E.G 'KUKA KR 60-3'
 
-# Plugin is dependent on the following scripts
-REQUIRED_PLUGINS = [
-    'robotAccumRot',
-    'robotIK',
-    'robotLimitRot',
-    'snapTransforms'
-]
-
 # Reconcile rotation execution
 # The reconcileRotation script job that ensures proper evaluation of the
 # rotations about axes 4 and 6 can have a negative impact on the scene's

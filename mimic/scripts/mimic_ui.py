@@ -835,11 +835,11 @@ def _build_axis_limits_frame(parent_layout):
     pm.gridLayout(nc=2, cw=114, ch=25)
     pm.button(label='Get Axis Limits',
               command=mimic_utils.get_axis_limits,
-              annotation='Gets axis limit values for selected robot and '\
+              annotation='Gets axis limit values for selected robot and ' \
                          'prints them above')
     pm.button(label='Set Axis Limits',
               command=mimic_utils.set_axis_limits,
-              annotation='Sets selected robot\'s axis limit values to the '\
+              annotation='Sets selected robot\'s axis limit values to the ' \
                          'input values above')
 
     pm.setParent('..')
@@ -872,7 +872,7 @@ def build_setup_tab(parent_layout):
 # EXTERNAL TAB
 def _build_add_external_axis_frame(parent_layout):
     add_external_axis_frame = pm.frameLayout('add_external_axis_frame',
-    										 label="Add External Axis",
+                                             label="Add External Axis",
                                              collapsable=True)
     add_external_axis_col = pm.columnLayout(adj=True, columnAttach=('both', 5))
     pm.separator(height=5, style='none')
@@ -888,43 +888,42 @@ def _build_add_external_axis_frame(parent_layout):
     pm.textField('t_externalAxisDescriptionText',
                  placeholderText='axisName',
                  font=FONT)
-    pm.setParent('..')  
+    pm.setParent('..')
     pm.separator(height=3, style='none')
 
-
     def __set_limit_display_units(*args):
-		if 'translate' in args[0]:
+        if 'translate' in args[0]:
 
-			pm.textField('t_externalAxisLimitMin',
-    					 edit=True,
-    					 placeholderText='mm')
-			pm.textField('t_externalAxisLimitMax',
-    					 edit=True,
-    					 placeholderText='mm')
-			pm.textField('t_externalAxisVelocityLimit',
-		                 edit=True,
-		                 placeholderText='m/s')
-		else:
-			pm.textField('t_externalAxisLimitMin',
-    					 edit=True,
-    					 placeholderText='deg')
-			pm.textField('t_externalAxisLimitMax',
-    					 edit=True,
-    					 placeholderText='deg')
-			pm.textField('t_externalAxisVelocityLimit',
-		                 edit=True,
-		                 placeholderText='deg/s')
-    
+            pm.textField('t_externalAxisLimitMin',
+                         edit=True,
+                         placeholderText='mm')
+            pm.textField('t_externalAxisLimitMax',
+                         edit=True,
+                         placeholderText='mm')
+            pm.textField('t_externalAxisVelocityLimit',
+                         edit=True,
+                         placeholderText='m/s')
+        else:
+            pm.textField('t_externalAxisLimitMin',
+                         edit=True,
+                         placeholderText='deg')
+            pm.textField('t_externalAxisLimitMax',
+                         edit=True,
+                         placeholderText='deg')
+            pm.textField('t_externalAxisVelocityLimit',
+                         edit=True,
+                         placeholderText='deg/s')
+
     pm.optionMenu('axisNumberMenu',
                   label='Axis Number:',
                   height=18)
-    
-    axis_number_list = [i+1 for i in range(6)]
+
+    axis_number_list = [i + 1 for i in range(6)]
     for axis_number in axis_number_list:
         pm.menuItem(label=axis_number)
-    
+
     pm.separator(height=3, style='none')
-    
+
     pm.optionMenu('drivingAttributeMenu',
                   label='Driving Attribute:',
                   height=18,
@@ -943,7 +942,6 @@ def _build_add_external_axis_frame(parent_layout):
                  columnWidth=[(1, 80), (2, 65), (3, 65)],
                  height=20)
     pm.text(label='Position Limits:')
-
 
     pm.textField('t_externalAxisLimitMin',
                  placeholderText='mm')
@@ -966,12 +964,12 @@ def _build_add_external_axis_frame(parent_layout):
 
     pm.rowLayout(numberOfColumns=1)
     pm.checkBox('cb_attachRobotToController',
-    			label="Attach robot to controller", value=0)
+                label="Attach robot to controller", value=0)
     pm.setParent('..')
-    
+
     pm.rowLayout(numberOfColumns=1)
     pm.checkBox('cb_ignoreExternalAxis',
-    			label="Ignore in prostprocessor", value=0)
+                label="Ignore in prostprocessor", value=0)
     pm.setParent('..')
 
     pm.separator(height=4, style='none')
@@ -979,13 +977,14 @@ def _build_add_external_axis_frame(parent_layout):
     pm.setParent(add_external_axis_col)
 
     pm.button('b_add_Axis',
-    		  label='Add Axis',
-    		  height=25,
-  			  backgroundColor=[.361, .361, .361],
-    		  command=mimic_external_axes.add_external_axis)
+              label='Add Axis',
+              height=25,
+              backgroundColor=[.361, .361, .361],
+              command=mimic_external_axes.add_external_axis)
     pm.separator(height=5, style='none')
 
     pm.setParent(parent_layout)
+
 
 '''
 def _build_external_axis_tools_frame(parent_layout):
@@ -1005,10 +1004,11 @@ def _build_external_axis_tools_frame(parent_layout):
     pm.setParent(parent_layout)
 '''
 
+
 def _build_axis_info_frame(parent_layout):
     # Axis Info
     pm.frameLayout(label="Axis Info",
-                   #height=215,
+                   # height=215,
                    collapsable=True)
     pm.columnLayout(adj=True, columnAttach=('both', 5))
 

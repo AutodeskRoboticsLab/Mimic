@@ -218,6 +218,9 @@ def compare_strings_as_lower(s1, s2):
     return string.lower(s1) == string.lower(s2)
 
 
+# TODO: Move below matrix functions to scripts/robotmath/transforms.py!
+
+
 def matrix_multiply_1xm_nxm(a, b):
     """
     Multiply a 1xM matrix and a NxM matrix.
@@ -411,6 +414,9 @@ def transpose_list(l):
     """
     result = [list(x) for x in zip(*l)]
     return result
+
+
+# TODO: Move above matrix functions to scripts/robotmath/transforms.py!
 
 
 def list_as_range_strings(values):

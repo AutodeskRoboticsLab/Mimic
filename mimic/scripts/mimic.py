@@ -23,23 +23,29 @@ reload(mimic_config)
 reload(mimic_ui)
 
 
-def load_mimic_plugins(plugin_file_names):
+def load_mimic_plugins():
     """
     Loads required python plugins into Maya from a directory.
     These are Dependency Graph and Command plugins that should be loaded into
     Maya's plugin manager
-    :param plugin_file_names: List of required plug-ins 
     :return:
     """
+    # Plugin is dependent on the following scripts
+    required_plugins = [
+        'robotAccumRot',
+        'robotIK',
+        'robotLimitRot',
+        'snapTransforms'
+    ]
     # Check to see if each plug-in is loaded
-    for plugin_file_name in plugin_file_names:
+    for plugin in required_plugins:
         # If the plug-in is not loaded:
-        if not pm.pluginInfo(plugin_file_name, query=True, loaded=True):
+        if not pm.pluginInfo(plugin, query=True, loaded=True):
             try:
                 # Try loading it (and turn on autoload)
-                pm.loadPlugin(plugin_file_name)
-                pm.pluginInfo(plugin_file_name, autoload=True)
-                print '{} Plug-in loaded'.format(plugin_file_name)
+                pm.loadPlugin(plugin)
+                pm.pluginInfo(plugin, autoload=True)
+                print '{} Plug-in loaded'.format(plugin)
             except Exception:  # Unknown error
                 pass
 
@@ -78,7 +84,7 @@ def confirm_requirements_exist():
             else:
                 warning = 'Exception: We noticed that you\'re missing the requirement: {}! ' \
                           'Download the latest release or clone our GitHub repository! ' \
-                          .format(requirement)
+                    .format(requirement)
                 raise Exception(warning)
         except UnicodeError:
             warning = 'Exception: Sorry! You\'ve encountered a known, but unsolved issue! ' \
@@ -113,6 +119,6 @@ def run():
     """
     # Perform preliminary checks
     confirm_requirements_exist()
-    load_mimic_plugins(mimic_config.REQUIRED_PLUGINS)
+    load_mimic_plugins()
     # Build the UI itself
     mimic_ui.build_mimic_ui()
