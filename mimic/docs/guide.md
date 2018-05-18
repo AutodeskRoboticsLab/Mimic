@@ -12,6 +12,11 @@ If you're looking for developer notes and programming guidelines, check out
 *mimic/docs/devnotes.md*.
 
 
+### Design goals
+
+
+
+
 ### Organization
 
 ```
@@ -73,45 +78,8 @@ If you're looking for developer notes and programming guidelines, check out
   `mimic_utils.py` provides supplementary functionality for `mimic.py`.
   
 - The most *important* Python modules in the Mimic repository are prefixed by
-  `mimic` and are located in the `scripts` directory. At the time of writing,
-  most of their documentation is contained in functional or inline comments.
-  A basic description of each is provided below.
-  
-    ```
-    |-- mimic
-        |-- scripts
-            |-- mimic.py
-            |-- mimic_config.py
-            |-- mimic_external_axes.py
-            |-- mimic_program.py
-            |-- mimic_ui.py
-            |-- mimic_utils.py
-            |-- ...
-    ```
-    - `mimic.py`
-    contains only a few, high-level functions which load plug-ins, confirm that
-    the repository is intact, and, most importantly, create the user interface
-    for Mimic.
-    
-    - `mimic_config.py`
-    contains a few global variables used to identify the Mimic version and which
-    may also define user-settings.
-    
-    - `mimic_external_axes.py`
-    provides support for external axes in Mimic.
-    
-    - `mimic_program.py`
-    provides support for writing programs in Mimic and interfaces the `postproc`
-    package.
-    
-    - `mimic_ui.py`
-    configures and creates the Mimic user interface. Ideally, as will eventually
-    be the case, this module is the only interface module between Maya and the
-    rest of Mimic.
-    
-    - `mimic_utils.py`
-    contains the majority of functions on which Mimic runs and, so, is the longest
-    Python module in the repository.
-    
+  `mimic` and are located in the `scripts` directory. For documentation on these,
+  see `mimic.md`; inline and functional comments are included throughout.
+
 
 #

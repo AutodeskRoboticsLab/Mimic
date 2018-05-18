@@ -107,7 +107,8 @@ following structure:
 ### Credits
 
 - All ABB robots credited to [ABB](http://new.abb.com/products/robotics).
-- All KUKA robots credited [KUKA](https://www.kuka.com/en-us).
+- All KUKA robots credited to [KUKA](https://www.kuka.com/en-us).
+- All Staubli robots credited to [Staubli](https://www.staubli.com/en-us/robotics/).
 - Exceptions to the above credits (`Robot name, attribution or source`):
     ```
     none, none

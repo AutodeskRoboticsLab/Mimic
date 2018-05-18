@@ -318,10 +318,13 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
     ignore_warnings = postproc_settings['Ignore Warnings']
     warning = ''  # Temporary holder
 
+    # TODO: write vel, acc, jerk algorithm for warnings, min/max, average, ...
+
     # Check if limits have been exceeded (i.e. velocity, acceleration)
     if user_options.Include_axes and not user_options.Ignore_motion:
         command_dicts = _check_command_rotations(robot, animation_settings, command_dicts)
-        warning = _check_velocity_of_axes(robot, command_dicts, animation_settings['Framerate'])
+        # TODO: max_velocities is awkwardly implemented...
+        warning, max_velocities = _check_velocity_of_axes(robot, command_dicts, animation_settings['Framerate'])
         if warning != '':
             # Print this one always
             warning += '\n'
@@ -375,10 +378,12 @@ def _check_velocity_of_axes(robot, command_dicts, framerate):
     frames = [c['Frame'] for c in command_dicts]
     axes_at_each_frame = [c[postproc.AXES] for c in command_dicts]
     velocity_limits = mimic_utils.get_velocity_limits(robot)
+    max_velocities = [0 for _ in range(6)]
 
     violations = {}
     _previous_frame = 0
     _previous_axes = []
+
     for i in range(len(axes_at_each_frame)):
         # Get time and axes right now
         _current_frame = frames[i]
@@ -390,6 +395,9 @@ def _check_velocity_of_axes(robot, command_dicts, framerate):
                 _current_axis = _current_axes[j]
                 displacement = abs(_current_axis - _previous_axis)
                 velocity = displacement / displacement_time
+                # Record max velocities
+                if velocity > max_velocities[j]:
+                    max_velocities[j] = velocity
                 # Check if a limit has been violated
                 if velocity > velocity_limits[j]:
                     # Add axis name to violations dict
@@ -419,9 +427,9 @@ def _check_velocity_of_axes(robot, command_dicts, framerate):
                   'Velocity limits have been violated!\n' \
                   'See the following frames:\n'
         warning_params.insert(0, warning)
-        return '\n'.join(warning_params) + '\n'
+        return '\n'.join(warning_params) + '\n', max_velocities
     else:
-        return ''
+        return '', max_velocities
 
 
 def _check_robot_postproc_compatibility(robot, processor):
