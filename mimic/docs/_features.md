@@ -1,6 +1,6 @@
 # Mimic
 
-### Features
+### Feature index
 
 At time of writing, the following features are available using the Mimic UI:
 

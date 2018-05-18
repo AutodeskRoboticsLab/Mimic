@@ -1,6 +1,6 @@
 # Mimic
 
-### Packages
+### Package index
 
 This is a simple index of packages installed in this repository. For each
 package are provided a brief description and link to documentation. Note that,

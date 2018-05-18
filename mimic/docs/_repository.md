@@ -1,6 +1,6 @@
 # Mimic
 
-### Features
+### Repository index
 
 At time of writing, the following contents are located in the Mimic repository:
 

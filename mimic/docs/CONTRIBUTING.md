@@ -2,6 +2,8 @@
 
 ### Contributing
 
+*Woohoo! Thanks for your help!*
+
 The code in this repository was generally written and tested in Python 2.7.14.
 We have used a number of different coding styles, however in the interest of
 consistency, use [PEP8](https://www.python.org/dev/peps/pep-0008/) conventions

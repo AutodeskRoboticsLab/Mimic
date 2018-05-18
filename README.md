@@ -108,7 +108,7 @@ Mimic currently supports the following post processors
 
 Help us out and contribute to this repository!
 You may submit an issue or open a pull request for any bugs or improvements to
-this software. See [contributing](mimic/docs/contributing.md) for programming guidelines.
+this software. See [CONTRIBUTING](mimic/docs/CONTRIBUTING.md) for programming guidelines.
 
 Join the our [slack channel](https://www.mimicformaya.com/#community-section)!
 You may also contact us at [mimic@autodesk.com](mailto:mimic@autodesk.com).
