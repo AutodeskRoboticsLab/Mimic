@@ -1,0 +1,7 @@
+DEF example()
+  BAS(#INITMOV, 0)
+  ; Go to start position
+{}
+  ; Go to programmed positions
+{}
+END

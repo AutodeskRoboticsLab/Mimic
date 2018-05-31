@@ -135,6 +135,13 @@ __ptp_structure = namedtuple(
     ]
 )
 
+MOVE_CPTP = 'CPTP'
+__cptp_structure = namedtuple(
+    MOVE_CPTP, [
+        __params
+    ]
+)
+
 STRUCTURES = {
     AXIS: __axis_structure,
     E6AXIS: __e6axis_structure,
@@ -143,6 +150,7 @@ STRUCTURES = {
     E6POS: __e6pos_structure,
     MOVE_LIN: __lin_structure,
     MOVE_PTP: __ptp_structure,
+    MOVE_CPTP: __cptp_structure,
     BINARY_OUT: __out_structure
 }
 
@@ -179,6 +187,9 @@ __e6pos_template = \
 __ptp_template = \
     '  PTP {}'
 
+__cptp_template = \
+    '  PTP {} C_PTP'
+
 __lin_template = \
     '  LIN {}'
 
@@ -193,6 +204,7 @@ TEMPLATES = {
     E6POS: __e6pos_template,
     MOVE_LIN: __lin_template,
     MOVE_PTP: __ptp_template,
+    MOVE_CPTP: __cptp_template,
     BINARY_OUT: __out_template
 }
 
@@ -243,10 +255,28 @@ class SimpleKRLProcessor(postproc.PostProcessor):
         :param processed_commands: List of processed commands.
         :return:
         """
-        # Get program structure and template
-        program_template = self._read_program_template()  # don't overwrite original
-        formatted_commands = '\n'.join(processed_commands)
-        return program_template.format(formatted_commands)
+        if opts.Use_continuous_motion:
+            initial_position = processed_commands[0].replace(' C_PTP', '')
+            formatted_commands = '\n'.join(processed_commands)
+            try:
+                program_template = self._read_program_template()  # don't overwrite original
+                if program_template.count('{}') != 2:
+                    raise IndexError
+                return program_template.format(initial_position, formatted_commands)
+            except IndexError:
+                message = 'To use continuous motion in KRL, template requires ' \
+                          '2 placeholders, one for the initial start position and ' \
+                          'another for the motion variables.'
+                raise IndexError(message)
+        else:
+            formatted_commands = '\n'.join(processed_commands)
+            try:
+                program_template = self._read_program_template()  # don't overwrite original
+                return program_template.format(formatted_commands)
+            except IndexError:
+                message = 'To use motion parameters as commands, template requires ' \
+                          '1 placeholder for the motion variables.'
+                raise IndexError(message)
 
     @staticmethod
     def _process_command(command, opts):
@@ -306,13 +336,14 @@ class SimpleKRLProcessor(postproc.PostProcessor):
             ignore_motion=True,
             use_nonlinear_motion=True,
             use_linear_motion=False,
+            use_continuous_motion=True,
             include_axes=True,
             include_external_axes=True,
             include_pose=False
         )
 
 
-def _process_motion_command(command, opts):  # Implement in base class!
+def _process_motion_command(command, opts):
     """
     Process motion command.
     :param command: Command tuple
@@ -342,7 +373,10 @@ def _process_motion_command(command, opts):  # Implement in base class!
 
     # Interpret nonlinear motion command
     elif opts.Use_nonlinear_motion:
-        motion_type = MOVE_PTP
+        if opts.Use_continuous_motion:
+            motion_type = MOVE_CPTP
+        else:
+            motion_type = MOVE_PTP
         if command.axes is not None:
             motion_data.extend(command.axes)
             if command.external_axes is not None:
@@ -369,6 +403,7 @@ def _process_motion_command(command, opts):  # Implement in base class!
         motion_data,
         STRUCTURES[motion_data_type],
         TEMPLATES[motion_data_type])
+
     formatted_motion = postproc.fill_template(
         formatted_motion_data,
         STRUCTURES[motion_type],

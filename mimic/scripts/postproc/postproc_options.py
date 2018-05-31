@@ -28,6 +28,7 @@ _fields = [
     'Use_motion_as_variables',
     'Use_linear_motion',
     'Use_nonlinear_motion',
+    'Use_continuous_motion',
     'Include_axes',
     'Include_pose',
     'Include_external_axes',
@@ -50,6 +51,7 @@ def configure_user_options(
         use_motion_as_variables=False,
         use_linear_motion=False,
         use_nonlinear_motion=False,
+        use_continuous_motion=False,
         include_axes=False,
         include_pose=False,
         include_external_axes=False,
@@ -68,6 +70,7 @@ def configure_user_options(
     :param use_motion_as_variables: Use motion as variables.
     :param use_linear_motion: Move linearly.
     :param use_nonlinear_motion: Move non-linearly.
+    :param use_continuous_motion: Move continuously without stopping.
     :param include_axes: Include axes in command.
     :param include_pose: Include pose in command.
     :param include_external_axes: Include external axes in command.
@@ -86,6 +89,7 @@ def configure_user_options(
         Use_motion_as_variables=use_motion_as_variables,
         Use_linear_motion=use_linear_motion,
         Use_nonlinear_motion=use_nonlinear_motion,
+        Use_continuous_motion=use_continuous_motion,
         Include_axes=include_axes,
         Include_pose=include_pose,
         Include_external_axes=include_external_axes,
