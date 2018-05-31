@@ -364,6 +364,53 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
     else:
         return True
 
+'''
+def _check_derivatives(values, frames, framerate=0.012, depth=1):
+    """
+    Compute the derivatives of a list of parameters. This is a very simple algorithm
+    and should be modified for scalability and functionality later on.
+    :param values:
+    :param frames:
+    :param framerate:
+    :param limit:
+    :return:
+    """
+    # Initialize params
+    _current_values = []
+    _current_frames = []
+    _previous_value = 0
+    _previous_frame = 0
+    derivatives = []
+    
+    # Execute loop
+    for n in range(depth):
+        
+        # Initialize
+        derivatives_n = []
+        
+        # Compute the derivatives
+        _current_values = values
+        _current_frames = frames
+        for i in range(len(values)):
+            if i > 0:  # skip zeroth
+                _current_value = values[i]
+                _current_frame = frames[i]
+                # Compute velocity
+                displacement = abs(_current_value - _previous_value)
+                displacement_time = abs(_current_frame - _previous_frame) / framerate
+                derivative = displacement / displacement_time
+                derivatives_n.append(derivative)
+                # Check if a limit has been violated
+                if limit is not None:
+                    if derivative > limit:
+                        violation = (_current_frame, derivative)
+                        violations.append(violation)
+            # Overwrite previous
+            _previous_value = _current_value
+            _previous_frame = _current_frame
+        derivatives.append(derivatives_n)
+        '''
+
 
 def _check_velocity_of_axes(robot, command_dicts, framerate):
     """
@@ -379,7 +426,7 @@ def _check_velocity_of_axes(robot, command_dicts, framerate):
     axes_at_each_frame = [c[postproc.AXES] for c in command_dicts]
     velocity_limits = mimic_utils.get_velocity_limits(robot)
     max_velocities = [0 for _ in range(6)]
-
+    max_velocities_frames = [0 for _ in range(6)]
     violations = {}
     _previous_frame = 0
     _previous_axes = []
@@ -398,6 +445,7 @@ def _check_velocity_of_axes(robot, command_dicts, framerate):
                 # Record max velocities
                 if velocity > max_velocities[j]:
                     max_velocities[j] = velocity
+                    max_velocities_frames[j] = _current_frame
                 # Check if a limit has been violated
                 if velocity > velocity_limits[j]:
                     # Add axis name to violations dict
@@ -408,6 +456,25 @@ def _check_velocity_of_axes(robot, command_dicts, framerate):
                     violations[axis_name].append(_current_frame)
         _previous_frame = _current_frame
         _previous_axes = _current_axes
+
+    # TODO: This is a hack!
+    print 'Max velocities:'
+    template_string = '>>> {0:>{padding1}}{1:>{padding2}}{2:>{padding3}}'
+    print template_string.format(
+        'A',
+        'Velocity',
+        'Frame',
+        padding1=2,
+        padding2=10,
+        padding3=10)
+    for i in range(6):
+        print template_string.format(
+            i + 1,
+            general_utils.num_to_str(max_velocities[i], precision=3),
+            general_utils.num_to_str(max_velocities_frames[i], precision=3),
+            padding1=2,
+            padding2=10,
+            padding3=10)
 
     # Format a warning
     warning_params = []
