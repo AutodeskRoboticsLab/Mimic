@@ -51,6 +51,22 @@ Documentation may be found in:
 [rigging.md]().
 
 
+### analysis *
+
+Tools for analyizing intended robot motion; primarily through graphical representations
+
+Documentation may be found in:
+[analysis.md]().
+
+
+### extern *
+
+External libraries leveraged by Mimic
+
+Documentation may be found in:
+[extern.md]().
+
+
 ### robotmath
 
 Algorithms for control of 6 DOF industrial robots including those for inverse

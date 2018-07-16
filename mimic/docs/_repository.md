@@ -91,6 +91,9 @@ At time of writing, the following contents are located in the Mimic repository:
         |-- mimic_program.py
         |-- mimic_ui.py
         |-- mimic_utils.py
+        |-- analyis
+            |-- __init__.py
+            |-- __analysis.md
         |-- postproc
             |-- __init__.py
             |-- postproc.py
