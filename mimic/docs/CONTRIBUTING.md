@@ -55,7 +55,7 @@ structure. Note the use of `__init__.py` throughout this repository.
 
 - Do not add IDE and temp files to the global `.gitignore`. Instead, add them
   to a local gitignore (added to `~/.gitconfig`). Alternatively, the folder
-  `extern` is ignored and may be used however you'd like.
+  `ignore` is ignored and may be used however you'd like.
 
 - Make sure your code compiles before submitting pull requests or pushing to
   the repository. For each commit, provide a briefly rationalized changelist.
