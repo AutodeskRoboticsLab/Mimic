@@ -1353,15 +1353,49 @@ def get_velocity_limits(robot):
     :param robot: name string of the selected robot
     :return:
     """
-    velocity_limits = []
+    return _get_limits(robot, "Velocity")
+
+
+def get_acceleration_limits(robot):
+    """
+    Gets the current acceleration limits and updates UI with those values.
+    :param robot: name string of the selected robot
+    :return:
+    """
+    return _get_limits(robot, "Acceleration")
+
+
+def get_jerk_limits(robot):
+    """
+    Gets the current jerk limits and updates UI with those values.
+    :param robot: name string of the selected robot
+    :return:
+    """
+    return _get_limits(robot, "Jerk")
+
+
+def _get_limits(robot, limit_type):
+    """
+    Gets the current velocity limits and updates UI with those values.
+    :param robot: name string of the selected robot
+    :param limit_type: name string of the limit type
+    :return:
+    """
+    limits = []
 
     # HARD CODED - Number of robot axes; should include external axes
     num_axes = 6
-    # Create a list of robot's velocity limits
-    for i in range(num_axes):
-        velocity_limits.append(pm.getAttr('{}|robot_GRP|target_CTRL.axis{}' \
-                                          'VelocityLimit'.format(robot, i + 1)))
-    return velocity_limits
+    # Create a list of robot's limits
+    try:
+        for i in range(num_axes):
+            limits.append(pm.getAttr('{}|robot_GRP|target_CTRL.axis{}' \
+                                     '{}Limit'.format(robot, i + 1, limit_type)))
+    except AttributeError:
+        # TODO: should probably support instances where partial axis limit 
+        # data is known instead of throwing out limit data for all axes 
+        limits = None
+
+    return limits
 
 
 def set_axis_limits(*args):
