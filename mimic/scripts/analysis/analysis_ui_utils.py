@@ -108,6 +108,7 @@ class AxisToggleWidget(QtWidgets.QWidget):
     def __build_toggle_group(self, number_of_axes):
         """
         """
+        axis_toggles = {}
         # Create a widget to hold the toggle button group
         toggle_button_widget = QtWidgets.QWidget()
 
@@ -115,22 +116,24 @@ class AxisToggleWidget(QtWidgets.QWidget):
         toggle_grid_layout = QtWidgets.QGridLayout(toggle_button_widget)
 
         # Create button group
-        self.toggle_buttons_group = QtWidgets.QButtonGroup()
+        toggle_buttons_group = QtWidgets.QButtonGroup()
 
         for i in range(number_of_axes):
             axis_number = i + 1  # Axes are 1-indexed
 
             axis_key = 'Axis {}'.format(axis_number)
 
-            self.axis_toggles[axis_key] = ToggleButton()
-            self.toggle_buttons_group.addButton(self.axis_toggles[axis_key])
+            axis_toggles[axis_key] = ToggleButton()
+            toggle_buttons_group.addButton(axis_toggles[axis_key])
 
             axis_label = QtWidgets.QLabel('Axis {}'.format(axis_number))
             axis_label.setFont(FONT)
 
             toggle_grid_layout.addWidget(axis_label, i, 0)
-            toggle_grid_layout.addWidget(self.axis_toggles[axis_key], i, 1)
+            toggle_grid_layout.addWidget(axis_toggles[axis_key], i, 1)
 
+        self.axis_toggles = axis_toggles
+        self.toggle_buttons_group = toggle_buttons_group
         self.toggle_grid_layout = toggle_grid_layout
 
         return toggle_button_widget
