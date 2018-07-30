@@ -2,10 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import general_utils
-from analysis import analysis_utils
 
 reload(general_utils)
-reload(analysis_utils)
 
 # Use Qt.py to provide for back-compatibility from PySide2 to PySide
 from extern.Qt import QtWidgets
