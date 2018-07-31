@@ -33,7 +33,7 @@ class ToggleButton(QtWidgets.QPushButton):
         self.toggle_on_path = icon_directory + '/icons/toggle_button_on.png'
         
         self.setCheckable(True)
-        self.setChecked(True)
+        self.setChecked(False)
 
         self.setFixedWidth(26)
         self.setFixedHeight(19)
@@ -56,9 +56,11 @@ class DataToggleButton(ToggleButton):
         """
         super(DataToggleButton, self).__init__(*args, **kwargs)
 
-        self.toggled.connect(self.update_plot)
+        self.toggled.connect(self.update)
 
-    def update_plot(self):
+    def update(self):
+        """
+        """
         if self.isChecked():
             print self.accessibleName() + ' is checked'
         else:
@@ -68,18 +70,108 @@ class DataToggleButton(ToggleButton):
 class IsolateToggleButton(ToggleButton):
     """
     """
-    def __init__(self, *args, **kwargs):
+    def __init__(self, toggle_group, *args, **kwargs):
         """
         """
         super(IsolateToggleButton, self).__init__(*args, **kwargs)
 
-        self.toggled.connect(self.toggle_isolation)
+        self.toggle_group = toggle_group
 
-    def toggle_isolation(self):
+        self.toggled.connect(self.update)
+
+    def update(self):
+        """
+        """
         if self.isChecked():
-            print self.accessibleName() + ' is checked'
+            # If the toggle is turned on, turn off all of the toggles in the 
+            # group, set the group to exclusive, then turn on a single toggle
+            
+            # Turn off group exclusivity as this is the only way to uncheck
+            # Every button
+            self.toggle_group.setExclusive(False)
+
+            # Get a list of active toggles
+            toggles = self.toggle_group.buttons()
+
+            # Break this out into a utility function?
+            active_toggles = [toggle for toggle in toggles if toggle.isChecked() == True]
+
+            # Turn off all active toggles
+            for toggle in active_toggles:
+                toggle.setChecked(False)
+            
+            # Set the first active toggle back on
+            try:
+                active_toggles[0].setChecked(True)
+            except IndexError:
+                # No toggles were active
+                pass
+
+            # Set the toggle group back to exclusive
+            self.toggle_group.setExclusive(True)
         else:
-            print self.accessibleName() + ' is unchecked'
+            # If toggle is turned off, set the toggle group to inexclusive
+            self.toggle_group.setExclusive(False)
+
+
+class UtilityButton(QtWidgets.QPushButton):
+    """
+    """
+    def __init__(self, label, data_control_widget, *args, **kwargs):
+        """
+        """
+        super(UtilityButton, self).__init__(label, *args, **kwargs)
+        
+        self.button_type = label
+        self.data_control_widget = data_control_widget
+        self.toggles = data_control_widget.toggles
+        self.toggle_buttons = data_control_widget.toggle_group.buttons()
+        self.toggle_group = data_control_widget.toggle_group
+
+        self.clicked.connect(self.update)
+    
+    def update(self):
+        """
+        """
+        if self.button_type == 'Show All':
+            self.show_all()
+        else:
+            self.hide_all()
+
+    def show_all(self):
+        """
+        """
+
+        # Make sure the Isolate toggle is turned off to enable all of the
+        # data toggles to be turned on
+        self.toggles['Isolate'].setChecked(False)
+
+        # Turn on all of the inactive data toggles
+        inactive_toggles = [toggle for toggle in self.toggle_buttons if toggle.isChecked() == False]
+
+        for toggle in inactive_toggles:
+            toggle.setChecked(True)
+
+    def hide_all(self):
+        """
+        """
+        # Make a reference for the state of the isolate toggle so we can
+        # maintain its state later
+        initial_isolate_toggle_state = self.toggles['Isolate'].isChecked()
+
+        # Turn off the Isolate toggle if necessary, which sets the toggle
+        # group's state to inexclusive, which allows us to turn off all of
+        # the toggles
+        self.toggles['Isolate'].setChecked(False)
+
+        # Turn off all of the active data toggles
+        active_toggles = [toggle for toggle in self.toggle_buttons if toggle.isChecked() == True]
+
+        for toggle in active_toggles:
+            toggle.setChecked(False)
+
+        # Set the state of the isolate toggle back to its initial state
+        self.toggles['Isolate'].setChecked(initial_isolate_toggle_state)
 
 
 class DataControlWidget(QtWidgets.QWidget):
@@ -116,41 +208,33 @@ class DataControlWidget(QtWidgets.QWidget):
 
         self.toggles = {}
         self.toggle_group = QtWidgets.QButtonGroup()
+        self.toggle_group.setExclusive(False)
 
         self.__build_data_control_widget()
-
 
     def __build_data_control_widget(self):
         """
         """        
         main_layout = QtWidgets.QVBoxLayout(self)
+        
+        # Create and add the data control toggles
         toggle_widget = self.__build_toggle_widget(self.toggle_names)
-    
-
         main_layout.addWidget(toggle_widget)
 
-        # main_layout.addSpacerItem(QtWidgets.QSpacerItem(5, 20))
-
-
+        # Add a spacing character
         main_layout.addWidget(QtWidgets.QLabel(unichr(0x2022)), alignment = 4)
 
-        # Add "isolate" toggle
-        isolate_widget = QtWidgets.QWidget()
-        isolate_grid_layout = QtWidgets.QGridLayout(isolate_widget)
-
-        label = QtWidgets.QLabel('Isolate')
-        label.setFont(FONT)
-
-        isolate_grid_layout.addWidget(label, 0, 0)
-        isolate_grid_layout.addWidget(IsolateToggleButton(), 0, 1)
-
+        # Create and add "isolate" toggle
+        isolate_widget = self.__build_isolate_toggle_widget()
         main_layout.addWidget(isolate_widget)
 
-        # Add "Show all" and "Hide all" buttons
-        main_layout.addWidget(QtWidgets.QPushButton('Show All')) # just for testing
-        main_layout.addWidget(QtWidgets.QPushButton('Hide All')) # just for testing
+        # Create and ddd "Show all" and "Hide all" buttons
+        show_all_button = UtilityButton(label = 'Show All', data_control_widget = self)
+        hide_all_button = UtilityButton(label = 'Hide All', data_control_widget = self)
+        main_layout.addWidget(show_all_button) 
+        main_layout.addWidget(hide_all_button) 
 
-        # Set layout view attributes
+        # Set layout view preferences
         main_layout.setAlignment(QtCore.Qt.AlignTop)
         main_layout.setSpacing(3)
         main_layout.setContentsMargins(0, 5, 0, 5)
@@ -187,3 +271,22 @@ class DataControlWidget(QtWidgets.QWidget):
         self.toggle_grid_layout = toggle_grid_layout
 
         return toggle_widget
+
+    def __build_isolate_toggle_widget(self):
+        """
+        """
+        isolate_widget = QtWidgets.QWidget()
+        isolate_toggle = IsolateToggleButton(self.toggle_group)
+
+        isolate_grid_layout = QtWidgets.QGridLayout(isolate_widget)
+
+        label = QtWidgets.QLabel('Isolate')
+        label.setFont(FONT)
+
+        isolate_grid_layout.addWidget(label, 0, 0)
+        isolate_grid_layout.addWidget(isolate_toggle, 0, 1)
+
+        # Add the isolate toggle button to the toggles dictionary
+        self.toggles['Isolate'] = isolate_toggle
+
+        return isolate_widget
