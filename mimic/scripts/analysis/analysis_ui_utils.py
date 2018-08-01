@@ -14,19 +14,21 @@ from extern.Qt import QtGui
 from extern.Qt import QtCore
 from extern.Qt import QtCompat
 
+from extern import pyqtgraph as pg
+
 # create a font
 FONT = QtGui.QFont()
 FONT.setPointSize(12)
 FONT.setBold = True
 
 
-class ToggleButton(QtWidgets.QPushButton):
+class Toggle(QtWidgets.QPushButton):
     """
     """
     def __init__(self, *args, **kwargs):
         """
         """
-        super(ToggleButton, self).__init__(*args, **kwargs)
+        super(Toggle, self).__init__(*args, **kwargs)
 
         icon_directory = general_utils.get_mimic_dir()
         self.toggle_off_path = icon_directory + '/icons/toggle_button_off.png'
@@ -48,32 +50,35 @@ class ToggleButton(QtWidgets.QPushButton):
         self.setFlat(False)
 
 
-class DataToggleButton(ToggleButton):
+class DataToggle(Toggle):
     """
     """
-    def __init__(self, *args, **kwargs):
+    def __init__(self, plot_widget, data_type, *args, **kwargs):
         """
         """
-        super(DataToggleButton, self).__init__(*args, **kwargs)
+        super(DataToggle, self).__init__(*args, **kwargs)
 
+        self.plot_widget = plot_widget
+        self.type = data_type  # 'axis' or 'derivative'
         self.toggled.connect(self.update)
 
     def update(self):
         """
         """
+        self.plot_widget.update(self)
         if self.isChecked():
             print self.accessibleName() + ' is checked'
         else:
             print self.accessibleName() + ' is unchecked'
 
 
-class IsolateToggleButton(ToggleButton):
+class IsolateToggle(Toggle):
     """
     """
     def __init__(self, toggle_group, *args, **kwargs):
         """
         """
-        super(IsolateToggleButton, self).__init__(*args, **kwargs)
+        super(IsolateToggle, self).__init__(*args, **kwargs)
 
         self.toggle_group = toggle_group
 
@@ -112,6 +117,25 @@ class IsolateToggleButton(ToggleButton):
         else:
             # If toggle is turned off, set the toggle group to inexclusive
             self.toggle_group.setExclusive(False)
+
+
+class LimitsToggle(Toggle):
+    """
+    """
+    def __init__(self, *args, **kwargs):
+        """
+        """
+        super(LimitsToggle, self).__init__(*args, **kwargs)
+
+        self.toggled.connect(self.update)
+
+    def update(self):
+        """
+        """
+        if self.isChecked():
+            print self.accessibleName() + ' is checked'
+        else:
+            print self.accessibleName() + ' is unchecked'
 
 
 class UtilityButton(QtWidgets.QPushButton):
@@ -198,13 +222,15 @@ class DataControlWidget(QtWidgets.QWidget):
     |   --------------------------   |
      --------------------------------
     """
-    def __init__(self, toggle_names, *args, **kwargs):
-        super(DataControlWidget, self).__init__(*args, **kwargs)
+    def __init__(self, toggle_names, plot_widget, data_type):
+        super(DataControlWidget, self).__init__()
 
         self.main_layout = None
         self.toggle_grid_layout = None
 
         self.toggle_names = toggle_names
+        self.plot_widget = plot_widget
+        self.data_type = data_type
 
         self.toggles = {}
         self.toggle_group = QtWidgets.QButtonGroup()
@@ -218,7 +244,7 @@ class DataControlWidget(QtWidgets.QWidget):
         main_layout = QtWidgets.QVBoxLayout(self)
         
         # Create and add the data control toggles
-        toggle_widget = self.__build_toggle_widget(self.toggle_names)
+        toggle_widget = self.__build_toggle_widget()
         main_layout.addWidget(toggle_widget)
 
         # Add a spacing character
@@ -242,7 +268,7 @@ class DataControlWidget(QtWidgets.QWidget):
         self.main_layout = main_layout
 
 
-    def __build_toggle_widget(self, toggle_names):
+    def __build_toggle_widget(self):
         """
         """
         # Create a widget to hold the toggle button and label grid
@@ -251,9 +277,10 @@ class DataControlWidget(QtWidgets.QWidget):
         # Create grid layout to be filled with toggle buttons and labels
         toggle_grid_layout = QtWidgets.QGridLayout(toggle_widget)
 
-        for i, toggle_name in enumerate(toggle_names):
+        for i, toggle_name in enumerate(self.toggle_names):
             # Create a toggle button and assign it a name            
-            toggle_object = DataToggleButton()
+            toggle_object = DataToggle(plot_widget = self.plot_widget,
+                                       data_type = self.data_type)
             toggle_object.setAccessibleName(toggle_name)
 
             # Assign the button object to its appropriate dictionary key
@@ -276,7 +303,7 @@ class DataControlWidget(QtWidgets.QWidget):
         """
         """
         isolate_widget = QtWidgets.QWidget()
-        isolate_toggle = IsolateToggleButton(self.toggle_group)
+        isolate_toggle = IsolateToggle(self.toggle_group)
 
         isolate_grid_layout = QtWidgets.QGridLayout(isolate_widget)
 
@@ -290,3 +317,67 @@ class DataControlWidget(QtWidgets.QWidget):
         self.toggles['Isolate'] = isolate_toggle
 
         return isolate_widget
+
+
+class LimitsToggleWidget(QtWidgets.QWidget):
+    """
+    """
+    def __init__(self):
+        super(LimitsToggleWidget, self).__init__()
+        
+        self.toggle = None
+        self.limits_toggle_widget = None
+        self.__build_limits_toggle_widget()
+
+    def __build_limits_toggle_widget(self):
+        """
+        """
+        limits_toggle_widget = QtWidgets.QWidget()
+        limits_toggle = LimitsToggle()
+
+        limits_grid_layout = QtWidgets.QGridLayout(limits_toggle_widget)
+
+        label = QtWidgets.QLabel('Limits')
+        label.setFont(FONT)
+
+        limits_grid_layout.addWidget(label, 0, 0)
+        limits_grid_layout.addWidget(limits_toggle, 0, 1)
+
+        self.toggle  = limits_toggle
+        self.limits_toggle_widget = limits_toggle_widget
+
+
+class AnalysisPlotWidget(QtWidgets.QWidget):
+    """
+    """
+    def __init__(self, axis_toggles, derivative_toggles):
+        super(AnalysisPlotWidget, self).__init__()
+
+        self.plot_window = pg.GraphicsLayoutWidget(show = True,
+                                                   title = 'Mimic Analysis')
+
+        self.axis_toggles = axis_toggles
+        self.derivative_toggles = derivative_toggles
+
+        self.plot_window.setBackground((78, 78, 78))
+
+        pg.setConfigOptions(antialias = True)
+
+        self.plot = self.plot_window.addPlot()
+        self.plot.showGrid(x = True, y = True)
+
+    def update(self, toggle):
+        if toggle.isChecked():
+            self.update_axis_data(toggle)
+        else:
+            self.update_derivative_data(toggle)
+
+        print toggle.type
+
+    def update_axis_data(self, toggle):
+        """
+        """
+        print 'hey'
+
+    def update_derivative_data(self, toggle):
+        print 'sup'
