@@ -37,6 +37,7 @@ def check_program(*args):
     # Check program, commands, raise exception on failure
     program_settings = _get_settings()
     command_dicts = _get_command_dicts(*program_settings)
+
     _check_command_dicts(command_dicts, *program_settings)
 
 
@@ -168,7 +169,7 @@ def _get_settings_for_animation(robot):
     framerate = mimic_utils.get_maya_framerate()
 
     # Define the animation time in seconds.
-    animation_time_sec = ((end_frame + 1) - start_frame) / framerate
+    animation_time_sec = ((end_frame) - start_frame) / framerate
     if end_frame <= start_frame:
         warning = 'End Frame must be larger than Start Frame'
         raise Exception(warning)
@@ -571,23 +572,31 @@ def _get_frames_using_sample_rate(animation_settings, postproc_settings):
     """
     # Get relevant animation parameters.
     start_frame = animation_settings['Start Frame']
-    # end_frame = animation_settings['End Frame']
+    end_frame = animation_settings['End Frame']
     framerate = animation_settings['Framerate']
     animation_time_sec = animation_settings['Animation Time (sec)']
     time_interval_units = postproc_settings['Time Interval Units']
     time_interval_value = postproc_settings['Time Interval Value']
+
+    animation_time_frames = end_frame - start_frame
     # Convert time interval from frames to seconds if necessary
     if time_interval_units == 'seconds':
         step_sec = float(time_interval_value)
+        # Find the closest multiple of the number of steps in our animation
+        num_steps = int(math.ceil(float(animation_time_sec) / step_sec) + 1)
+
+        # Create array of time-steps in milliseconds.
+        time_array_sec = [round(i * step_sec, 5) for i in range(0, num_steps)]
+        # Create list of frames (time-steps).
+        frames = [round(start_frame + (framerate * t_sec), 3) for t_sec in time_array_sec]
     else:  # time_interval_units == 'frames'
-        step_sec = float(time_interval_value) / float(framerate)
-    # Find the closest multiple of the number of steps in our animation
-    num_steps = int(math.ceil(float(animation_time_sec) / step_sec) + 1)
-    # Create array of time-steps in milliseconds.
-    time_array_sec = [round(i * step_sec, 5) for i in range(0, num_steps)]
-    # Create list of frames (time-steps).
-    frames = [round(start_frame + (framerate * t_sec), 3) for t_sec in time_array_sec]
+        step_frame = float(time_interval_value)
+        num_steps = int(math.ceil(float(animation_time_frames) / step_frame) + 1)
+        frames = [start_frame + round(i * step_frame, 3) for i in range(0, num_steps)]
+
+
     return frames
+ 
 
 
 def _get_frames_using_keyframes_only(robot, animation_settings):
