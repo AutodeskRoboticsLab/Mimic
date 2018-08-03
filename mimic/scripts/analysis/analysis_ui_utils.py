@@ -59,7 +59,7 @@ class DataToggle(Toggle):
         super(DataToggle, self).__init__(*args, **kwargs)
 
         self.plot_widget = plot_widget
-        self.type = data_type  # 'axis' or 'derivative'
+        self.type = data_type  # 'Axis' or 'Derivative'
         self.toggled.connect(self.update)
 
     def update(self):
@@ -149,6 +149,7 @@ class UtilityButton(QtWidgets.QPushButton):
         self.button_type = label
         self.data_control_widget = data_control_widget
         self.toggles = data_control_widget.toggles
+        self.isolate_toggle = data_control_widget.isolate_toggle
         self.toggle_buttons = data_control_widget.toggle_group.buttons()
         self.toggle_group = data_control_widget.toggle_group
 
@@ -168,7 +169,7 @@ class UtilityButton(QtWidgets.QPushButton):
 
         # Make sure the Isolate toggle is turned off to enable all of the
         # data toggles to be turned on
-        self.toggles['Isolate'].setChecked(False)
+        self.isolate_toggle.setChecked(False)
 
         # Turn on all of the inactive data toggles
         inactive_toggles = [toggle for toggle in self.toggle_buttons if toggle.isChecked() == False]
@@ -181,12 +182,12 @@ class UtilityButton(QtWidgets.QPushButton):
         """
         # Make a reference for the state of the isolate toggle so we can
         # maintain its state later
-        initial_isolate_toggle_state = self.toggles['Isolate'].isChecked()
+        initial_isolate_toggle_state = self.isolate_toggle.isChecked()
 
         # Turn off the Isolate toggle if necessary, which sets the toggle
         # group's state to inexclusive, which allows us to turn off all of
         # the toggles
-        self.toggles['Isolate'].setChecked(False)
+        self.isolate_toggle.setChecked(False)
 
         # Turn off all of the active data toggles
         active_toggles = [toggle for toggle in self.toggle_buttons if toggle.isChecked() == True]
@@ -195,7 +196,7 @@ class UtilityButton(QtWidgets.QPushButton):
             toggle.setChecked(False)
 
         # Set the state of the isolate toggle back to its initial state
-        self.toggles['Isolate'].setChecked(initial_isolate_toggle_state)
+        self.isolate_toggle.setChecked(initial_isolate_toggle_state)
 
 
 class DataControlWidget(QtWidgets.QWidget):
@@ -235,6 +236,8 @@ class DataControlWidget(QtWidgets.QWidget):
         self.toggles = {}
         self.toggle_group = QtWidgets.QButtonGroup()
         self.toggle_group.setExclusive(False)
+
+        self.isolate_toggle = None
 
         self.__build_data_control_widget()
 
@@ -314,7 +317,7 @@ class DataControlWidget(QtWidgets.QWidget):
         isolate_grid_layout.addWidget(isolate_toggle, 0, 1)
 
         # Add the isolate toggle button to the toggles dictionary
-        self.toggles['Isolate'] = isolate_toggle
+        self.isolate_toggle = isolate_toggle
 
         return isolate_widget
 
@@ -350,14 +353,12 @@ class LimitsToggleWidget(QtWidgets.QWidget):
 class AnalysisPlotWidget(QtWidgets.QWidget):
     """
     """
-    def __init__(self, axis_toggles, derivative_toggles):
+    def __init__(self):
         super(AnalysisPlotWidget, self).__init__()
 
         self.plot_window = pg.GraphicsLayoutWidget(show = True,
                                                    title = 'Mimic Analysis')
-
-        self.axis_toggles = axis_toggles
-        self.derivative_toggles = derivative_toggles
+        self.data_controls = None
 
         self.plot_window.setBackground((78, 78, 78))
 
@@ -381,3 +382,87 @@ class AnalysisPlotWidget(QtWidgets.QWidget):
 
     def update_derivative_data(self, toggle):
         print 'sup'
+
+    def add_data_controls(self, axis_toggles, derivative_toggles):
+        data_controls = {}
+        data_controls['Axis'] = axis_toggles
+        data_controls['Derivative'] = derivative_toggles
+
+        self.data_controls = data_controls
+
+
+class Palette(object):
+    """
+    """
+    _COLORS = [(19, 234, 201),
+               (255, 107, 107),
+               (210, 200, 100),
+               (150, 100, 190),
+               (190, 20, 100),
+               (250, 120, 5),
+               (19, 234, 100),
+               (55, 50, 100),
+               (100, 100, 255),
+               (75, 200, 190),
+               (80, 20, 50),
+               (250, 120, 255)
+               ]
+    _PEN_WIDTH = 2
+    _PEN_OPACITY = 150  # 255-scale
+    _PEN_STYLES = {'Position': QtCore.Qt.SolidLine,
+                   'Velocity': QtCore.Qt.DashLine,
+                   'Accel': QtCore.Qt.DashDotLine,
+                   'Jerk': QtCore.Qt.DotLine
+                   }
+
+    _DERIVATIVES = ['Position', 'Velocity', 'Accel', 'Jerk']
+
+    _BRUSH_OPACITY = 25
+
+
+
+
+    def __init__(self, number_of_axes):
+        super(Palette, self).__init__()
+
+        self.number_of_axes = number_of_axes
+
+        self.pens = self._create_pens()
+
+    def _create_pens(self):
+        """
+        """
+        pens = {}
+
+        for i in range(self.number_of_axes):
+            number_of_colors = len(Palette._COLORS)
+            color_index = i % number_of_colors
+            pen_color = Palette._COLORS[color_index]
+            axis_number = i + 1  # Axis numbers are 1-indexed
+            pen_key = 'Axis {}'.format(axis_number)
+
+            pens[pen_key] = {}
+            for deriv in Palette._DERIVATIVES:
+                pen_style = Palette._PEN_STYLES[deriv]
+
+                pens[pen_key][deriv] = pg.mkPen(pen_color + (Palette._PEN_OPACITY,), width = Palette._PEN_WIDTH)
+                pens[pen_key][deriv].setStyle(pen_style)
+
+        return pens
+
+    def _create_brushes(self):
+        """
+        """
+        brushes = {}
+
+        for i in range(self.number_of_axes):
+            number_of_colors = len(Palette._COLORS)
+            color_index = i % number_of_colors
+            pen_color = Palette._COLORS[color_index]
+            axis_number = i + 1  # Axis numbers are 1-indexed
+            brush_key = 'Axis {}'.format(axis_number)
+
+            brushes[brush_key] = pg.mkPen(pen_color + (Palette._PEN_OPACITY,),
+                                          width = Palette._PEN_WIDTH)
+        return brushes
+
