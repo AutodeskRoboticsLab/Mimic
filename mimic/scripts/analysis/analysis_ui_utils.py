@@ -53,16 +53,34 @@ class Toggle(QtWidgets.QPushButton):
 class DataToggle(Toggle):
     """
     """
-    def __init__(self, plot_widget, data_type, *args, **kwargs):
+    def __init__(self, data_type, plot_widget=None, data_control_widget=None, *args, **kwargs):
         """
         """
         super(DataToggle, self).__init__(*args, **kwargs)
 
+        self.type = data_type  # 'Axis', 'Derivative', 'Isolate', 'Legend'
+
         self.plot_widget = plot_widget
-        self.type = data_type  # 'Axis' or 'Derivative'
+        self.data_control_widget = data_control_widget
+
         self.toggled.connect(self.update)
 
     def update(self):
+        """
+        """
+        if self.type == 'Axis':
+            self.update_axis()
+        elif self.type == 'Derivative':
+            self.update_derivative()
+        elif self.type == 'Isolate':
+            self.update_isolate()
+        elif self.type == 'Legend':
+            self.update_legend()
+        else:
+            pm.warning('Unsupported DataToggle Type in analysis_ui_utils')
+
+
+    def update_axis(self):
         """
         """
         self.plot_widget.update(self)
@@ -72,66 +90,27 @@ class DataToggle(Toggle):
             print self.accessibleName() + ' is unchecked'
 
 
-class IsolateToggle(Toggle):
-    """
-    """
-    def __init__(self, toggle_group, *args, **kwargs):
+    def update_derivative(self):
         """
         """
-        super(IsolateToggle, self).__init__(*args, **kwargs)
-
-        self.toggle_group = toggle_group
-
-        self.toggled.connect(self.update)
-
-    def update(self):
-        """
-        """
+        self.plot_widget.update(self)
         if self.isChecked():
-            # If the toggle is turned on, turn off all of the toggles in the 
-            # group, set the group to exclusive, then turn on a single toggle
-            
-            # Turn off group exclusivity as this is the only way to uncheck
-            # Every button
-            self.toggle_group.setExclusive(False)
-
-            # Get a list of active toggles
-            toggles = self.toggle_group.buttons()
-
-            # Break this out into a utility function?
-            active_toggles = [toggle for toggle in toggles if toggle.isChecked() == True]
-
-            # Turn off all active toggles
-            for toggle in active_toggles:
-                toggle.setChecked(False)
-            
-            # Set the first active toggle back on
-            try:
-                active_toggles[0].setChecked(True)
-            except IndexError:
-                # No toggles were active
-                pass
-
-            # Set the toggle group back to exclusive
-            self.toggle_group.setExclusive(True)
+            print self.accessibleName() + ' is checked'
         else:
-            # If toggle is turned off, set the toggle group to inexclusive
-            self.toggle_group.setExclusive(False)
+            print self.accessibleName() + ' is unchecked'
 
 
-class LimitsToggle(Toggle):
-    """
-    """
-    def __init__(self, *args, **kwargs):
+    def update_isolate(self):
         """
         """
-        super(LimitsToggle, self).__init__(*args, **kwargs)
+        isolate_toggle_state = self.isChecked()
+        self.data_control_widget.set_isolate(isolate_toggle_state)
 
-        self.toggled.connect(self.update)
 
-    def update(self):
+    def update_legend(self):
         """
         """
+        self.plot_widget.update(self)
         if self.isChecked():
             print self.accessibleName() + ' is checked'
         else:
@@ -251,21 +230,23 @@ class DataControlWidget(QtWidgets.QWidget):
         main_layout.addWidget(toggle_widget)
 
         # Add a spacing character
-        main_layout.addWidget(QtWidgets.QLabel(unichr(0x2022)), alignment = 4)
+        main_layout.addWidget(QtWidgets.QLabel(unichr(0x2022)), alignment=4)
 
         # Create and add "isolate" toggle
         isolate_widget = self.__build_isolate_toggle_widget()
         main_layout.addWidget(isolate_widget)
 
         # Create and ddd "Show all" and "Hide all" buttons
-        show_all_button = UtilityButton(label = 'Show All', data_control_widget = self)
-        hide_all_button = UtilityButton(label = 'Hide All', data_control_widget = self)
+        show_all_button = UtilityButton(label='Show All',
+                                        data_control_widget=self)
+        hide_all_button = UtilityButton(label='Hide All',
+                                        data_control_widget=self)
         main_layout.addWidget(show_all_button) 
         main_layout.addWidget(hide_all_button) 
 
         # Set layout view preferences
         main_layout.setAlignment(QtCore.Qt.AlignTop)
-        main_layout.setSpacing(3)
+        main_layout.setSpacing(1)
         main_layout.setContentsMargins(0, 5, 0, 5)
 
         self.main_layout = main_layout
@@ -282,8 +263,8 @@ class DataControlWidget(QtWidgets.QWidget):
 
         for i, toggle_name in enumerate(self.toggle_names):
             # Create a toggle button and assign it a name            
-            toggle_object = DataToggle(plot_widget = self.plot_widget,
-                                       data_type = self.data_type)
+            toggle_object = DataToggle(plot_widget=self.plot_widget,
+                                       data_type=self.data_type)
             toggle_object.setAccessibleName(toggle_name)
 
             # Assign the button object to its appropriate dictionary key
@@ -306,11 +287,13 @@ class DataControlWidget(QtWidgets.QWidget):
         """
         """
         isolate_widget = QtWidgets.QWidget()
-        isolate_toggle = IsolateToggle(self.toggle_group)
+        isolate_toggle = DataToggle(data_control_widget=self,
+                                    data_type='Isolate')
 
         isolate_grid_layout = QtWidgets.QGridLayout(isolate_widget)
 
         label = QtWidgets.QLabel('Isolate')
+        isolate_toggle.setAccessibleName('Isolate')
         label.setFont(FONT)
 
         isolate_grid_layout.addWidget(label, 0, 0)
@@ -322,32 +305,80 @@ class DataControlWidget(QtWidgets.QWidget):
         return isolate_widget
 
 
-class LimitsToggleWidget(QtWidgets.QWidget):
+    def get_active_toggles(self):
+        """
+        """
+        toggles = self.toggle_group.buttons()
+        active_toggles = [toggle for toggle in toggles if toggle.isChecked() == True]
+
+        return active_toggles
+
+
+    def set_isolate(self, isolate_toggle_state):
+        """
+        """
+        # If the toggle is turned on, turn off all of the toggles in the 
+        # group, set the group to exclusive, then turn on a single toggle
+        if isolate_toggle_state:
+            # Turn off group exclusivity as this is the only way to uncheck
+            # Every button
+            self.toggle_group.setExclusive(False)
+
+            # Break this out into a utility function?
+            active_toggles = self.get_active_toggles()
+
+            # Turn off all active toggles
+            for toggle in active_toggles:
+                toggle.setChecked(False)
+            
+            # Set the first active toggle back on
+            try:
+                active_toggles[0].setChecked(True)
+            except IndexError:
+                # No toggles were active
+                pass
+
+            # Set the toggle group back to exclusive
+            self.toggle_group.setExclusive(True)
+        else:
+            # If toggle is turned off, set the toggle group to inexclusive
+            self.toggle_group.setExclusive(False)
+
+
+class AuxToggleWidget(QtWidgets.QWidget):
     """
     """
-    def __init__(self):
-        super(LimitsToggleWidget, self).__init__()
+    def __init__(self, toggle_names, plot_widget):
+        super(AuxToggleWidget, self).__init__()
         
-        self.toggle = None
-        self.limits_toggle_widget = None
-        self.__build_limits_toggle_widget()
+        self.plot_widget = plot_widget
 
-    def __build_limits_toggle_widget(self):
+        self.toggle_names = toggle_names
+        self.toggles = {}
+        self.__build_aux_toggle_widget()
+
+    def __build_aux_toggle_widget(self):
         """
         """
-        limits_toggle_widget = QtWidgets.QWidget()
-        limits_toggle = LimitsToggle()
+        aux_grid_layout = QtWidgets.QGridLayout(self)
 
-        limits_grid_layout = QtWidgets.QGridLayout(limits_toggle_widget)
+        for i, toggle_name in enumerate(self.toggle_names):
+            # Create a toggle button and assign it a name            
+            toggle_object = DataToggle(plot_widget=self.plot_widget,
+                                       data_type='Legend')
+            toggle_object.setAccessibleName(toggle_name)
 
-        label = QtWidgets.QLabel('Limits')
-        label.setFont(FONT)
+            # Assign the button object to its appropriate dictionary key
+            self.toggles[toggle_name] = toggle_object
+            
+            toggle_label = QtWidgets.QLabel(toggle_name)
+            toggle_label.setFont(FONT)
 
-        limits_grid_layout.addWidget(label, 0, 0)
-        limits_grid_layout.addWidget(limits_toggle, 0, 1)
+            # Add the button and its label to the toggle grid UI
+            aux_grid_layout.addWidget(toggle_label, i, 0)
+            aux_grid_layout.addWidget(toggle_object, i, 1)
 
-        self.toggle  = limits_toggle
-        self.limits_toggle_widget = limits_toggle_widget
+            self.toggles[toggle_name]  = toggle_object
 
 
 class AnalysisPlotWidget(QtWidgets.QWidget):
@@ -356,16 +387,17 @@ class AnalysisPlotWidget(QtWidgets.QWidget):
     def __init__(self):
         super(AnalysisPlotWidget, self).__init__()
 
-        self.plot_window = pg.GraphicsLayoutWidget(show = True,
-                                                   title = 'Mimic Analysis')
+        self.plot_window = pg.GraphicsLayoutWidget(show=True,
+                                                   title='Mimic Analysis')
         self.data_controls = None
 
         self.plot_window.setBackground((78, 78, 78))
 
-        pg.setConfigOptions(antialias = True)
+        pg.setConfigOptions(antialias=True)
 
         self.plot = self.plot_window.addPlot()
-        self.plot.showGrid(x = True, y = True)
+        self.plot.showGrid(x=True, y=True)
+
 
     def update(self, toggle):
         if toggle.isChecked():
@@ -375,13 +407,16 @@ class AnalysisPlotWidget(QtWidgets.QWidget):
 
         print toggle.type
 
+
     def update_axis_data(self, toggle):
         """
         """
         print 'hey'
 
+
     def update_derivative_data(self, toggle):
         print 'sup'
+
 
     def add_data_controls(self, axis_toggles, derivative_toggles):
         data_controls = {}
@@ -445,7 +480,7 @@ class Palette(object):
             for deriv in Palette._DERIVATIVES:
                 pen_style = Palette._PEN_STYLES[deriv]
 
-                pens[pen_key][deriv] = pg.mkPen(pen_color + (Palette._PEN_OPACITY,), width = Palette._PEN_WIDTH)
+                pens[pen_key][deriv] = pg.mkPen(pen_color + (Palette._PEN_OPACITY,), width=Palette._PEN_WIDTH)
                 pens[pen_key][deriv].setStyle(pen_style)
 
         return pens
@@ -463,6 +498,6 @@ class Palette(object):
             brush_key = 'Axis {}'.format(axis_number)
 
             brushes[brush_key] = pg.mkPen(pen_color + (Palette._PEN_OPACITY,),
-                                          width = Palette._PEN_WIDTH)
+                                          width=Palette._PEN_WIDTH)
         return brushes
 
