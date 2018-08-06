@@ -365,7 +365,7 @@ class AuxToggleWidget(QtWidgets.QWidget):
         for i, toggle_name in enumerate(self.toggle_names):
             # Create a toggle button and assign it a name            
             toggle_object = DataToggle(plot_widget=self.plot_widget,
-                                       data_type='Legend')
+                                       data_type=toggle_name)
             toggle_object.setAccessibleName(toggle_name)
 
             # Assign the button object to its appropriate dictionary key
