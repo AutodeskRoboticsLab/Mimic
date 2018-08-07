@@ -192,7 +192,7 @@ class MimicAnalysisWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
 
         # TO-DO: replace these settings with config settings
         axis_toggles[axis_toggle_names[0]].setChecked(True)
-        self.axis_toggle_widget.set_isolate(True)
+        self.axis_toggle_widget.isolate_toggle.setChecked(True)
 
         deriv_toggle_names = self.deriv_toggle_widget.get_toggle_names()
         deriv_toggles = self.deriv_toggle_widget.get_toggles()
