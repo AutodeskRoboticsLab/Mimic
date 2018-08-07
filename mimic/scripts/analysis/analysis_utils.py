@@ -26,12 +26,6 @@ class Program(object):
 
 def generate_data_for_analysis(command_dicts):
     """
-    program_data = {
-    'Axis 1': {'Position':[], 'Velocity':[], 'Accel':[], 'Jerk':[]},
-    'Axis 2': {'Position':[], 'Velocity':[], 'Accel':[], 'Jerk':[]},
-                                   ...
-    'Axis n': {'Position':[], 'Velocity':[], 'Accel':[], 'Jerk':[]},
-    }
     """
     position_dicts = command_dicts
     velocity_dicts = _generate_derivative_dicts(command_dicts, 1)
@@ -48,6 +42,12 @@ def generate_data_for_analysis(command_dicts):
 
 def _format_program_data(combined_command_dicts):
     """
+    program_data = {
+    'Axis 1': {'Position':[], 'Velocity':[], 'Accel':[], 'Jerk':[]},
+    'Axis 2': {'Position':[], 'Velocity':[], 'Accel':[], 'Jerk':[]},
+                                   ...
+    'Axis n': {'Position':[], 'Velocity':[], 'Accel':[], 'Jerk':[]},
+    }
     """
 
     sample_command_dict = combined_command_dicts['Position']
@@ -124,6 +124,23 @@ def _get_total_num_axes(command_dicts):
     total_num_axes = num_primary_axes + num_external_axes
 
     return total_num_axes
+
+def get_axis_numbers(command_dicts):
+    """
+    e.g. [1, 2, 3, 4, 5, 6, 8, 10, 11]
+    """
+    axis_numbers = []
+    num_primary_axes = _get_num_primary_axes(command_dicts)
+
+    for i in range(num_primary_axes):
+        axis_numbers.append(i+1)  # Axis numbers are 1-indexed
+
+    external_axis_numbers = _get_external_axes_indeces(command_dicts)
+    if external_axis_numbers:
+        for i in external_axis_numbers:
+            axis_numbers.append(num_primary_axes + i+1)  # External Axis numbers are 1-indexed
+
+    return axis_numbers
 
 
 def _generate_derivative_dicts(command_dicts, order):

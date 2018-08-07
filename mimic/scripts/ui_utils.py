@@ -1,9 +1,7 @@
 #!usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import general_utils
-
-reload(general_utils)
+import maya.OpenMayaUI as omui
 
 # Use Qt.py to provide for back-compatibility from PySide2 to PySide
 from extern.Qt import QtWidgets
@@ -11,12 +9,14 @@ from extern.Qt import QtGui
 from extern.Qt import QtCore
 from extern.Qt import QtCompat
 
-# create a font
-FONT = QtGui.QFont()
-FONT.setPointSize(12)
-FONT.setBold = True
 
+def getMayaWindow():
+    """
+    """
+    mayaMainWindowPtr = omui.MQtUtil.mainWindow() 
+    mayaMainWindow = QtCompat.wrapInstance(long(mayaMainWindowPtr), QtWidgets.QWidget) 
 
+    return mayaMainWindow
 
 class QHLine(QtWidgets.QFrame):
     def __init__(self):

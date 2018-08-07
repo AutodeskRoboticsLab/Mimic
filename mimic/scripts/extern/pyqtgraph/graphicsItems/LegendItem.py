@@ -70,7 +70,7 @@ class LegendItem(GraphicsWidget, GraphicsWidgetAnchor):
         title           The title to display for this item. Simple HTML allowed.
         ==============  ========================================================
         """
-        label = LabelItem(name)
+        label = LabelItem(name, justify='left')
         if isinstance(item, ItemSample):
             sample = item
         else:
@@ -109,12 +109,12 @@ class LegendItem(GraphicsWidget, GraphicsWidgetAnchor):
         width = 0
         #print("-------")
         for sample, label in self.items:
-            height += max(sample.height(), label.height()) + 3
-            width = max(width, (sample.sizeHint(QtCore.Qt.MinimumSize, sample.size()).width() +
-                                label.sizeHint(QtCore.Qt.MinimumSize, label.size()).width()))
+            height += max(sample.boundingRect().height(), label.height()) + 3
+            width = max(width, sample.boundingRect().width()+label.width())
             #print(width, height)
         #print width, height
         self.setGeometry(0, 0, width+25, height)
+
     
     def boundingRect(self):
         return QtCore.QRectF(0, 0, self.width(), self.height())

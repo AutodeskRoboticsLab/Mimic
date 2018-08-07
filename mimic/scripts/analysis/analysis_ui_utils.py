@@ -1,6 +1,13 @@
 #!usr/bin/env python
 # -*- coding: utf-8 -*-
-
+try:
+    import pymel.core as pm
+    import maya.mel as mel
+    MAYA_IS_RUNNING = True
+except ImportError:  # Maya is not running
+    pm = None
+    mel = None
+    MAYA_IS_RUNNING = False
 
 import general_utils
 import ui_utils
@@ -55,10 +62,11 @@ class DataToggle(Toggle):
     """
     def __init__(self, data_type, plot_widget=None, data_control_widget=None, *args, **kwargs):
         """
+        Supported data_types: 'Axis', 'Derivative', 'Isolate', 'Limit' 'Legend'
         """
         super(DataToggle, self).__init__(*args, **kwargs)
 
-        self.type = data_type  # 'Axis', 'Derivative', 'Isolate', 'Legend'
+        self.type = data_type  
 
         self.plot_widget = plot_widget
         self.data_control_widget = data_control_widget
@@ -73,7 +81,9 @@ class DataToggle(Toggle):
         elif self.type == 'Derivative':
             self.update_derivative()
         elif self.type == 'Isolate':
-            self.update_isolate()
+            self.update_isolate()        
+        elif self.type == 'Limits':
+            self.update_limits()
         elif self.type == 'Legend':
             self.update_legend()
         else:
@@ -88,6 +98,7 @@ class DataToggle(Toggle):
             print self.accessibleName() + ' is checked'
         else:
             print self.accessibleName() + ' is unchecked'
+        print 'Toggle Data Type: ', self.type
 
 
     def update_derivative(self):
@@ -99,13 +110,21 @@ class DataToggle(Toggle):
         else:
             print self.accessibleName() + ' is unchecked'
 
+        print 'Toggle Data Type: ', self.type
 
     def update_isolate(self):
         """
         """
         isolate_toggle_state = self.isChecked()
         self.data_control_widget.set_isolate(isolate_toggle_state)
+        print 'Toggle Data Type: ', self.type
 
+
+    def update_limits(self):
+        """
+        """
+        limits_toggle_state = self.isChecked()
+        print 'Toggle Data Type: ', self.type
 
     def update_legend(self):
         """
@@ -115,6 +134,7 @@ class DataToggle(Toggle):
             print self.accessibleName() + ' is checked'
         else:
             print self.accessibleName() + ' is unchecked'
+        print 'Toggle Data Type: ', self.type
 
 
 class UtilityButton(QtWidgets.QPushButton):
@@ -314,6 +334,16 @@ class DataControlWidget(QtWidgets.QWidget):
         return active_toggles
 
 
+    def get_toggle_names(self):
+        """
+        """
+        return self.toggle_names
+
+    def get_toggles(self):
+        """
+        """
+        return self.toggles       
+
     def set_isolate(self, isolate_toggle_state):
         """
         """
@@ -390,6 +420,7 @@ class AnalysisPlotWidget(QtWidgets.QWidget):
         self.plot_window = pg.GraphicsLayoutWidget(show=True,
                                                    title='Mimic Analysis')
         self.data_controls = None
+        self.data = None
 
         self.plot_window.setBackground((78, 78, 78))
 
@@ -425,6 +456,10 @@ class AnalysisPlotWidget(QtWidgets.QWidget):
 
         self.data_controls = data_controls
 
+    def add_data(self, data):
+        """
+        """
+        self.data = data
 
 class Palette(object):
     """
@@ -453,9 +488,6 @@ class Palette(object):
     _DERIVATIVES = ['Position', 'Velocity', 'Accel', 'Jerk']
 
     _BRUSH_OPACITY = 25
-
-
-
 
     def __init__(self, number_of_axes):
         super(Palette, self).__init__()
