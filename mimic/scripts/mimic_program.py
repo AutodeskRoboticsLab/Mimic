@@ -18,10 +18,14 @@ import math
 
 import general_utils
 import mimic_utils
+import mimic_external_axes
+
+from analysis import analysis_utils
+reload(analysis_utils)
+
 from postproc import postproc
 from postproc import postproc_setup
 from postproc import postproc_options
-import mimic_external_axes
 
 OUTPUT_WINDOW_NAME = 'programOutputScrollField'
 
@@ -39,6 +43,7 @@ def check_program(*args):
     command_dicts = _get_command_dicts(*program_settings)
     _check_command_dicts(command_dicts, *program_settings)
 
+    print command_dicts
 
 def save_program(*args):
     """
@@ -318,7 +323,7 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
 
         # Check velocity limits
         velocity_limits = mimic_utils.get_velocity_limits(robot)
-        velocity_dicts = _generate_derivative_dicts(command_dicts)
+        velocity_dicts = analysis_utils._generate_derivative_dicts(command_dicts, 1)
         if velocity_limits is None:
             velocity_warning = 'Unable to check velocity limits. Robot rig does not contain velocity data.\n'
             pm.scrollField(OUTPUT_WINDOW_NAME, insertText=velocity_warning, edit=True)
@@ -326,7 +331,7 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
 
         # Check acceleration limits
         acceleration_limits = mimic_utils.get_acceleration_limits(robot)
-        acceleration_dicts = _generate_derivative_dicts(velocity_dicts)
+        acceleration_dicts = analysis_utils._generate_derivative_dicts(velocity_dicts, 2)
         if acceleration_limits is None:
             acceleration_warning = 'Unable to check acceleration limits. Robot rig does not contain acceleration data.\n'
             pm.scrollField(OUTPUT_WINDOW_NAME, insertText=acceleration_warning, edit=True)
@@ -334,7 +339,7 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
 
         # Check jerk limits
         jerk_limits = mimic_utils.get_jerk_limits(robot)
-        jerk_dicts = _generate_derivative_dicts(acceleration_dicts)
+        jerk_dicts = analysis_utils._generate_derivative_dicts(acceleration_dicts, 3)
         if jerk_limits is None:
             jerk_warning = 'Unable to check jerk limits. Robot rig does not contain jerk data.\n'
             pm.scrollField(OUTPUT_WINDOW_NAME, insertText=jerk_warning, edit=True)
@@ -471,38 +476,6 @@ def _print_axis_stats(axis_stats, limit_type):
     # Formatting
     stats_str = '{} Stats:\n'.format(limit_type) + '\n'.join(res) + '\n'
     pm.scrollField(OUTPUT_WINDOW_NAME, insertText=stats_str, edit=True)
-
-
-def _generate_derivative_dicts(command_dicts):
-    """
-    Generate a command dicts that is a derivitive of a command dicts.
-    :param command_dicts: A list of list of robot axes
-    :return:
-    """
-    import copy
-    derivative_dicts = copy.deepcopy(command_dicts)
-
-    num_axes = len(derivative_dicts[0][postproc.AXES])
-    previous_axes = []
-
-    for command_index, current_command in enumerate(command_dicts):
-        current_axes = current_command[postproc.AXES]
-        current_axes_derivative = [0] * num_axes
-        if command_index > 0:  # skip zeroth
-            for axis_index, current_axis in enumerate(current_axes):
-                previous_axis = previous_axes[axis_index]
-                displacement = current_axis - previous_axis
-                # Do we need to compute displacement_time between every frame? Does this change?
-                displacement_time = current_command['Time Index'] - previous_command['Time Index']
-                derivative = displacement / displacement_time
-                current_axes_derivative[axis_index] = derivative
-
-        derivative_dicts[command_index][postproc.AXES] =  postproc.Axes(*current_axes_derivative)
-        previous_axes = current_axes
-        previous_command = current_command
-
-    derivative_dicts.pop(0) # Get rid of 0th value; this is not a derivitive
-    return derivative_dicts
 
 
 def _check_command_dicts_limits(command_dicts, limits=None, get_min=False, get_max=False, get_average=False):
