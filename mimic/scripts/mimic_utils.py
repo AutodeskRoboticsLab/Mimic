@@ -1295,19 +1295,18 @@ def detach_tool_controller(*args):
                 # If so unlock the robot's target_CTRL translate and
                 # rotate attributes and parent the tool_CTRL to the world
                 robot = get_robot_roots(sel=[sel])[0]
+                target_ctrl_path = get_target_ctrl_path(robot)
+                tool_ctrl_fk_path = get_tool_ctrl_fk_path(robot)
 
-                pm.delete(get_target_ctrl_path(robot)
-                        + '|targetToToolCtrl_pCnst')
-                pm.delete('{}|robot_GRP|robot_GEOM|Base|' \
-                          'axis1|axis2|axis3|axis4|axis5|axis6|' \
-                          'tcp_GRP|tcp_HDL|tool_CTRL_FK' \
-                          .format(robot))
-                pm.setAttr(get_target_ctrl_path(robot)
-                         + '.translate',
-                           lock=False)
-                pm.setAttr(get_target_ctrl_path(robot)
-                         + '.rotate',
-                           lock=False)
+                pm.delete(target_ctrl_path + '|targetToToolCtrl_pCnst')
+                pm.delete(tool_ctrl_fk_path)
+
+                try: 
+                    pm.setAttr(target_ctrl_path + '.translate', lock=False)
+                    pm.setAttr(target_ctrl_path + '.rotate', lock=False)
+                except:
+                    pm.warning('Mimic: target_CTRL.translate is from a referenced file, and cannot be unlocked.')
+
                 pm.parent(sel, world=True, absolute=True)
                 tools = 1  # Our selection is a tool controller
                 pm.headsUpMessage('Tool Controller detached successfuly!')
@@ -1342,7 +1341,7 @@ def detach_tool_model(*args):
                 except:
                     pm.warning('Couldn\'t remove tool model from robot')
                 tools = 1  # Our selection is a tool controller
-                pm.headsUpMessage('Tool Controller detached successfuly!')
+                pm.headsUpMessage('Tool Model detached successfuly!')
 
     # If there were no tools in our selection, alert the user
     if not tools:
@@ -1356,23 +1355,24 @@ def get_axis_limits(*args):
     :param args:
     :return:
     """
-    robot = get_robot_roots()[0]
-    if not robot:
+    robots = get_robot_roots()
+    if not robots:
         pm.warning('Nothing Selected; Select a valid robot')
         return
 
     # TODO: HARD CODED - Number of robot axes; should include external axes
     num_axes = 6
 
-    if len(robot) > 1:
+    if len(robots) > 1:
         pm.warning('Too many selections: Select a single robot')
         return
 
+    robot = robots[0]
+    target_ctrl_path = get_target_ctrl_path(robot)
+
     for i in range(num_axes):
-        val_min = int(pm.getAttr(get_target_ctrl_path(robot)
-                               + '.axis{}Min'.format(i + 1)))
-        val_max = int(pm.getAttr(get_target_ctrl_path(robot)
-                               + '.axis{}Max'.format(i + 1)))
+        val_min = int(pm.getAttr(target_ctrl_path + '.axis{}Min'.format(i+1)))
+        val_max = int(pm.getAttr(target_ctrl_path + '.axis{}Max'.format(i+1)))
 
         pm.textField('t_A{}Min'.format(i + 1), edit=True, text=val_min)
         pm.textField('t_A{}Max'.format(i + 1), edit=True, text=val_max)
@@ -1380,7 +1380,8 @@ def get_axis_limits(*args):
 
 def set_axis_limit(axis_number, min_max):
     """
-    Gets user-input value from UI and sets corresponding axis limits on the robot
+    Gets user-input value from UI and sets corresponding axis limits
+    on the robot
     :param axis_number: Index of axis to effect (1 indexed)
     :param min_max: string, either 'Min' or 'Max'
     :return:
@@ -1419,6 +1420,7 @@ def get_velocity_limits(robot):
 
     return velocity_limits
 
+#TO-DO: make set_velocity_limits function and connect it to the UI
 
 def set_axis_limits(*args):
     """
@@ -1479,8 +1481,9 @@ def select_fk_axis_handle(axis_number):
 
     selection = []
     for robot in robots:
-        selection.append('{}|robot_GRP|FK_CTRLS|a{}FK_CTRL' \
-                         .format(robot, axis_number))
+        ns = robot.namespace()
+        fk_ctrl_path = '{0}|{1}robot_GRP|{1}FK_CTRLS|{1}a{2}FK_CTRL'.format(robot, ns, axis_number)
+        selection.append(fk_ctrl_path)
 
     pm.select(selection)
     pm.setToolTo('RotateSuperContext')
@@ -1509,9 +1512,8 @@ def set_axis(axis_number):
                                  text=True))
 
         for robot in robots:
-            pm.setAttr('{}|robot_GRP|FK_CTRLS|a{}FK_CTRL.rotate{}' \
-                       .format(robot, axis_number, rotation_axis),
-                       val)
+            ns = robot.namespace()
+            pm.setAttr('{0}|{1}robot_GRP|{1}FK_CTRLS|{1}a{2}FK_CTRL.rotate{3}'.format(robot, ns, axis_number, rotation_axis), val)
     except:
         pass
 
@@ -1542,31 +1544,26 @@ def _snap_ik_target_to_fk(robot):
 
     # Snap IK Ctrl to FK location
     # If robot has tool controller, use that
-    if pm.objExists('{}|robot_GRP|tool_CTRL'.format(robot)):
-        ctrl_ik = '{}|robot_GRP|tool_CTRL'.format(robot)
-        ctrl_fk = '{}|robot_GRP|robot_GEOM|Base|axis1|axis2|axis3|' \
-                  'axis4|axis5|axis6|tcp_GRP|tcp_HDL|tool_CTRL_FK' \
-            .format(robot)
+    target_ctrl_path = get_target_ctrl_path(robot)
+    tool_ctrl_path = get_tool_ctrl_path(robot)
+    tool_ctrl_fk_path = get_tool_ctrl_fk_path(robot)
+    tcp_hdl_path = format_path(__TCP_HDL_PATH, robot)
 
-        # Snap tool_CTRL to tool_CTRL_FK.
-        try:
-            pm.snapTransforms(s=ctrl_fk, d=ctrl_ik)
-        except:
-            pm.warning('Coundn\'t snap {} tool_CTRL handle to FK' \
-                       .format(robot))
+    if pm.objExists(tool_ctrl_path):
+        ctrl_ik = tool_ctrl_path
+        ctrl_fk = tool_ctrl_fk_path
 
     # If robot doesn't have a tool controller, use target_CTRL.
     else:
-        ctrl_ik = get_target_ctrl_path(robot)
-        ctrl_fk = '{}|robot_GRP|robot_GEOM|Base|axis1|axis2|axis3|' \
-                  'axis4|axis5|axis6|tcp_GRP|tcp_HDL' \
-            .format(robot)
+        ctrl_ik = target_ctrl_path
+        ctrl_fk = tcp_hdl_path
 
-        try:
-            pm.snapTransforms(s=ctrl_fk, d=ctrl_ik)
-        except:
-            pm.warning('Coundn\'t snap {} target_CTRL handle to FK' \
-                       .format(robot))
+    # Snap tool_CTRL to tool_CTRL_FK.
+    try:
+        pm.snapTransforms(s=ctrl_fk, d=ctrl_ik)
+    except:
+        pm.warning('Coundn\'t snap {} tool_CTRL handle to FK' \
+                   .format(robot))
 
 
 def _ik_and_fk_aligned(ik_ctrl, tcp_handle):
@@ -1609,17 +1606,21 @@ def switch_to_ik(robot):
     :return:
     """
 
+    target_ctrl_path = get_target_ctrl_path(robot)
+    tool_ctrl_path = get_tool_ctrl_path(robot)
+    fk_ctrls_path = format_path('{0}|{1}robot_GRP|{1}FK_CTRLS', robot)
+
     try:
         # Turn FK control visibility off
-        pm.setAttr('{}|robot_GRP|FK_CTRLS.v'.format(robot), 0)
+        pm.setAttr(fk_ctrls_path + '.v', 0)
 
         # Turn IK control visibility on
-        pm.setAttr(get_target_ctrl_path(robot) + '.v', 1)
+        pm.setAttr(target_ctrl_path + '.v', 1)
         pm.setAttr(format_path(__TARGET_CTRL_PATH + '|{1}target_CTRLShape',
                                robot) + '.visibility', 1)
 
-        if pm.objExists('{}|robot_GRP|tool_CTRL'.format(robot)):
-            pm.setAttr('{}|robot_GRP|tool_CTRL.v'.format(robot), 1)
+        if pm.objExists(tool_ctrl_path):
+            pm.setAttr(tool_ctrl_path + '.v'.format(robot), 1)
 
         # Snap IK Ctrl to FK location
         _snap_ik_target_to_fk(robot)
@@ -1633,18 +1634,12 @@ def switch_to_ik(robot):
         ik_config = find_closest_config(fk_config_trunc, ik_sols)
 
         # Match IK config to FK pose
-        pm.setAttr(get_target_ctrl_path(robot)
-                 + '.ikSolution1',
-                   ik_config[0])
-        pm.setAttr(get_target_ctrl_path(robot)
-                 + '.ikSolution2',
-                   ik_config[1])
-        pm.setAttr(get_target_ctrl_path(robot)
-                 + '.ikSolution3',
-                   ik_config[2])
+        pm.setAttr(target_ctrl_path + '.ikSolution1', ik_config[0])
+        pm.setAttr(target_ctrl_path + '.ikSolution2', ik_config[1])
+        pm.setAttr(target_ctrl_path + '.ikSolution3', ik_config[2])
 
         # turn ik solve back on
-        pm.setAttr(get_target_ctrl_path(robot) + '.ik', 1)
+        pm.setAttr(target_ctrl_path + '.ik', 1)
 
     except:
         pm.warning('Error swithching to IK')
@@ -1656,33 +1651,37 @@ def switch_to_fk(robot):
     :param robot: name string of the selected robot
     :return:
     """
+    target_ctrl_path = get_target_ctrl_path(robot)
+    tool_ctrl_path = get_tool_ctrl_path(robot)
+    fk_ctrls_path = format_path('{0}|{1}robot_GRP|{1}FK_CTRLS', robot)
+
     try:
         # Turn IK control visibility off
         pm.setAttr(get_target_ctrl_path(robot) + '.v', 0)
 
-        if pm.objExists('{}|robot_GRP|tool_CTRL'.format(robot)):
-            pm.setAttr('{}|robot_GRP|tool_CTRL.v'.format(robot), 0)
+        if pm.objExists(tool_ctrl_path):
+            pm.setAttr(tool_ctrl_path + '.v'.format(robot), 0)
 
             # Turn FK control visibility on
-        pm.setAttr('{}|robot_GRP|FK_CTRLS.v'.format(robot), 1)
+        pm.setAttr(fk_ctrls_path + '.v'.format(robot), 1)
 
         # Find axis angles from IK pose, and match FK control handles
         fk_config = find_fk_config(robot)
 
-        pm.setAttr('{}|robot_GRP|FK_CTRLS|a1FK_CTRL.rotateY'.format(robot),
+        pm.setAttr(format_path(__A1_FK_CTRL_PATH, robot) + '.rotateY',
                    fk_config[0])
-        pm.setAttr('{}|robot_GRP|FK_CTRLS|a2FK_CTRL.rotateX'.format(robot),
+        pm.setAttr(format_path(__A2_FK_CTRL_PATH, robot) + '.rotateX',
                    fk_config[1])
-        pm.setAttr('{}|robot_GRP|FK_CTRLS|a3FK_CTRL.rotateX'.format(robot),
+        pm.setAttr(format_path(__A3_FK_CTRL_PATH, robot) + '.rotateX',
                    fk_config[2])
-        pm.setAttr('{}|robot_GRP|FK_CTRLS|a4FK_CTRL.rotateZ'.format(robot),
+        pm.setAttr(format_path(__A4_FK_CTRL_PATH, robot) + '.rotateZ',
                    fk_config[3])
-        pm.setAttr('{}|robot_GRP|FK_CTRLS|a5FK_CTRL.rotateX'.format(robot),
+        pm.setAttr(format_path(__A5_FK_CTRL_PATH, robot) + '.rotateX',
                    fk_config[4])
-        pm.setAttr('{}|robot_GRP|FK_CTRLS|a6FK_CTRL.rotateZ'.format(robot),
+        pm.setAttr(format_path(__A6_FK_CTRL_PATH, robot) + '.rotateZ',
                    fk_config[5])
 
-        pm.setAttr(get_target_ctrl_path(robot) + '.ik', 0)
+        pm.setAttr(target_ctrl_path + '.ik', 0)
 
     except:
         pm.warning('Error switching to FK')
@@ -1709,17 +1708,16 @@ def toggle_ik_fk(*args):
         return
 
     for robot in robots:
+        target_ctrl_path = get_target_ctrl_path(robot)
         try:
             if ik_tab:
-                if pm.getAttr(get_target_ctrl_path(robot)
-                            + '.ik'):
+                if pm.getAttr(target_ctrl_path + '.ik'):
                     continue
 
                 switch_to_ik(robot)
 
             else:
-                if not pm.getAttr(get_target_ctrl_path(robot)
-                                + '.ik'):
+                if not pm.getAttr(target_ctrl_path  + '.ik'):
                     continue
 
                 switch_to_fk(robot)
@@ -1733,19 +1731,17 @@ def toggle_ik_fk(*args):
         if active_robots:
             if ik_tab:
                 for robot in active_robots:
-                    if pm.objExists(get_target_ctrl_path(robot)):
-                        if pm.objExists('{}|robot_GRP|tool_CTRL' \
-                                                .format(robot)):
-                            selection.append('{}|robot_GRP|tool_CTRL' \
-                                             .format(robot))
-                        else:
-                            selection.append(format_path(__TARGET_CTRL_PATH,
-                                                         robot))
+                    target_ctrl_path = get_target_ctrl_path(robot)
+                    tool_ctrl_path = get_tool_ctrl_path(robot)
+
+                    if pm.objExists(tool_ctrl_path):
+                        selection.append(tool_ctrl_path)
+                    else:
+                        selection.append(target_ctrl_path)
             else:
                 for robot in active_robots:
-                    if pm.objExists(get_target_ctrl_path(robot)):
-                        selection.append('{}|robot_GRP|FK_CTRLS|a6FK_CTRL' \
-                                         .format(robot))
+                    selection.append(format_path(__A6_FK_CTRL_PATH, robot))
+                    
             pm.select(selection)
         else:
             pass
