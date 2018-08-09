@@ -2,6 +2,14 @@
 # -*- coding: utf-8 -*-
 
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
+try:
+    import pymel.core as pm
+    from pymel import versions
+    MAYA_IS_RUNNING = True
+except ImportError:  # Maya is not running
+    pm = None
+    mel = None
+    MAYA_IS_RUNNING = False
 
 import extern.pyqtgraph as pg
 import ui_utils
@@ -19,9 +27,15 @@ from extern.Qt import QtCompat
 
 class MimicAnalysisWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
     def __init__(self, window_name, axis_numbers, parent=None):
+        self._delete_instance(window_name)
+
         super(MimicAnalysisWindow, self).__init__(parent=parent)
         self.window_name = window_name
         self.axis_numbers = axis_numbers
+        # Create and assign the central widget
+        central_widget = QtWidgets.QWidget()
+        self.setCentralWidget(central_widget)
+
         self.setWindowTitle('Mimic Analysis')
         self.setObjectName(self.window_name)
         self.setProperty('saveWindowPref', True)
@@ -31,18 +45,28 @@ class MimicAnalysisWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
         self.deriv_toggle_widget = None
         self.aux_toggle_widget = None
 
-        # Create and assign the central widget
-        central_widget = QtWidgets.QWidget()
-        self.setCentralWidget(central_widget)
+
         self.__build_ui()
 
         #print('# ' + mimic_analysis_window.showRepr())
         #mimic_analysis_window.show(dockable=True, height = 600, width=1165, floating=True)
-        self.show()
+        self.show(dockable=True, height = 600, width=1165)
 
-        self.test_run()
 
+    def _delete_instance(self, window_name):
+        """
+        """
+        if versions.current() <201700:
+            if pm.window(window_name, exists = True):
+                pm.deleteUI(window_name, wnd = True)
         
+        if versions.current() >= 201700:
+            control = window_name + 'WorkspaceControl'
+            if pm.workspaceControl(control, q=True, exists=True):
+                pm.workspaceControl(control, e=True, close=True)
+                pm.deleteUI(control, control=True)
+        
+
     def __build_ui(self):
         """
         """
@@ -91,6 +115,8 @@ class MimicAnalysisWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
         
         # Create the main plot window and add it to the plot frame layout
         self.analysis_plot = analysis_ui_utils.AnalysisPlotWidget()
+        self.analysis_plot.set_axis_numbers(self.axis_numbers)
+
         plot_frame_layout.addWidget(self.analysis_plot.plot_window)
         
         # Set the plot frames layout
@@ -136,8 +162,8 @@ class MimicAnalysisWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
 
         # Assign data toggles to plot
         self.analysis_plot.add_data_controls(
-                    axis_toggles=self.axis_toggle_widget.toggles,
-                    derivative_toggles=self.deriv_toggle_widget.toggles)
+                    axis_toggles=self.axis_toggle_widget.toggle_group,
+                    derivative_toggles=self.deriv_toggle_widget.toggle_group)
         
         return data_control_frame
 
@@ -190,10 +216,6 @@ class MimicAnalysisWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
         axis_toggle_names = self.axis_toggle_widget.get_toggle_names()
         axis_toggles = self.axis_toggle_widget.get_toggles()
 
-        # TO-DO: replace these settings with config settings
-        axis_toggles[axis_toggle_names[0]].setChecked(True)
-        self.axis_toggle_widget.isolate_toggle.setChecked(True)
-
         deriv_toggle_names = self.deriv_toggle_widget.get_toggle_names()
         deriv_toggles = self.deriv_toggle_widget.get_toggles()
 
@@ -201,9 +223,13 @@ class MimicAnalysisWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
         for toggle in deriv_toggles:
             deriv_toggles[toggle].setChecked(True)
 
+        # TO-DO: replace these settings with config settings
+        axis_toggles[axis_toggle_names[0]].setChecked(True)
+        self.axis_toggle_widget.isolate_toggle.setChecked(True)
+
 
     def test_run(self):
-        
+        '''
         pens = analysis_ui_utils.Palette(6).pens
         
         deriv = 'Accel'
@@ -214,6 +240,7 @@ class MimicAnalysisWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
         plotitem_5 = pg.PlotDataItem(range(4, 14), pen=pens['Axis 5'][deriv])
         plotitem_6 = pg.PlotDataItem(range(5, 15), pen=pens['Axis 6'][deriv])
         
+
         self.analysis_plot.plot.addItem(plotitem_1)
         self.analysis_plot.plot.addItem(plotitem_2)
         self.analysis_plot.plot.addItem(plotitem_3)
@@ -230,6 +257,14 @@ class MimicAnalysisWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
         legend.addItem(plotitem_6, 'Axis 6')
         
         legend.setParentItem(self.analysis_plot.plot)
-        
-        
+        '''
+        self.analysis_plot.plot.addItem(self.analysis_plot.plot_data['Axis 1']['Position'])
+        self.analysis_plot.plot.addItem(self.analysis_plot.plot_data['Axis 2']['Position'])
+        self.analysis_plot.plot.addItem(self.analysis_plot.plot_data['Axis 3']['Position'])
+        self.analysis_plot.plot.addItem(self.analysis_plot.plot_data['Axis 4']['Position'])
+        self.analysis_plot.plot.addItem(self.analysis_plot.plot_data['Axis 5']['Position'])
+        self.analysis_plot.plot.addItem(self.analysis_plot.plot_data['Axis 6']['Position'])       
+        self.analysis_plot.plot.addItem(self.analysis_plot.plot_data['Axis 8']['Position'])        
+        self.analysis_plot.plot.addItem(self.analysis_plot.plot_data['Axis 10']['Jerk'])
+
 

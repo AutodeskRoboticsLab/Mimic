@@ -14,14 +14,27 @@ import math
 
 from postproc import postproc
 
-
+'''
 class Program(object):
     """
     """
     def __init__(self, program_data):
         super(Program, self).__init__()
         self.program_data = program_data
+'''
 
+def get_program_data(command_dicts):
+    """
+    """
+    axes = postproc.Axes
+    external_axes = postproc.ExternalAxes
+
+    combined_command_dicts = generate_data_for_analysis(command_dicts)
+    frames = get_program_frames(command_dicts)
+
+    program_data = _format_program_data(combined_command_dicts)
+
+    return program_data, frames 
         
 
 def generate_data_for_analysis(command_dicts):
@@ -38,7 +51,19 @@ def generate_data_for_analysis(command_dicts):
                               'Jerk': jerk_dicts}
 
     return combined_command_dicts
-                              
+
+
+def get_program_frames(command_dicts):
+    """
+    Produces an array of frames that represent the programs timestep
+    """
+    frames = []
+
+    for command in command_dicts:
+        frames.append(command['Frame'])
+
+    return frames
+
 
 def _format_program_data(combined_command_dicts):
     """

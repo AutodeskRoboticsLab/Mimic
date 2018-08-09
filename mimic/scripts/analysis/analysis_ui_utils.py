@@ -66,65 +66,52 @@ class DataToggle(Toggle):
         """
         super(DataToggle, self).__init__(*args, **kwargs)
 
-        self.type = data_type  
+        self.data_type = data_type  
 
         self.plot_widget = plot_widget
         self.data_control_widget = data_control_widget
 
         self.toggled.connect(self.update)
 
+
+    def get_data_type(self):
+        """
+        """
+        return self.data_type
+
+
     def update(self):
         """
         """
-        if self.type == 'Axis':
-            self.update_axis()
-        elif self.type == 'Derivative':
-            self.update_derivative()
-        elif self.type == 'Isolate':
+        data_type = self.get_data_type()
+
+        if data_type == 'Axis':
+            self.plot_widget.update_axis(self)
+        elif data_type == 'Derivative':
+            self.plot_widget.update_derivative(self)
+        elif data_type == 'Isolate':
             self.update_isolate()        
-        elif self.type == 'Limits':
+        elif data_type == 'Limits':
             self.update_limits()
-        elif self.type == 'Legend':
+        elif data_type == 'Legend':
             self.update_legend()
         else:
             pm.warning('Unsupported DataToggle Type in analysis_ui_utils')
 
-
-    def update_axis(self):
-        """
-        """
-        self.plot_widget.update(self)
-        if self.isChecked():
-            print self.accessibleName() + ' is checked'
-        else:
-            print self.accessibleName() + ' is unchecked'
-        print 'Toggle Data Type: ', self.type
-
-
-    def update_derivative(self):
-        """
-        """
-        self.plot_widget.update(self)
-        if self.isChecked():
-            print self.accessibleName() + ' is checked'
-        else:
-            print self.accessibleName() + ' is unchecked'
-
-        print 'Toggle Data Type: ', self.type
 
     def update_isolate(self):
         """
         """
         isolate_toggle_state = self.isChecked()
         self.data_control_widget.set_isolate(isolate_toggle_state)
-        print 'Toggle Data Type: ', self.type
 
 
     def update_limits(self):
         """
         """
         limits_toggle_state = self.isChecked()
-        print 'Toggle Data Type: ', self.type
+        print 'Toggle Data Type: ', self.data_type
+
 
     def update_legend(self):
         """
@@ -134,7 +121,7 @@ class DataToggle(Toggle):
             print self.accessibleName() + ' is checked'
         else:
             print self.accessibleName() + ' is unchecked'
-        print 'Toggle Data Type: ', self.type
+        print 'Toggle Data Type: ', self.data_type
 
 
 class UtilityButton(QtWidgets.QPushButton):
@@ -339,10 +326,12 @@ class DataControlWidget(QtWidgets.QWidget):
         """
         return self.toggle_names
 
+
     def get_toggles(self):
         """
         """
         return self.toggles       
+
 
     def set_isolate(self, isolate_toggle_state):
         """
@@ -420,8 +409,14 @@ class AnalysisPlotWidget(QtWidgets.QWidget):
         self.plot_window = pg.GraphicsLayoutWidget(show=True,
                                                    title='Mimic Analysis')
         self.data_controls = None
-        self.data = None
+        self.frames = None
+        self.plot_data = None
 
+        self.program_info = None
+
+        self.axis_numbers = None
+        self.derivative_names = ['Position', 'Velocity', 'Accel', 'Jerk']
+        
         self.plot_window.setBackground((78, 78, 78))
 
         pg.setConfigOptions(antialias=True)
@@ -430,23 +425,43 @@ class AnalysisPlotWidget(QtWidgets.QWidget):
         self.plot.showGrid(x=True, y=True)
 
 
-    def update(self, toggle):
-        if toggle.isChecked():
-            self.update_axis_data(toggle)
+    def set_axis_numbers(self, axis_numbers):
+        """
+        """
+        self.axis_numbers = axis_numbers
+        self.axis_names = ['Axis {}'.format(axis_num) for axis_num in self.axis_numbers]
+
+
+    def get_axis_numbers(self):
+        """
+        """
+        return self.axis_numbers
+
+
+    def get_active_toggles(self, data_type):
+        """
+        """
+        if data_type == 'Axis':
+            toggle_buttons = self.data_controls['Axis'].buttons()
         else:
-            self.update_derivative_data(toggle)
+            toggle_buttons = self.data_controls['Derivative'].buttons()
 
-        print toggle.type
+        active_toggles = [toggle for toggle in toggle_buttons if toggle.isChecked() == True]
+
+        return active_toggles
 
 
-    def update_axis_data(self, toggle):
+    def get_inactive_toggles(self, data_type):
         """
         """
-        print 'hey'
+        if data_type == 'Axis':
+            toggle_buttons = self.data_controls['Axis'].buttons()
+        else:
+            toggle_buttons = self.data_controls['Derivative'].buttons()
 
-
-    def update_derivative_data(self, toggle):
-        print 'sup'
+        inactive_toggles = [toggle for toggle in toggle_buttons if toggle.isChecked() == False]
+        
+        return inactive_toggles
 
 
     def add_data_controls(self, axis_toggles, derivative_toggles):
@@ -456,10 +471,122 @@ class AnalysisPlotWidget(QtWidgets.QWidget):
 
         self.data_controls = data_controls
 
-    def add_data(self, data):
+
+    def add_plot_data(self, program_data, frames):
+        """
+        Converts input data to pyqtgraph plotItem objects for graphng
+        """
+        self.frames = frames
+
+        self.plot_data = self._format_data_as_plotItems(program_data)
+
+
+    def _format_data_as_plotItems(self, program_data):
         """
         """
-        self.data = data
+        frames = self.frames
+        num_axes = max(self.axis_numbers)
+        pens = Palette(num_axes).pens
+
+        plot_data = {}
+
+        for axis in program_data:
+            plot_data[axis] = {}
+            for deriv in self.derivative_names:
+                plot_data[axis][deriv] = {}
+
+                axis_data = program_data[axis][deriv]
+                pen = pens[axis][deriv]
+
+                plot_item = pg.PlotDataItem(frames, axis_data, pen=pen)
+                plot_data[axis][deriv] = plot_item
+
+        return plot_data
+
+
+    def add_program_info(self, program_info):
+        """
+        """
+        self.program_info = program_info
+
+    
+    def update(self, toggle):
+        """
+        """
+        pass
+    
+
+    def update_axis(self, toggle):
+        """
+        """
+        axis_name = toggle.accessibleName()
+
+        # If the axis toggle is on, we check for all of the active derivative
+        # toggles, and turn on their corresponding plots
+        if toggle.isChecked():
+            active_deriv_toggles = self.get_active_toggles('Derivative')
+
+            for toggle in active_deriv_toggles:
+                deriv_name = toggle.accessibleName()
+                axis_plot_item = self.plot_data[axis_name][deriv_name]
+                self.plot.addItem(axis_plot_item)
+
+        # If the axis toggle is off, turn off all of it's visible plots
+        else:
+            for deriv_name in self.derivative_names:
+                axis_plot_item = self.plot_data[axis_name][deriv_name]
+                self.plot.removeItem(axis_plot_item)
+
+
+    def update_derivative(self, toggle):
+        """
+        """
+        deriv_name = toggle.accessibleName()
+
+        # If the derivativ toggle is on, we check for all of the active
+        # axis toggles, and turn on their corresponding plots
+        if toggle.isChecked():
+            active_axis_toggles = self.get_active_toggles('Axis')
+
+            for toggle in active_axis_toggles:
+                axis_name = toggle.accessibleName()
+                axis_plot_item = self.plot_data[axis_name][deriv_name]
+                self.plot.addItem(axis_plot_item)
+
+        # If the axis toggle is off, turn off all of it's visible plots
+        else:
+            for axis_name in self.axis_names:
+                axis_plot_item = self.plot_data[axis_name][deriv_name]
+                self.plot.removeItem(axis_plot_item)
+
+
+    def update_all(self):
+        """
+        """
+        active_axis_toggles = self.get_active_toggles('Axis')
+        active_deriv_toggles = self.get_active_toggles('Derivative')
+
+        for axis_toggle in active_axis_toggles:
+            axis_name = axis_toggle.accessibleName()
+
+            for deriv_toggle in active_deriv_toggles:
+                deriv_name = deriv_toggle.accessibleName()
+
+                axis_plot_item = self.plot_data[axis_name][deriv_name]
+                self.plot.addItem(axis_plot_item)
+
+        inactive_axis_toggles = self.get_inactive_toggles('Axis')
+        inactive_deriv_toggles = self.get_inactive_toggles('Derivative')
+
+        for axis_toggle in inactive_axis_toggles:
+            axis_name = axis_toggle.accessibleName()
+
+            for deriv_toggle in inactive_deriv_toggles:
+                deriv_name = deriv_toggle.accessibleName()
+
+                axis_plot_item = self.plot_data[axis_name][deriv_name]
+                self.plot.removeItem(axis_plot_item)
+
 
 class Palette(object):
     """
@@ -473,7 +600,7 @@ class Palette(object):
                (19, 234, 100),
                (55, 50, 100),
                (100, 100, 255),
-               (75, 200, 190),
+               (200, 100, 50),
                (80, 20, 50),
                (250, 120, 255)
                ]

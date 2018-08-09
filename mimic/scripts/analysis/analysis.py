@@ -22,10 +22,12 @@ def run(command_dicts):
     window_name='mimic_analysis_window'
     mimic_analysis_window = None
 
+    '''
     if pm.window(window_name, exists = True):
         pm.deleteUI(window_name, wnd = True)
         # Delete previous references to window object
         del mimic_analysis_window
+    '''
     
     axis_numbers = analysis_utils.get_axis_numbers(command_dicts)    
     # Create the Mimic Analysis UI and parent it to Maya's main UI window
@@ -37,22 +39,10 @@ def run(command_dicts):
 
 
     # Get the program data from Maya's animation, and assign it to the plot
-    program_data = get_program_data(command_dicts)
-    mimic_analysis_window.analysis_plot.add_data(program_data)
+    program_data, frames = analysis_utils.get_program_data(command_dicts)
+    mimic_analysis_window.analysis_plot.add_plot_data(program_data, frames)
+
+    #mimic_analysis_window.test_run()
+
     # Set toggles based on user config file
-
     mimic_analysis_window.initialize_toggle_states() 
-
-    
-def get_program_data(command_dicts):
-    """
-    """
-    from postproc import postproc
-    axes = postproc.Axes
-    external_axes = postproc.ExternalAxes
-
-    combined_command_dicts = analysis_utils.generate_data_for_analysis(command_dicts)
-
-    program_data = analysis_utils._format_program_data(combined_command_dicts)
-
-    return program_data 
