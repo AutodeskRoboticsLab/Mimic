@@ -117,6 +117,10 @@ class MimicAnalysisWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
         self.analysis_plot = analysis_ui_utils.AnalysisPlotWidget()
         self.analysis_plot.set_axis_numbers(self.axis_numbers)
 
+        # Add a Legend to the plot
+        legend = pg.LegendItem( offset=(60, 5))
+        self.analysis_plot.add_legend(legend)      
+
         plot_frame_layout.addWidget(self.analysis_plot.plot_window)
         
         # Set the plot frames layout
@@ -162,8 +166,12 @@ class MimicAnalysisWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
 
         # Assign data toggles to plot
         self.analysis_plot.add_data_controls(
-                    axis_toggles=self.axis_toggle_widget.toggle_group,
-                    derivative_toggles=self.deriv_toggle_widget.toggle_group)
+                    axis_toggle_group=self.axis_toggle_widget.toggle_group,
+                    derivative_toggle_group=self.deriv_toggle_widget.toggle_group)
+
+        self.analysis_plot.add_toggles(
+                    axis_toggles=self.axis_toggle_widget.toggles,
+                    derivative_toggles=self.deriv_toggle_widget.toggles)
         
         return data_control_frame
 
@@ -219,6 +227,8 @@ class MimicAnalysisWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
         deriv_toggle_names = self.deriv_toggle_widget.get_toggle_names()
         deriv_toggles = self.deriv_toggle_widget.get_toggles()
 
+        aux_toggles = self.aux_toggle_widget.get_toggles()
+
         # TO-DO: replace these settings with config settings
         for toggle in deriv_toggles:
             deriv_toggles[toggle].setChecked(True)
@@ -226,6 +236,8 @@ class MimicAnalysisWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
         # TO-DO: replace these settings with config settings
         axis_toggles[axis_toggle_names[0]].setChecked(True)
         self.axis_toggle_widget.isolate_toggle.setChecked(True)
+
+        aux_toggles['Legend'].setChecked(True)
 
 
     def test_run(self):

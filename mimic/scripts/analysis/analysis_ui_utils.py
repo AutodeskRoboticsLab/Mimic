@@ -94,7 +94,7 @@ class DataToggle(Toggle):
         elif data_type == 'Limits':
             self.update_limits()
         elif data_type == 'Legend':
-            self.update_legend()
+            self.plot_widget.update_legend_visibility(self)
         else:
             pm.warning('Unsupported DataToggle Type in analysis_ui_utils')
 
@@ -110,17 +110,6 @@ class DataToggle(Toggle):
         """
         """
         limits_toggle_state = self.isChecked()
-        print 'Toggle Data Type: ', self.data_type
-
-
-    def update_legend(self):
-        """
-        """
-        self.plot_widget.update(self)
-        if self.isChecked():
-            print self.accessibleName() + ' is checked'
-        else:
-            print self.accessibleName() + ' is unchecked'
         print 'Toggle Data Type: ', self.data_type
 
 
@@ -399,6 +388,11 @@ class AuxToggleWidget(QtWidgets.QWidget):
 
             self.toggles[toggle_name]  = toggle_object
 
+    def get_toggles(self):
+        """
+        """
+        return self.toggles
+
 
 class AnalysisPlotWidget(QtWidgets.QWidget):
     """
@@ -408,13 +402,18 @@ class AnalysisPlotWidget(QtWidgets.QWidget):
 
         self.plot_window = pg.GraphicsLayoutWidget(show=True,
                                                    title='Mimic Analysis')
+        self.legend = None
         self.data_controls = None
+        self.axis_toggles = None
+        self.derivative_toggles = None
+
         self.frames = None
         self.plot_data = None
 
         self.program_info = None
 
         self.axis_numbers = None
+        self.axis_names = None
         self.derivative_names = ['Position', 'Velocity', 'Accel', 'Jerk']
         
         self.plot_window.setBackground((78, 78, 78))
@@ -464,12 +463,25 @@ class AnalysisPlotWidget(QtWidgets.QWidget):
         return inactive_toggles
 
 
-    def add_data_controls(self, axis_toggles, derivative_toggles):
+    def add_legend(self, legend):
+        """
+        """
+        self.legend = legend
+
+
+    def add_data_controls(self, axis_toggle_group, derivative_toggle_group):
         data_controls = {}
-        data_controls['Axis'] = axis_toggles
-        data_controls['Derivative'] = derivative_toggles
+        data_controls['Axis'] = axis_toggle_group
+        data_controls['Derivative'] = derivative_toggle_group
 
         self.data_controls = data_controls
+
+
+    def add_toggles(self, axis_toggles, derivative_toggles):
+        """
+        """
+        self.axis_toggles = axis_toggles
+        self.derivative_toggles = derivative_toggles
 
 
     def add_plot_data(self, program_data, frames):
@@ -510,6 +522,18 @@ class AnalysisPlotWidget(QtWidgets.QWidget):
         self.program_info = program_info
 
     
+    def hide_legend(self):
+        """
+        """
+        self.legend.scene().removeItem(self.legend)
+
+
+    def show_legend(self):
+        """
+        """
+        self.legend.setParentItem(self.plot)
+
+
     def update(self, toggle):
         """
         """
@@ -531,12 +555,51 @@ class AnalysisPlotWidget(QtWidgets.QWidget):
                 axis_plot_item = self.plot_data[axis_name][deriv_name]
                 self.plot.addItem(axis_plot_item)
 
+                # Add the item to the Legend
+                #self.legend.addItem(axis_plot_item, '{} {}'.format(axis_name, deriv_name))
+                self.update_legend_contents()
+
+
         # If the axis toggle is off, turn off all of it's visible plots
         else:
             for deriv_name in self.derivative_names:
                 axis_plot_item = self.plot_data[axis_name][deriv_name]
                 self.plot.removeItem(axis_plot_item)
+                
+                # Remove the item from the Legend
+                # self.legend.removeItem(axis_plot_item)
+                self.update_legend_contents()
 
+
+    def update_legend_visibility(self, toggle):
+        """
+        """
+        # If the legend toggle is on, turn the legend visibility on
+        # Otherwise, hide the legend
+        if toggle.isChecked():
+            self.show_legend()
+        else:
+            self.hide_legend()
+
+
+    def update_legend_contents(self):
+        """
+        Note: we essentially rebuild the legend each time a toggle is changed
+        to maintain the order of the items in the legend
+        """
+        # Clear the previous legend
+        for axis_name in self.axis_names:
+            for deriv_name in self.derivative_names:
+                plot_item = self.plot_data[axis_name][deriv_name]
+                self.legend.removeItem(plot_item)
+
+        for axis_name in self.axis_names:
+            for deriv_name in self.derivative_names:
+                plot_item = self.plot_data[axis_name][deriv_name]
+
+                if self.axis_toggles[axis_name].isChecked() and self.derivative_toggles[deriv_name].isChecked():
+                    self.legend.addItem(plot_item, '{} {}'.format(axis_name, deriv_name))
+        
 
     def update_derivative(self, toggle):
         """
@@ -553,12 +616,17 @@ class AnalysisPlotWidget(QtWidgets.QWidget):
                 axis_plot_item = self.plot_data[axis_name][deriv_name]
                 self.plot.addItem(axis_plot_item)
 
+                # Add the item to the Legend
+                self.update_legend_contents()
+
         # If the axis toggle is off, turn off all of it's visible plots
         else:
             for axis_name in self.axis_names:
                 axis_plot_item = self.plot_data[axis_name][deriv_name]
                 self.plot.removeItem(axis_plot_item)
 
+                # Remove the item from the Legend
+                self.update_legend_contents()
 
     def update_all(self):
         """
