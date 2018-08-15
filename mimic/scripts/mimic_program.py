@@ -20,7 +20,9 @@ import general_utils
 import mimic_utils
 import mimic_external_axes
 
+from analysis import analysis
 from analysis import analysis_utils
+reload(analysis)
 reload(analysis_utils)
 
 from postproc import postproc
@@ -30,7 +32,7 @@ from postproc import postproc_options
 OUTPUT_WINDOW_NAME = 'programOutputScrollField'
 
 
-def check_program(*args):
+def analyze_program(*args):
     """
     Check program parameters, raise exception on failure
     :return:
@@ -43,7 +45,8 @@ def check_program(*args):
     command_dicts = _get_command_dicts(*program_settings)
     _check_command_dicts(command_dicts, *program_settings)
 
-    print command_dicts
+    analysis.run(command_dicts)
+
 
 def save_program(*args):
     """

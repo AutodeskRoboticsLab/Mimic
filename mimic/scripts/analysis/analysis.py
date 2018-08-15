@@ -46,3 +46,5 @@ def run(command_dicts):
 
     # Set toggles based on user config file
     mimic_analysis_window.initialize_toggle_states() 
+
+    # return mimic_analysis_window
