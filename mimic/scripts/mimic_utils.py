@@ -219,6 +219,17 @@ def get_robot_type(robot_name):
     return get_attribute_value(path)
 
 
+def get_robot_subtype(robot_name):
+    """
+    Get subType of robot
+    :param robot_name: string, name of robot
+    :return:
+    """
+    attr = 'robotSubtype'
+    path = '{}.{}'.format(get_target_ctrl_path(robot_name), attr)
+    return get_attribute_value(path)
+
+
 def get_target_ctrl_path(robot_name):
     """
     Get the long name of input robot's target_CTRL transform.
@@ -244,6 +255,15 @@ def get_tool_ctrl_fk_path(robot_name):
     :return:
     """
     return format_path(__TOOL_CTRL_FK_PATH, robot_name)
+
+
+def get_tcp_hdl_path(robot_name):
+    """
+    Get the long name of input robot's tcp_HDL transform.
+    :param robot_name: string, name of robot
+    :return:
+    """
+    return format_path(__TCP_HDL_PATH, robot_name)
 
 
 def get_local_ctrl_path(robot_name):
@@ -404,15 +424,13 @@ def get_reconciled_rotation_value(robot, axis, rotation_axis, current_frame):
     # Find the closest keyframe on the robot's IK attribute
     closest_ik_key, count_direction = get_closest_ik_keyframe(robot,
                                                               current_frame)
-
     # If there are no IK attribute keyframes on the current robot,
     # exit the function.
     if not type(closest_ik_key) == float:
         return keyed_val, flip
 
-
     attr_path = '{0}|{1}robot_GRP|{1}FK_CTRLS|{1}a{2}FK_CTRL.rotate{3}' \
-                .format(robot, pm.namespace(robot), axis, rotation_axis)
+                .format(robot, robot.namespace(), axis, rotation_axis)
 
     # If the current frame has an ik attribute keyframe,
     # assign that value as the keyed value.
@@ -2030,8 +2048,6 @@ def delete_ik_fk_keys(*args):
                           time=current_frame,
                           attribute='rotate',
                           option="keys")
-
-    pm.headsUpMessage('IK/FK Keyframe deleted successfuly!')
 
 
 def toggle_ik_fk_ui(*args):
