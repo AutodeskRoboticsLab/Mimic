@@ -2003,7 +2003,7 @@ def delete_ik_fk_keys(*args):
     for robot in robots:
         target_ctrl_path = get_target_ctrl_path(robot)
         tool_ctrl_path = get_tool_ctrl_path(robot)
-        # Check if there's an keyframe set on the target_CTRL.ik attribute
+        # Check if there's a keyframe set on the target_CTRL.ik attribute
         key = pm.keyframe(target_ctrl_path,
                           attribute='ik',
                           query=True,
@@ -2015,6 +2015,22 @@ def delete_ik_fk_keys(*args):
             pm.warning('{} has no IK|FK keyframe at frame {}' \
                        .format(robot, current_frame))
             continue
+
+        # If there is a keyframe on the IK attribute, we also check if there's
+        # a keyframe on an FK controller as well, as we only consider there to
+        # be a proper IK or FK keyframe if both are true
+        # Note, we only need to check a single FK controller as they should all
+        # be keyframed (or not) together
+        fk_test_handle_path = format_path(__A1_FK_CTRL_PATH + '.rotateY', robot)
+        fk_key = pm.keyframe(fk_test_handle_path,
+                             query=True,
+                             time=current_frame)
+        # If there is no keyframe set on the FK controller attribute,
+        # continue to the next robot
+        if not fk_key:
+            pm.warning('{} has no IK|FK keyframe at frame {}' \
+                       .format(robot, current_frame))
+            continue        
 
         for obj in keyed_attrs:
             for attr in keyed_attrs[obj]:
