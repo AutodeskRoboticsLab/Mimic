@@ -124,9 +124,10 @@ def _show_program_in_output_window(robot, processor, program):
               'Path to output    : {}\n' \
               '\n'
 
+    target_ctrl_path = mimic_utils.get_target_ctrl_path(robot)
     filled_details = details.format(
-        pm.getAttr('{}|robot_GRP|target_CTRL.robotType'.format(robot)),
-        pm.getAttr('{}|robot_GRP|target_CTRL.robotSubtype'.format(robot)),
+        mimic_utils.get_robot_type(robot),
+        mimic_utils.get_robot_subtype(robot),
         robot,
         processor.type_robot,
         processor.type_processor,
@@ -320,7 +321,6 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
     warning = ''  # Temporary holder
 
     # TODO: write vel, acc, jerk algorithm for warnings, min/max, average, ...
-
     # Check if limits have been exceeded (i.e. velocity, acceleration)
     if user_options.Include_axes and not user_options.Ignore_motion:
         command_dicts = _check_command_rotations(robot, animation_settings, command_dicts)
@@ -333,7 +333,6 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
             pm.headsUpMessage('WARNINGS: See Mimic output window for details')
             if not ignore_warnings:
                 raise Exception(warning)
-
     if user_options.Include_external_axes and not user_options.Ignore_motion:
         # TODO: Implement velocity check for external axes
         # warning = _check_velocity_of_external_axes(robot, command_dicts, animation_settings['Framerate'])
@@ -506,8 +505,9 @@ def _check_robot_postproc_compatibility(robot, processor):
     :return:
     """
     warning = ''
-    robot_type = pm.getAttr('{}|robot_GRP|target_CTRL.robotType'.format(robot))
+    robot_type = mimic_utils.get_robot_type(robot)
     processor_type = processor.type_robot
+
     if robot_type != processor_type:
         warning = 'WARNING!\n' \
                   'The type of robot ({}) \n' \
@@ -531,6 +531,7 @@ def _check_command_rotations(robot, animation_settings, command_dicts):
     for command_dict in command_dicts:
         axes = command_dict[postproc.AXES] if postproc.AXES in command_dict else None
         command_axes.append(list(axes))
+
     # Make sure the user has selected use of axes
     if not all(x is None for x in command_axes):
         start_frame = animation_settings['Start Frame']
@@ -594,10 +595,8 @@ def _get_frames_using_sample_rate(animation_settings, postproc_settings):
         num_steps = int(math.ceil(float(animation_time_frames) / step_frame) + 1)
         frames = [start_frame + round(i * step_frame, 3) for i in range(0, num_steps)]
 
-
     return frames
  
-
 
 def _get_frames_using_keyframes_only(robot, animation_settings):
     """
@@ -610,8 +609,9 @@ def _get_frames_using_keyframes_only(robot, animation_settings):
     start_frame = animation_settings['Start Frame']
     end_frame = animation_settings['End Frame']
     # Get list of keyframes on robots IK attribute for the given range
+    target_ctrl_path = get_target_ctrl_path(robot)
     ik_keyframes = pm.keyframe(
-        '{}|robot_GRP|target_CTRL'.format(robot),
+        target_ctrl_path,
         attribute='ik',
         query=True,
         time='{}:{}'.format(start_frame, end_frame))
@@ -619,8 +619,9 @@ def _get_frames_using_keyframes_only(robot, animation_settings):
     # attributes. If there's not, we remove it from the list
     # Note: we only need to check on controller as they are all keyframed
     # together
+    fk_test_handle_path = mimic_utils.format_path('{0}|{1}robot_GRP|{1}FK_CTRLS|{}a1FK_CTRL.rotateY', robot)
     frames = [frame for frame in ik_keyframes if pm.keyframe(
-        '{}|robot_GRP|FK_CTRLS|a1FK_CTRL.rotateY'.format(robot),
+        fk_test_handle_path,
         query=True,
         time=frame)]
     return frames
@@ -702,9 +703,11 @@ def _sample_frame_get_axes(robot_name, frame):
     :return:
     """
     axes = []
+    target_ctrl_path = mimic_utils.get_target_ctrl_path(robot_name)
     for i in range(6):
-        axis_name = '{}|robot_GRP|target_CTRL.axis{}'.format(robot_name, i + 1)
-        axis = pm.getAttr(axis_name, time=frame)
+        axis_number = i + 1  # Axis numbers are 1-indexed
+        axis_path = target_ctrl_path + '.axis{}'.format(axis_number)
+        axis = pm.getAttr(axis_path, time=frame)
         axes.append(axis)
     return axes
 
@@ -721,12 +724,11 @@ def _sample_frame_get_pose(robot_name, frame):
     pm.currentTime(frame)
 
     # tool_name = get_tool_name(robot_name)
-    tool_name = '{}|robot_GRP|tool_CTRL'.format(robot_name)
+    tool_name = mimic_utils.get_tool_ctrl_path(robot_name)
     try:  # Try to grab the named tool
         tool_object = pm.ls(tool_name)[0]  # Try to get tool, may raise an exception
     except IndexError:  # No tool attached, use flange
-        tool_name = '{}|robot_GRP|robot_GEOM|Base|' \
-                    'axis1|axis2|axis3|axis4|axis5|axis6|tcp_GRP|tcp_HDL'.format(robot_name)
+        tool_name = mimic_utils.get_tcp_hdl_path(robot_name)
 
     # Local Base Frame controller (circle control at base of the robot).
     base_name = pm.ls(mimic_utils.get_local_ctrl_path(robot_name))[0]
