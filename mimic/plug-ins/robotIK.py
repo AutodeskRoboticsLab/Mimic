@@ -314,48 +314,49 @@ class robotIKS(OpenMaya.MPxNode):
             s2   = math.sqrt(s2_2)
             k    = math.sqrt(k_2)
             
+            valid_solition = 1
+
+
             # Theta 1
             theta1_1     = math.atan2(pivotPt[1], pivotPt[0]) - math.atan2(b, (nx1 + a1))
             theta1_2     = math.atan2(pivotPt[1], pivotPt[0]) + math.atan2(b, (nx1 + a1)) - math.pi
             
+            
             # Theta 2
-            try:
+            if abs((s1_2 + math.pow(c2, 2) - k_2) / (2 * s1 * c2)) <= 1:
                 theta2_1 = -math.acos((s1_2 + math.pow(c2, 2) - k_2) / (2 * s1 * c2)) + math.atan2(nx1, (pivotPt[2] - c1))
-            except:
-                theta2_1 = 999
-            
-            try:    
                 theta2_2 = math.acos((s1_2 + math.pow(c2, 2) - k_2) / (2 * s1 * c2)) + math.atan2(nx1, (pivotPt[2] - c1))
-            except:
-                theta2_2 = 999
-            
-            try:
+            else:
+                valid_solition = 0
+                theta2_1 = math.atan2(nx1, (pivotPt[2] - c1))
+                theta2_2 = math.atan2(nx1, (pivotPt[2] - c1))
+
+            if abs((s2_2 + math.pow(c2, 2) - k_2) / (2 * s2 * c2)) <= 1:
                 theta2_3 = math.acos((s2_2 + math.pow(c2, 2) - k_2) / (2 * s2 * c2)) - math.atan2((nx1 + 2 * a1), (pivotPt[2] - c1))
-            except:
-                theta2_3 = 999
-            
-            try:
                 theta2_4 = -(math.acos((s2_2 + math.pow(c2, 2) - k_2) / (2 * s2 * c2)) + math.atan2((nx1 + 2 * a1), (pivotPt[2] - c1)))
-            except:
-                theta2_4 = 999   
+            else:
+                valid_solition = 0
+                theta2_3 = - math.atan2((nx1 + 2 * a1), (pivotPt[2] - c1)) 
+                theta2_4 = - math.atan2((nx1 + 2 * a1), (pivotPt[2] - c1)) 
             
+
             # Theta 3
-            try:
+            if abs((math.pow(c2, 2) + k_2 - s1_2) / (2 * c2 * k)) <= 1:
                 theta3_1 = math.pi - (math.acos((math.pow(c2, 2) + k_2 - s1_2) / (2 * c2 * k)) - math.atan2(a2, c3))
-            except:
-                theta3_1 = 999
-            try: 
                 theta3_2 = math.pi - (-math.acos((math.pow(c2, 2) + k_2 - s1_2) / (2 * c2 * k)) - math.atan2(a2, c3))
-            except:
-                theta3_2 = 999
-            try: 
+            else:
+                valid_solition = 0
+                theta3_1 = math.pi - (math.pi - math.atan2(a2, c3))
+                theta3_2 = math.pi - (-math.pi - math.atan2(a2, c3))
+
+            if abs((math.pow(c2, 2) + k_2 - s2_2) / (2 * c2 * k)) <= 1:
                 theta3_3 = -(math.pi - (math.acos((math.pow(c2, 2) + k_2 - s2_2) / (2 * c2 * k)) + math.atan2(a2, c3)))
-            except:
-                theta3_3 = 999
-            try: 
                 theta3_4 = -(math.pi - (-math.acos((math.pow(c2, 2) + k_2 - s2_2) / (2 * c2 * k)) + math.atan2(a2, c3)))
-            except:
-                theta3_4 = 999
+            else:
+                valid_solition = 0
+                theta3_3 = -(math.pi - (math.pi - math.atan2(a2, c3)))
+                theta3_4 = -(math.pi - (-math.pi - math.atan2(a2, c3)))
+
             
             sin11 = math.sin(theta1_1)
             sin12 = math.sin(theta1_1)
@@ -383,83 +384,46 @@ class robotIKS(OpenMaya.MPxNode):
             m14 = Re[0][2] * sin234 * cos14 + Re[1][2] * sin234 * sin14 + Re[2][2] * cos234
             
             # Theta 4
-            try:
-                theta4_1 = math.atan2((Re[1][2] * cos11 - Re[0][2] * sin11), Re[0][2] * cos231 * cos11 + Re[1][2] * cos231 * sin11 - Re[2][2] * sin231)
-                theta4_5 = theta4_1 + math.pi
-            except:
-                theta4_1 = 999
-                theta4_5 = 999
-            try:
-                theta4_2 = math.atan2((Re[1][2] * cos12 - Re[0][2] * sin12), Re[0][2] * cos232 * cos12 + Re[1][2] * cos232 * sin12 - Re[2][2] * sin232)
-                theta4_6 = theta4_2 + math.pi
-            except:
-                theta4_2 = 999
-                theta4_6 = 999
-            try:
-                theta4_3 = math.atan2((Re[1][2] * cos13 - Re[0][2] * sin13), Re[0][2] * cos233 * cos13 + Re[1][2] * cos233 * sin13 - Re[2][2] * sin233)
-                theta4_7 = theta4_3 + math.pi
-            except:
-                theta4_3 = 999
-                theta4_7 = 999
-            try:
-                theta4_4 = math.atan2((Re[1][2] * cos14 - Re[0][2] * sin14), Re[0][2] * cos234 * cos14 + Re[1][2] * cos234 * sin14 - Re[2][2] * sin234)
-                theta4_8 = theta4_4 + math.pi
-            except:
-                theta4_4 = 999
-                theta4_8 = 999
+            theta4_1 = math.atan2((Re[1][2] * cos11 - Re[0][2] * sin11), Re[0][2] * cos231 * cos11 + Re[1][2] * cos231 * sin11 - Re[2][2] * sin231)
+            theta4_5 = theta4_1 + math.pi
+
+            theta4_2 = math.atan2((Re[1][2] * cos12 - Re[0][2] * sin12), Re[0][2] * cos232 * cos12 + Re[1][2] * cos232 * sin12 - Re[2][2] * sin232)
+            theta4_6 = theta4_2 + math.pi
+
+            theta4_3 = math.atan2((Re[1][2] * cos13 - Re[0][2] * sin13), Re[0][2] * cos233 * cos13 + Re[1][2] * cos233 * sin13 - Re[2][2] * sin233)
+            theta4_7 = theta4_3 + math.pi
+
+            theta4_4 = math.atan2((Re[1][2] * cos14 - Re[0][2] * sin14), Re[0][2] * cos234 * cos14 + Re[1][2] * cos234 * sin14 - Re[2][2] * sin234)
+            theta4_8 = theta4_4 + math.pi
+
             
             # Theta 5
-            try:
-                theta5_1 = math.atan2((math.sqrt(1 - math.pow(m11, 2))), m11)
-                theta5_5 = -theta5_1
-            except:
-                theta5_1 = 999
-                theta5_5 = 999
-            try:
-                theta5_2 = math.atan2((math.sqrt(1 - math.pow(m12, 2))), m12)
-                theta5_6 = -theta5_2
-            except:
-                theta5_2 = 999
-                theta5_6 = 999
-            try:
-                theta5_3 = math.atan2((math.sqrt(1 - math.pow(m13, 2))), m13)
-                theta5_7 = -theta5_3
-            except:
-                theta5_3 = 999
-                theta5_7 = 999
-            try:
-                theta5_4 = math.atan2((math.sqrt(1 - math.pow(m14, 2))), m14)
-                theta5_8 = -theta5_4
-            except:
-                theta5_4 = 999
-                theta5_8 = 999
+            theta5_1 = math.atan2((math.sqrt(1 - math.pow(m11, 2))), m11)
+            theta5_5 = -theta5_1
+
+            theta5_2 = math.atan2((math.sqrt(1 - math.pow(m12, 2))), m12)
+            theta5_6 = -theta5_2
+
+            theta5_3 = math.atan2((math.sqrt(1 - math.pow(m13, 2))), m13)
+            theta5_7 = -theta5_3
+
+            theta5_4 = math.atan2((math.sqrt(1 - math.pow(m14, 2))), m14)
+            theta5_8 = -theta5_4
             
             
             # Theta 6
-            try:
-                theta6_1 = math.atan2((Re[0][1] * sin231 * cos11 + Re[1][1] * sin231 * sin11 + Re[2][1] * cos231), (-Re[0][0] * sin231 * cos11 - Re[1][0] * sin231 * sin11 - Re[2][0] * cos231))
-                theta6_5 = theta6_1 - math.pi
-            except:
-                theta6_1 = 999
-                theta6_5 = 999
-            try:
-                theta6_2 = math.atan2((Re[0][1] * sin232 * cos12 + Re[1][1] * sin232 * sin12 + Re[2][1] * cos232), (-Re[0][0] * sin232 * cos12 - Re[1][0] * sin232 * sin12 - Re[2][0] * cos232))
-                theta6_6 = theta6_2 - math.pi
-            except:
-                theta6_2 = 999
-                theta6_6 = 999
-            try:
-                theta6_3 = math.atan2((Re[0][1] * sin233 * cos13 + Re[1][1] * sin233 * sin13 + Re[2][1] * cos233), (-Re[0][0] * sin233 * cos13 - Re[1][0] * sin233 * sin13 - Re[2][0] * cos233))
-                theta6_7 = theta6_3 - math.pi
-            except:
-                theta6_3 = 999
-                theta6_7 = 999
-            try:
-                theta6_4 = math.atan2((Re[0][1] * sin234 * cos14 + Re[1][1] * sin234 * sin14 + Re[2][1] * cos234), (-Re[0][0] * sin234 * cos14 - Re[1][0] * sin234 * sin14 - Re[2][0] * cos234))
-                theta6_8 = theta6_4 - math.pi
-            except:
-                theta6_4 = 999
-                theta6_8 = 999
+            theta6_1 = math.atan2((Re[0][1] * sin231 * cos11 + Re[1][1] * sin231 * sin11 + Re[2][1] * cos231), (-Re[0][0] * sin231 * cos11 - Re[1][0] * sin231 * sin11 - Re[2][0] * cos231))
+            theta6_5 = theta6_1 - math.pi
+
+            theta6_2 = math.atan2((Re[0][1] * sin232 * cos12 + Re[1][1] * sin232 * sin12 + Re[2][1] * cos232), (-Re[0][0] * sin232 * cos12 - Re[1][0] * sin232 * sin12 - Re[2][0] * cos232))
+            theta6_6 = theta6_2 - math.pi
+
+            theta6_3 = math.atan2((Re[0][1] * sin233 * cos13 + Re[1][1] * sin233 * sin13 + Re[2][1] * cos233), (-Re[0][0] * sin233 * cos13 - Re[1][0] * sin233 * sin13 - Re[2][0] * cos233))
+            theta6_7 = theta6_3 - math.pi
+
+            theta6_4 = math.atan2((Re[0][1] * sin234 * cos14 + Re[1][1] * sin234 * sin14 + Re[2][1] * cos234), (-Re[0][0] * sin234 * cos14 - Re[1][0] * sin234 * sin14 - Re[2][0] * cos234))
+            theta6_8 = theta6_4 - math.pi
+
                     
             theta1_Sol[0] = math.degrees(theta1_1)
             theta1_Sol[1] = math.degrees(theta1_2)
