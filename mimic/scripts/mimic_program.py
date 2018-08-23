@@ -37,15 +37,22 @@ def analyze_program(*args):
     Check program parameters, raise exception on failure
     :return:
     """
+    robot_name = mimic_utils.get_selected_robot_name()
+
     # Do this first upon button click!
     _clear_output_window()
 
     # Check program, commands, raise exception on failure
     program_settings = _get_settings()
     command_dicts = _get_command_dicts(*program_settings)
-    _check_command_dicts(command_dicts, *program_settings)
+    limits_data = mimic_utils._get_all_limits(robot_name)
 
-    analysis.run(command_dicts)
+    violation_exception, violation_warning = _check_command_dicts(command_dicts, *program_settings)
+
+    analysis.run(command_dicts, limits_data)
+
+    if violation_exception:
+        raise Exception("Limit violations found. See Mimic output window for details.")
 
 
 def save_program(*args):
@@ -59,12 +66,12 @@ def save_program(*args):
     # Check program, commands, raise exception on failure
     program_settings = _get_settings()
     command_dicts = _get_command_dicts(*program_settings)
-    warnings = _check_command_dicts(command_dicts, *program_settings)
+    violation_exception, violation_warning = _check_command_dicts(command_dicts, *program_settings)
 
     # Continue to save program:
     _process_program(command_dicts, *program_settings)
 
-    if warnings:
+    if violation_warning:
         pm.headsUpMessage('Program exported with warnings; ' \
                           'See Mimic output window for details')
     else:
@@ -302,6 +309,11 @@ def _get_command_dicts(robot, animation_settings, postproc_settings, user_option
     # Get commands from sampled frames
     command_dicts = _sample_frames_get_command_dicts(robot, frames, animation_settings, time_interval_in_seconds,
                                                      user_options)
+    
+    if using_sample_rate:
+        # Check commands for axis flips and reconcile them if necessary
+        command_dicts = _check_command_rotations(robot, animation_settings, command_dicts)
+
     return command_dicts
 
 
@@ -321,13 +333,12 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
 
     # Check if limits have been exceeded (i.e. velocity, acceleration)
     if user_options.Include_axes and not user_options.Ignore_motion:
-        command_dicts = _check_command_rotations(robot, animation_settings, command_dicts)
         # TODO: Add UI options to select which violations, max/min/avg user wants to check
 
         # Check velocity limits
         velocity_limits = mimic_utils.get_velocity_limits(robot)
         velocity_dicts = analysis_utils._generate_derivative_dicts(command_dicts, 1)
-        if velocity_limits is None:
+        if velocity_limits['Axis 1']['Min Limit'] is None:
             velocity_warning = 'Unable to check velocity limits. Robot rig does not contain velocity data.\n'
             pm.scrollField(OUTPUT_WINDOW_NAME, insertText=velocity_warning, edit=True)
         velocity_violations, velocity_stats = _check_command_dicts_limits(velocity_dicts, limits=velocity_limits, get_min=True, get_max=True, get_average=True)
@@ -335,7 +346,7 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
         # Check acceleration limits
         acceleration_limits = mimic_utils.get_acceleration_limits(robot)
         acceleration_dicts = analysis_utils._generate_derivative_dicts(velocity_dicts, 2)
-        if acceleration_limits is None:
+        if acceleration_limits['Axis 1']['Min Limit'] is None:
             acceleration_warning = 'Unable to check acceleration limits. Robot rig does not contain acceleration data.\n'
             pm.scrollField(OUTPUT_WINDOW_NAME, insertText=acceleration_warning, edit=True)
         acceleration_violations, acceleration_stats = _check_command_dicts_limits(acceleration_dicts, limits=acceleration_limits, get_min=True, get_max=True, get_average=True)
@@ -343,7 +354,7 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
         # Check jerk limits
         jerk_limits = mimic_utils.get_jerk_limits(robot)
         jerk_dicts = analysis_utils._generate_derivative_dicts(acceleration_dicts, 3)
-        if jerk_limits is None:
+        if jerk_limits['Axis 1']['Min Limit'] is None:
             jerk_warning = 'Unable to check jerk limits. Robot rig does not contain jerk data.\n'
             pm.scrollField(OUTPUT_WINDOW_NAME, insertText=jerk_warning, edit=True)
         jerk_violations, jerk_stats = _check_command_dicts_limits(jerk_dicts, limits=jerk_limits, get_min=True, get_max=True, get_average=True)
@@ -378,24 +389,28 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
 
     # If all checks passed then we don't have any warnings...
     # Format and print warnings
+    violation_exception = False
+    violation_warning = False
     if velocity_violations or acceleration_violations or jerk_violations:
         # Print this one always
         pm.headsUpMessage('WARNINGS: See Mimic output window for details')
         if velocity_violations:
             _print_violations(velocity_violations, velocity_limits, "Velocity")
-        print acceleration_violations
         if acceleration_violations:
             _print_violations(acceleration_violations, acceleration_limits, "Acceleration")
         if jerk_violations:
             _print_violations(jerk_violations, jerk_limits, "Jerk")
         if not ignore_warnings:
-            raise Exception("Limit violations found. See Mimic output window for details.")
-        return True
+            violation_exception = True
+        violation_warning = True
     else:
         no_warning = 'All checks passed!\n'
         pm.scrollField(OUTPUT_WINDOW_NAME, insertText=no_warning, edit=True)
         pm.headsUpMessage('All Checks Passed!')
-        return False
+        violation_warning = False
+
+    return violation_exception, violation_warning 
+
 
 def _print_violations(violation_dicts, limits, limit_type):
     """
@@ -414,10 +429,15 @@ def _print_violations(violation_dicts, limits, limit_type):
         axis_num = int(axis_name.split(' ')[-1]) - 1  # This is super hacky... should fix.
         warning += warning_template.format('Time', 'Frame', 'Limit', 'Actual', **padding)
         for violation in violation_dicts[axis_name]:
+            if limits[axis_name]['Max Limit']:
+                axis_limit = general_utils.num_to_str(limits[axis_name]['Max Limit'], precision=3)
+            else:
+                return 
+
             warning += warning_template.format(
                 general_utils.num_to_str(violation['Time Index'], precision=3),
                 general_utils.num_to_str(violation['Frame'], precision=3),
-                general_utils.num_to_str(limits[axis_num], precision=3),
+                axis_limit,
                 general_utils.num_to_str(violation[postproc.AXES][axis_num], precision=3),
                 **padding)
 
@@ -502,12 +522,16 @@ def _check_command_dicts_limits(command_dicts, limits=None, get_min=False, get_m
     for current_command in command_dicts:
         current_axes = current_command[postproc.AXES]
         for axis_index, current_axis in enumerate(current_axes):
+            axis_number = axis_index + 1  # Axis numbers are 1-indexed
+            axis_name = 'Axis {}'.format(axis_number)
 
             # Check limits
             if limits:
-                if abs(current_axis) > limits[axis_index]:
-                    axis_name = 'Axis {}'.format(axis_index + 1)
-                    violations.setdefault(axis_name,[]).append(current_command)
+                if limits[axis_name]['Max Limit']:
+                    if current_axis > limits[axis_name]['Max Limit']:
+                        violations.setdefault(axis_name,[]).append(current_command)
+                    elif current_axis < limits[axis_name]['Min Limit']:
+                        violations.setdefault(axis_name,[]).append(current_command)
 
             # Min
             if get_min:
@@ -636,7 +660,6 @@ def _get_frames_using_sample_rate(animation_settings, postproc_settings):
 
     return frames
  
-
 
 def _get_frames_using_keyframes_only(robot, animation_settings):
     """

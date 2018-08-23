@@ -150,6 +150,7 @@ def _get_total_num_axes(command_dicts):
 
     return total_num_axes
 
+
 def get_axis_numbers(command_dicts):
     """
     e.g. [1, 2, 3, 4, 5, 6, 8, 10, 11]

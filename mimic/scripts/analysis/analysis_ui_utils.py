@@ -16,12 +16,12 @@ reload(general_utils)
 reload(ui_utils)
 
 # Use Qt.py to provide for back-compatibility from PySide2 to PySide
-from extern.Qt import QtWidgets
-from extern.Qt import QtGui
-from extern.Qt import QtCore
-from extern.Qt import QtCompat
+from Qt import QtWidgets
+from Qt import QtGui
+from Qt import QtCore
+from Qt import QtCompat
 
-from extern import pyqtgraph as pg
+import pyqtgraph as pg
 
 # create a font
 FONT = QtGui.QFont()

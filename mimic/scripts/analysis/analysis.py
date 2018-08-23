@@ -16,7 +16,7 @@ reload(analysis_utils)
 reload(ui_utils)
 
 
-def run(command_dicts):
+def run(command_dicts, limits_data):
     """
     """
     window_name='mimic_analysis_window'

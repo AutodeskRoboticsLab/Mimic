@@ -1295,11 +1295,11 @@ def detach_tool_model(*args):
         return
 
 
-def get_axis_limits(*args):
+def get_axis_limits(write_to_ui=True, *args):
     """
     Gets the current axis limits and updates UI with those values.
     :param args:
-    :return:
+    :return axis_position_limits: dict containing axis position limits
     """
     robot = get_robot_roots()
     if not robot:
@@ -1313,14 +1313,25 @@ def get_axis_limits(*args):
         pm.warning('Too many selections: Select a single robot')
         return
 
+    axis_position_limits = {}
+
     for i in range(num_axes):
+        axis_number = i + 1  # Axis numbers are 1-indexed
+        axis_name = 'Axis {}'.format(axis_number)
         val_min = int(pm.getAttr('{}|robot_GRP|target_CTRL.axis{}Min' \
                                  .format(robot[0], i + 1)))
         val_max = int(pm.getAttr('{}|robot_GRP|target_CTRL.axis{}Max' \
                                  .format(robot[0], i + 1)))
 
-        pm.textField('t_A{}Min'.format(i + 1), edit=True, text=val_min)
-        pm.textField('t_A{}Max'.format(i + 1), edit=True, text=val_max)
+        if write_to_ui:
+            pm.textField('t_A{}Min'.format(i + 1), edit=True, text=val_min)
+            pm.textField('t_A{}Max'.format(i + 1), edit=True, text=val_max)
+
+        # Save value to dictionary
+        axis_position_limits[axis_name] = {'Min Limit': val_min,
+                                           'Max Limit': val_max}
+    
+    return axis_position_limits
 
 
 def set_axis_limit(axis_number, min_max):
@@ -1381,21 +1392,72 @@ def _get_limits(robot, limit_type):
     :param limit_type: name string of the limit type
     :return:
     """
-    limits = []
+    limits = {}
 
     # HARD CODED - Number of robot axes; should include external axes
     num_axes = 6
     # Create a list of robot's limits
-    try:
-        for i in range(num_axes):
-            limits.append(pm.getAttr('{}|robot_GRP|target_CTRL.axis{}' \
-                                     '{}Limit'.format(robot, i + 1, limit_type)))
-    except AttributeError:
-        # TODO: should probably support instances where partial axis limit 
-        # data is known instead of throwing out limit data for all axes 
-        limits = None
+    
+    for i in range(num_axes):
+        axis_number = i + 1  # Axis numbers are 1-indexed
+        axis_name = 'Axis {}'.format(axis_number)
+        limits[axis_name] = {'Min Limit': None, 'Max Limit': None}
+        try:
+            limit = pm.getAttr('{}|robot_GRP|target_CTRL.axis{}' \
+                               '{}Limit'.format(robot, i + 1, limit_type))
+        except AttributeError:
+            limit = None
+
+        if limit:
+            limits[axis_name] = {'Min Limit': -limit,
+                                 'Max Limit': limit}
 
     return limits
+
+
+def _get_all_limits(robot):
+    """
+    Gets all axis limits for the selected robot and places them in a dictionary
+    limits_data = {
+        "Position": {
+                   "Axis 1":{"Min Limit": limit, "Max Limit": limit},
+                   "Axis 2":{"Min Limit": limit, "Max Limit": limit},
+                ...
+                   "Axis n":{"Min Limit": limit, "Max Limit": limit}
+                   },
+            
+        "Velocity": {
+                   "Axis 1":{"Min Limit": limit, "Max Limit": limit},
+                   "Axis 2":{"Min Limit": limit, "Max Limit": limit},
+                ...
+                   "Axis n":{"Min Limit": limit, "Max Limit": limit}
+                   },
+
+        "Accel": {
+                   "Axis 1":{"Min Limit": limit, "Max Limit": limit},
+                   "Axis 2":{"Min Limit": limit, "Max Limit": limit},
+                ...
+                   "Axis n":{"Min Limit": limit, "Max Limit": limit}
+                   },
+
+        "Jerk": {
+                   "Axis 1":{"Min Limit": limit, "Max Limit": limit},
+                   "Axis 2":{"Min Limit": limit, "Max Limit": limit},
+                ...
+                   "Axis n":{"Min Limit": limit, "Max Limit": limit}
+                   }
+        }
+    :param robot: name string of the selected robot
+    :return limits_data: dict containing all limit data
+    """
+    limits_data = {}
+
+    limits_data['Position'] = get_axis_limits(write_to_ui=False)
+    limits_data['Velocity'] = get_velocity_limits(robot)
+    limits_data['Accel'] = get_acceleration_limits(robot)
+    limits_data['Jerk'] = get_jerk_limits(robot)
+
+    return limits_data
 
 
 def set_axis_limits(*args):
@@ -2318,7 +2380,6 @@ def save_pose_to_shelf(*args):
         if 'robotSubtype' in keyable:
             keyable.remove('robotSubtype')
 
-        print keyable
         for each in keyable:
             find_val = pm.getAttr(target_ctrl + "." + each)
             save_to_shelf = (start_line_code + "'" + (
