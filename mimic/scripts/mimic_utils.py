@@ -333,8 +333,7 @@ def get_reconciled_rotation_value(robot, axis, rotation_axis, current_frame):
     if closest_ik_key == current_frame:
         # Axis rotation value as given by the Dependency Graph
         dg_val = pm.getAttr('{}|robot_GRP|target_CTRL.axis{}' \
-                            .format(robot, axis),
-                            time=current_frame)
+                            .format(robot, axis))
         # Axis rotation as approximated by an IK keyframe
         keyed_val = pm.getAttr('{}|robot_GRP|FK_CTRLS|a{}FK_CTRL.rotate{}' \
                                .format(robot, axis, rotation_axis),
@@ -358,6 +357,7 @@ def get_reconciled_rotation_value(robot, axis, rotation_axis, current_frame):
         for frame in range(int(closest_ik_key),
                            int(current_frame + count_direction),
                            count_direction):
+            #pm.refresh()
             # Find the axis value at the current frame as given by the
             # Dependency Graph.
             dg_val = pm.getAttr('{}|robot_GRP|target_CTRL.axis{}' \
@@ -866,17 +866,13 @@ def invert_axis(axis_number, robots=[]):
         pm.warning('Nothing Selected; Select a valid robot')
         return
 
-    sel = pm.ls(selection=True, type='transform')
-
     try:
         for robot in robots:
             target_ctrl_attr = '{}|robot_GRP|target_CTRL.invertAxis{}' \
                 .format(robot, axis_number)
             pm.setAttr(target_ctrl_attr, 1)
-            pm.select(sel)
-            eval_str = 'import pymel.core as pm; ' \
-                       'pm.setAttr(\'' + target_ctrl_attr + '\', 0)'
-            pm.evalDeferred(eval_str)
+            pm.refresh()
+            pm.setAttr(target_ctrl_attr, 0)
     except:
         pm.warning('Error Inverting Axis')
 

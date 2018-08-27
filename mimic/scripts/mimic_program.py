@@ -37,13 +37,36 @@ def analyze_program(*args):
     Check program parameters, raise exception on failure
     :return:
     """
-    robot_name = mimic_utils.get_selected_robot_name()
-
     # Do this first upon button click!
     _clear_output_window()
 
     # Check program, commands, raise exception on failure
     program_settings = _get_settings()
+
+    animation_settings = program_settings[1]
+    start_frame = animation_settings['Start Frame']
+    pm.currentTime(start_frame)
+
+    
+    eval_str = 'import pymel.core as pm; ' \
+               'import mimic_program;' \
+               'reload(mimic_program);' \
+               'mimic_program.execute_analysis();'
+
+    pm.evalDeferred(eval_str)
+
+
+def execute_analysis():
+    """
+    This function must be run as a deferred evaluation to ensure proper axis 
+    rotation evaluation.
+
+    This allows Maya to reconcile any axis angles before saving. When axis
+    angles have been reconciled and Maya is idle, this function runs
+    """
+    robot_name = mimic_utils.get_selected_robot_name()
+    program_settings = _get_settings()
+
     command_dicts = _get_command_dicts(*program_settings)
     limits_data = mimic_utils._get_all_limits(robot_name)
 
@@ -65,7 +88,33 @@ def save_program(*args):
 
     # Check program, commands, raise exception on failure
     program_settings = _get_settings()
+
+    animation_settings = program_settings[1]
+    start_frame = animation_settings['Start Frame']
+    pm.currentTime(start_frame)
+
+    
+    eval_str = 'import pymel.core as pm; ' \
+               'import mimic_program;' \
+               'reload(mimic_program);' \
+               'mimic_program.execute_save();'
+
+    pm.evalDeferred(eval_str)
+
+
+def execute_save():
+    """
+    This function must be run as a deferred evaluation to ensure proper axis 
+    rotation evaluation.
+
+    This allows Maya to reconcile any axis angles before saving. When axis
+    angles have been reconciled and Maya is idle, this function runs
+    """
+
+    program_settings = _get_settings()
+
     command_dicts = _get_command_dicts(*program_settings)
+
     violation_exception, violation_warning = _check_command_dicts(command_dicts, *program_settings)
 
     # Continue to save program:
@@ -77,7 +126,7 @@ def save_program(*args):
     else:
         pm.headsUpMessage('Program exported successfuly; ' \
                           'See Mimic output window for details')
-
+    
 
 def _process_program(command_dicts, robot, animation_settings, postproc_settings, user_options):
     """
@@ -763,10 +812,12 @@ def _sample_frame_get_axes(robot_name, frame):
     :param frame: Frame to sample
     :return:
     """
+
     axes = []
+    pm.currentTime(frame)
     for i in range(6):
         axis_name = '{}|robot_GRP|target_CTRL.axis{}'.format(robot_name, i + 1)
-        axis = pm.getAttr(axis_name, time=frame)
+        axis = pm.getAttr(axis_name)
         axes.append(axis)
     return axes
 
