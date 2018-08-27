@@ -203,11 +203,13 @@ def _generate_derivative_dicts(command_dicts, order):
     # Replace order-th value with with zeros; this is not a derivitive
     # We do this to ensure the lengths of our command remain constant
     for i in range(order):
-        derivative_dicts[i][postproc.AXES] = postproc.Axes(*[0] * num_axes)
-    
+        try:
+            derivative_dicts[i][postproc.AXES] = postproc.Axes(*[0] * num_axes)
+        except IndexError:
+            pm.warning("Insufficient number of sample points to generate derivatives. Increase sample rate or add additional IK/FK keys for proper analysis")
 
     # If external axes exist, repeat derivative process on them
-    if 'external_axes' in derivative_dicts[i]:
+    if 'external_axes' in derivative_dicts[0]:
         num_external_axes = len(command_dicts[0][postproc.EXTERNAL_AXES])
         
         # Get the indeces of external axes that are being used
