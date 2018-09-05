@@ -19,6 +19,9 @@ this repository has no external dependencies and can be easily installed in *one
 step* by anyone. To that end, users should not be expected to install external
 dependencies.
 
+If necessary, however, packages can be added to the `/scripts/extern` directory.
+See `/scripts/extern.md` for more details.
+
 Don't worry about this section unless you're using something other than Maya to
 interface this repository. The following dependencies are accessible only through
 Maya; use [mayapy](http://help.autodesk.com/cloudhelp/2016/CHS/Maya-Tech-Docs/PyMel/standalone.html)
