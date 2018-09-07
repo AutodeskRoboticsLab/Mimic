@@ -69,12 +69,12 @@ def execute_analysis():
     program_settings = _get_settings()
 
     command_dicts = _get_command_dicts(*program_settings)
-    limits_data = mimic_utils._get_all_limits(robot_name)
+    limit_data = mimic_utils.get_all_limits(robot_name)
 
     violation_exception, violation_warning = _check_command_dicts(command_dicts, *program_settings)
     _initialize_export_progress_bar(is_on=False)
 
-    analysis.run(command_dicts, limits_data)
+    analysis.run(robot_name, command_dicts, limit_data)
 
     if violation_exception:
         raise Exception("Limit violations found. See Mimic output window for details.")
@@ -754,7 +754,8 @@ def _sample_frames_get_command_dicts(robot_name, frames, animation_settings, tim
     # Initialize output array.
     command_dicts = []
     time_index_count = 0
-    frame_range = frames[-1] - frames[0]
+    start_frame = animation_settings['Start Frame']
+    end_frame = animation_settings['End Frame']
 
     for frame in frames:
         # Set the background to the current frame
@@ -806,7 +807,7 @@ def _sample_frames_get_command_dicts(robot_name, frames, animation_settings, tim
                 pass
         command_dicts.append(command_dict)
         pm.refresh()
-        _update_export_progress_bar(frame_range, frame)
+        _update_export_progress_bar(start_frame, end_frame, frame)
     # Reset current frame (just in case)
     pm.currentTime(frames[0])
     return command_dicts
@@ -967,16 +968,21 @@ def _sample_frame_get_configuration(robot_name, frame):
 
 
 def _initialize_export_progress_bar(is_on=True):
-
+    """
+    """
     pm.progressBar('pb_exportProgress', edit=True, progress=0)
     pm.progressBar('pb_exportProgress', edit=True, visible=is_on)
 
 
-def _update_export_progress_bar(frame_range, frame_index):
+def _update_export_progress_bar(start_frame, end_frame, frame_index):
+    """
+    """
+    frame_range = end_frame - start_frame
+
     if (frame_range == 0):
         step = 0
     else:
         export_bar_range = 100
-        step = ((frame_index * export_bar_range) / frame_range)
+        step = ((frame_index - start_frame) * export_bar_range) / frame_range
         pm.progressBar('pb_exportProgress', edit=True, progress=int(step))
 

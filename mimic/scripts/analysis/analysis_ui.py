@@ -171,7 +171,8 @@ class MimicAnalysisWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
 
         self.analysis_plot.add_toggles(
                     axis_toggles=self.axis_toggle_widget.toggles,
-                    derivative_toggles=self.deriv_toggle_widget.toggles)
+                    derivative_toggles=self.deriv_toggle_widget.toggles,
+                    limit_toggle=self.aux_toggle_widget.toggles['Limits'])
         
         return data_control_frame
 
@@ -179,8 +180,6 @@ class MimicAnalysisWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
     def __build_axis_toggle_widget(self):
         """
         """
-        # TO-DO: Get axis toggle names dynamically
-        number_of_axes = 6
         axis_toggle_names = []
 
         for axis_number in self.axis_numbers:
@@ -238,45 +237,5 @@ class MimicAnalysisWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
         self.axis_toggle_widget.isolate_toggle.setChecked(True)
 
         aux_toggles['Legend'].setChecked(True)
-
-
-    def test_run(self):
-        '''
-        pens = analysis_ui_utils.Palette(6).pens
-        
-        deriv = 'Accel'
-        plotitem_1 = pg.PlotDataItem(range(10), pen=pens['Axis 1']['Position'])
-        plotitem_2 = pg.PlotDataItem(range(1, 11), pen=pens['Axis 2']['Velocity'])
-        plotitem_3 = pg.PlotDataItem(range(2, 12), pen=pens['Axis 3']['Accel'])
-        plotitem_4 = pg.PlotDataItem(range(3, 13), pen=pens['Axis 4']['Jerk'])
-        plotitem_5 = pg.PlotDataItem(range(4, 14), pen=pens['Axis 5'][deriv])
-        plotitem_6 = pg.PlotDataItem(range(5, 15), pen=pens['Axis 6'][deriv])
-        
-
-        self.analysis_plot.plot.addItem(plotitem_1)
-        self.analysis_plot.plot.addItem(plotitem_2)
-        self.analysis_plot.plot.addItem(plotitem_3)
-        self.analysis_plot.plot.addItem(plotitem_4)
-        self.analysis_plot.plot.addItem(plotitem_5)
-        self.analysis_plot.plot.addItem(plotitem_6)
-        
-        legend = pg.LegendItem( offset=(50, 5))
-        legend.addItem(plotitem_1, 'Axis 1 Postion')
-        legend.addItem(plotitem_2, 'Axis 2 Velocity')
-        legend.addItem(plotitem_3, 'Axis 3')
-        legend.addItem(plotitem_4, 'Axis 4')
-        legend.addItem(plotitem_5, 'Axis 5')
-        legend.addItem(plotitem_6, 'Axis 6')
-        
-        legend.setParentItem(self.analysis_plot.plot)
-        '''
-        self.analysis_plot.plot.addItem(self.analysis_plot.plot_data['Axis 1']['Position'])
-        self.analysis_plot.plot.addItem(self.analysis_plot.plot_data['Axis 2']['Position'])
-        self.analysis_plot.plot.addItem(self.analysis_plot.plot_data['Axis 3']['Position'])
-        self.analysis_plot.plot.addItem(self.analysis_plot.plot_data['Axis 4']['Position'])
-        self.analysis_plot.plot.addItem(self.analysis_plot.plot_data['Axis 5']['Position'])
-        self.analysis_plot.plot.addItem(self.analysis_plot.plot_data['Axis 6']['Position'])       
-        self.analysis_plot.plot.addItem(self.analysis_plot.plot_data['Axis 8']['Position'])        
-        self.analysis_plot.plot.addItem(self.analysis_plot.plot_data['Axis 10']['Jerk'])
 
 

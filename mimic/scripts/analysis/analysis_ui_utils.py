@@ -92,7 +92,7 @@ class DataToggle(Toggle):
         elif data_type == 'Isolate':
             self.update_isolate()        
         elif data_type == 'Limits':
-            self.update_limits()
+            self.plot_widget.update_limits(self)
         elif data_type == 'Legend':
             self.plot_widget.update_legend_visibility(self)
         else:
@@ -406,9 +406,11 @@ class AnalysisPlotWidget(QtWidgets.QWidget):
         self.data_controls = None
         self.axis_toggles = None
         self.derivative_toggles = None
+        self.limit_toggle = None
 
         self.frames = None
         self.plot_data = None
+        self.limit_data = None
 
         self.program_info = None
 
@@ -477,11 +479,12 @@ class AnalysisPlotWidget(QtWidgets.QWidget):
         self.data_controls = data_controls
 
 
-    def add_toggles(self, axis_toggles, derivative_toggles):
+    def add_toggles(self, axis_toggles, derivative_toggles, limit_toggle):
         """
         """
         self.axis_toggles = axis_toggles
         self.derivative_toggles = derivative_toggles
+        self.limit_toggle = limit_toggle
 
 
     def add_plot_data(self, program_data, frames):
@@ -492,6 +495,13 @@ class AnalysisPlotWidget(QtWidgets.QWidget):
 
         self.plot_data = self._format_data_as_plotItems(program_data)
 
+
+    def add_limit_data(self, limit_data):
+        """
+        Converts input data to pyqtgraph linearRegionItem objects for graphng
+        """
+        self.limit_data = self._format_data_as_LinearRegionItems(limit_data)
+        
 
     def _format_data_as_plotItems(self, program_data):
         """
@@ -505,8 +515,6 @@ class AnalysisPlotWidget(QtWidgets.QWidget):
         for axis in program_data:
             plot_data[axis] = {}
             for deriv in self.derivative_names:
-                plot_data[axis][deriv] = {}
-
                 axis_data = program_data[axis][deriv]
                 pen = pens[axis][deriv]
 
@@ -516,12 +524,114 @@ class AnalysisPlotWidget(QtWidgets.QWidget):
         return plot_data
 
 
+    def _format_data_as_LinearRegionItems(self, limit_data):
+        """
+        """
+        num_axes = max(self.axis_numbers)
+        pens = Palette(num_axes).pens
+        brushes = Palette(num_axes).brushes
+
+        region_buffer = 100
+
+        plot_limit_data = {}
+
+        for deriv in self.derivative_names:
+            plot_limit_data[deriv] = {}
+            for axis in limit_data[deriv]:
+                plot_limit_data[deriv][axis] = {}
+
+                limit_max = limit_data[deriv][axis]['Max Limit']
+                limit_min = limit_data[deriv][axis]['Min Limit']
+
+                # Find the maximum and minumum values in the data
+                max_data = self.plot_data[axis][deriv].dataBounds(1)[1]
+                min_data = self.plot_data[axis][deriv].dataBounds(1)[0]
+
+                pen = pens[axis][deriv]
+                # Adjust pen alpha to make it more transparent
+                pen_color = pen.color()
+                pen_color.setAlpha(100)
+                pen.setColor(pen_color)
+
+                brush = brushes[axis]
+
+                if limit_max is not None:
+                    linear_region_max = pg.LinearRegionItem(orientation='horizontal', pen=pen, brush=brush, movable=False)
+
+                    # If the data exceeds the maximum limit, set the limit
+                    # buffer region above the max data
+                    if max_data > limit_max:
+                        linear_region_max.setRegion([limit_max, max_data + region_buffer])
+                    # Otherwise use the default region buffer
+                    else:
+                        linear_region_max.setRegion([limit_max, limit_max + region_buffer])
+                else:
+                    linear_region_max = None
+
+
+                if limit_min is not None:
+                    linear_region_min = pg.LinearRegionItem(orientation='horizontal', pen=pen, brush=brush, movable=False)
+                    
+                    # If the data exceeds the minimum limit, set the limit
+                    # buffer region below the min data
+                    if min_data < limit_min:
+                        linear_region_min.setRegion([limit_min, min_data - region_buffer])
+                    # Otherwise use the default region buffer
+                    else:
+                        linear_region_min.setRegion([limit_min, limit_min - region_buffer])
+                else:
+                    linear_region_min = None
+
+                plot_limit_data[deriv][axis]['Max Limit'] = linear_region_max
+                plot_limit_data[deriv][axis]['Min Limit'] = linear_region_min
+
+        return plot_limit_data
+
+
     def add_program_info(self, program_info):
         """
         """
         self.program_info = program_info
 
-    
+
+    def show_limits(self):
+        """
+        """
+        active_axis_toggles = self.get_active_toggles('Axis')
+        active_deriv_toggles = self.get_active_toggles('Derivative')
+
+        for axis_toggle in active_axis_toggles:
+            for deriv_toggle in active_deriv_toggles:
+                axis = axis_toggle.accessibleName()
+                deriv = deriv_toggle.accessibleName()
+
+                limit_max_item = self.limit_data[deriv][axis]['Max Limit']
+                limit_min_item = self.limit_data[deriv][axis]['Min Limit']
+
+                # If there is limit data for the current axis derivative,
+                # Add it to the plot
+                if limit_max_item is not None:
+                    self.plot.addItem(limit_max_item)
+                if limit_min_item is not None:
+                    self.plot.addItem(limit_min_item)
+
+
+    def hide_limits(self):
+        """
+        """
+        for axis in self.axis_names:
+            for deriv in self.derivative_names:
+                limit_max_item = self.limit_data[deriv][axis]['Max Limit']
+                limit_min_item = self.limit_data[deriv][axis]['Min Limit']
+                
+                # If there is limit data for the current axis derivative,
+                # Remove it from the plot
+                if limit_max_item is not None:
+                    self.plot.removeItem(limit_max_item)
+                if limit_min_item is not None:
+                    self.plot.removeItem(limit_min_item)
+
+
     def hide_legend(self):
         """
         """
@@ -555,20 +665,15 @@ class AnalysisPlotWidget(QtWidgets.QWidget):
                 axis_plot_item = self.plot_data[axis_name][deriv_name]
                 self.plot.addItem(axis_plot_item)
 
-                # Add the item to the Legend
-                #self.legend.addItem(axis_plot_item, '{} {}'.format(axis_name, deriv_name))
-                self.update_legend_contents()
-
-
         # If the axis toggle is off, turn off all of it's visible plots
         else:
             for deriv_name in self.derivative_names:
                 axis_plot_item = self.plot_data[axis_name][deriv_name]
                 self.plot.removeItem(axis_plot_item)
                 
-                # Remove the item from the Legend
-                # self.legend.removeItem(axis_plot_item)
-                self.update_legend_contents()
+        # Update the legend and limits
+        self.update_legend_contents()
+        self.update_limits()
 
 
     def update_legend_visibility(self, toggle):
@@ -616,17 +721,31 @@ class AnalysisPlotWidget(QtWidgets.QWidget):
                 axis_plot_item = self.plot_data[axis_name][deriv_name]
                 self.plot.addItem(axis_plot_item)
 
-                # Add the item to the Legend
-                self.update_legend_contents()
-
         # If the axis toggle is off, turn off all of it's visible plots
         else:
             for axis_name in self.axis_names:
                 axis_plot_item = self.plot_data[axis_name][deriv_name]
                 self.plot.removeItem(axis_plot_item)
 
-                # Remove the item from the Legend
-                self.update_legend_contents()
+        # Update the legend and limits
+        self.update_legend_contents()
+        self.update_limits()
+
+
+    def update_limits(self, toggle=None):
+        """
+        """
+        if not toggle:
+            toggle = self.limit_toggle
+
+        # If the toggle is on, check all active axis and derivative toggles
+        # and show their corresponding limits
+        if toggle.isChecked():
+            self.hide_limits()  # Clear the plot of limits first
+            self.show_limits()
+        else:
+            self.hide_limits()
+
 
     def update_all(self):
         """
@@ -690,6 +809,7 @@ class Palette(object):
         self.number_of_axes = number_of_axes
 
         self.pens = self._create_pens()
+        self.brushes = self._create_brushes()
 
     def _create_pens(self):
         """
@@ -720,11 +840,13 @@ class Palette(object):
         for i in range(self.number_of_axes):
             number_of_colors = len(Palette._COLORS)
             color_index = i % number_of_colors
-            pen_color = Palette._COLORS[color_index]
+            brush_color = Palette._COLORS[color_index]
             axis_number = i + 1  # Axis numbers are 1-indexed
             brush_key = 'Axis {}'.format(axis_number)
 
-            brushes[brush_key] = pg.mkPen(pen_color + (Palette._PEN_OPACITY,),
-                                          width=Palette._PEN_WIDTH)
+            brushes[brush_key] = {}
+            
+            brushes[brush_key] = pg.mkBrush(brush_color + (Palette._BRUSH_OPACITY,))
+
         return brushes
 

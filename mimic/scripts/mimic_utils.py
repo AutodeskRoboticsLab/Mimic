@@ -1327,6 +1327,7 @@ def get_axis_limits(write_to_ui=True, *args):
         axis_position_limits[axis_name] = {'Min Limit': val_min,
                                            'Max Limit': val_max}
     
+    # TO-DO: Add external axes
     return axis_position_limits
 
 
@@ -1407,11 +1408,12 @@ def _get_limits(robot, limit_type):
         if limit:
             limits[axis_name] = {'Min Limit': -limit,
                                  'Max Limit': limit}
-
+    
+    # TO-DO: Add external axes
     return limits
 
 
-def _get_all_limits(robot):
+def get_all_limits(robot):
     """
     Gets all axis limits for the selected robot and places them in a dictionary
     limits_data = {
