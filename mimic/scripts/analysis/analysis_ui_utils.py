@@ -605,32 +605,36 @@ class AnalysisPlotWidget(QtWidgets.QWidget):
                 axis = axis_toggle.accessibleName()
                 deriv = deriv_toggle.accessibleName()
 
-                limit_max_item = self.limit_data[deriv][axis]['Max Limit']
-                limit_min_item = self.limit_data[deriv][axis]['Min Limit']
+                try: 
+                    limit_max_item = self.limit_data[deriv][axis]['Max Limit']
+                    limit_min_item = self.limit_data[deriv][axis]['Min Limit']
 
-                # If there is limit data for the current axis derivative,
-                # Add it to the plot
-                if limit_max_item is not None:
-                    self.plot.addItem(limit_max_item)
-                if limit_min_item is not None:
-                    self.plot.addItem(limit_min_item)
-
+                    # If there is limit data for the current axis derivative,
+                    # Add it to the plot
+                    if limit_max_item is not None:
+                        self.plot.addItem(limit_max_item)
+                    if limit_min_item is not None:
+                        self.plot.addItem(limit_min_item)
+                except KeyError:  # External Axis limits not implemented yet
+                    pass
 
     def hide_limits(self):
         """
         """
         for axis in self.axis_names:
             for deriv in self.derivative_names:
-                limit_max_item = self.limit_data[deriv][axis]['Max Limit']
-                limit_min_item = self.limit_data[deriv][axis]['Min Limit']
-                
-                # If there is limit data for the current axis derivative,
-                # Remove it from the plot
-                if limit_max_item is not None:
-                    self.plot.removeItem(limit_max_item)
-                if limit_min_item is not None:
-                    self.plot.removeItem(limit_min_item)
-
+                try:
+                    limit_max_item = self.limit_data[deriv][axis]['Max Limit']
+                    limit_min_item = self.limit_data[deriv][axis]['Min Limit']
+                    
+                    # If there is limit data for the current axis derivative,
+                    # Remove it from the plot
+                    if limit_max_item is not None:
+                        self.plot.removeItem(limit_max_item)
+                    if limit_min_item is not None:
+                        self.plot.removeItem(limit_min_item)
+                except KeyError:  # External Axis limits not implemented yet
+                    pass
 
     def hide_legend(self):
         """

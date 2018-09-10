@@ -1,3 +1,5 @@
+
+
 ![mimic_logo](mimic/logos/mimic_logo_web.gif)
 
 #
@@ -6,39 +8,29 @@
 
 *An open-source Autodesk Maya plugin for controlling Industrial Robots.*
 
-[Mimic](https://www.mimicformaya.com/) is a free and open-source plugin for
-[Autodesk Maya](https://www.autodesk.com/products/maya/overview) that enables
-simulation, programming, and control of 6-axis, Industrial Robots. Use Mimic
-to generate programs without writing any code, or extend Mimic to suit your
-project's needs. Written in Python 2.7.
+[Mimic](https://www.mimicformaya.com/) is a free and open-source plugin for [Autodesk Maya](https://www.autodesk.com/products/maya/overview) that enables simulation, programming, and control of 6-axis, Industrial Robots. Use Mimic to generate programs without writing any code, or extend Mimic to suit your project's needs. Written in Python 2.7.
 
 
 ### Installation
 
-Download this release and copy the contents of it to one of the following
-directories, depending on your operating system. When you're done, open Maya,
-click on the Mimic shelf tab, and click on the Mimic icon; that's it!
-
+Download the latest [release](https://github.com/AutodeskRoboticsLab/Mimic/releases) and copy the contents of it to one of the following directories, depending on your operating system:
 ```
 macOS   ~/Library/Preferences/Autodesk/maya/modules
 Windows ~/Documents/maya/modules
 ```
+If you're running Windows or Linux, you must install NumPy manually for Mimic's Analysis module to run properly. Download the correct version from the  [releases](https://github.com/AutodeskRoboticsLab/Mimic/releases) page and place the unzipped `numpy` folder in the `scripts/extern` directory. _note: macOS come with NumPy pre-installed, so if you're using a Mac, you do not have to install NumPy manually_
 
+When you're done, open Maya, click on the Mimic shelf tab, and click on the Mimic icon; that's it!
+
+**Installation tips:**
 - If the `modules` directory above does not exist, create it.
-- If you're using Maya 2017 update 3 or earlier, you must
-  [manually load the Mimic shelf](https://youtu.be/bc3SqEXcE5Q?t=1m46s).
-- If you're running Windows and downloaded a release and/or rigs archive,
-  confirm that it isn't "blocked" before unzipping and installing it (right click
-  the archive, select Properties, check Unblock if necessary).
-- If you cloned this repository, download the latest robot rigs from
-  [releases](https://github.com/AutodeskRoboticsLab/Mimic/releases). Once you do,
-  replace the directory mimic/rigs with the one you downloaded after unzipping it.
-- See [troubleshooting](mimic/docs/troubleshooting.md) if you have trouble 
-  using or installing Mimic.
+- If you're using Maya 2017 update 3 or earlier, you must [manually load the Mimic shelf](https://youtu.be/bc3SqEXcE5Q?t=1m46s).
+- If you're running Windows and downloaded a release and/or rigs archive,  confirm that it isn't "blocked" before unzipping and installing it (right click the archive, select Properties, check Unblock if necessary).
+- If you cloned this repository, download the latest robot rigs from  [releases](https://github.com/AutodeskRoboticsLab/Mimic/releases). 
+Replace the directory `mimic/rigs`  with the unzipped `rigs` folder.
+- See [troubleshooting](mimic/docs/troubleshooting.md) if you have trouble  using or installing Mimic.
 
-You can find tutorials, videos, and other media on our
-[website](https://www.mimicformaya.com/) and textual documentation in
-[docs](mimic/docs).
+You can find tutorials, videos, and other media on our [website](https://www.mimicformaya.com/) and textual documentation in [docs](mimic/docs).
 
 
 ### Currently supported robots
@@ -60,6 +52,7 @@ Mimic currently supports the following robots (see [rigs](mimic/rigs)):
     |-- IRB 6640-235-255
     |-- IRB 6700-150-320
     |-- IRB 6700-205-280
+    |-- IRB 6700-245-300
 |-- KUKA
     |-- KL 100 6125
     |-- KL 1500-3 6000
@@ -68,19 +61,24 @@ Mimic currently supports the following robots (see [rigs](mimic/rigs)):
     |-- KR 6 R900 sixx
     |-- KR 10 R900 sixx
     |-- KR 10 R1100 sixx
+    |-- KR 10 R1420
+    |-- KR 16 L6-2
     |-- KR 16 R2010
     |-- KR 16-arc HW
     |-- KR 60-3
     |-- KR 120 R2700 HA
+    |-- KR 150 R3100 Prime
     |-- KR 150-2
     |-- KR 200 L140-2
+    |-- KR 210 R3100
     |-- KR 210-2
     |-- KR 500-2
     |-- KR 500-2 RC
     |-- KR 600 R2830
     |-- KR 1000 TITAN
-|-- Staubli * 
+|-- Staubli
     |-- RX160
+    |-- RX160L
     |-- TX40
     |-- TX60
     |-- TX60L

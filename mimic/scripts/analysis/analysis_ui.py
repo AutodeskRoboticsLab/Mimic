@@ -14,9 +14,11 @@ except ImportError:  # Maya is not running
 import pyqtgraph as pg
 import ui_utils
 import analysis_ui_utils
+import analysis_ui_config
 
 reload(ui_utils)
 reload(analysis_ui_utils)
+reload(analysis_ui_config)
 
 # Use Qt.py to provide for back-compatibility from PySide2 to PySide
 from Qt import QtWidgets
@@ -220,22 +222,38 @@ class MimicAnalysisWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
     def initialize_toggle_states(self):
         """
         """
-        axis_toggle_names = self.axis_toggle_widget.get_toggle_names()
         axis_toggles = self.axis_toggle_widget.get_toggles()
 
-        deriv_toggle_names = self.deriv_toggle_widget.get_toggle_names()
         deriv_toggles = self.deriv_toggle_widget.get_toggles()
 
         aux_toggles = self.aux_toggle_widget.get_toggles()
 
-        # TO-DO: replace these settings with config settings
+        # Get default toggle states from analysis_ui_config
+        axis_states = analysis_ui_config.AXIS_STATES
+        external_axis_state = analysis_ui_config.EXTERNAL_AXIS_STATE
+        isolate_axis = analysis_ui_config.ISOLATE_AXIS
+        derivative_states = analysis_ui_config.DERIVATIVE_STATES
+        isolate_derivative = analysis_ui_config.ISOLATE_DERIVATIVE
+        show_limits = analysis_ui_config.SHOW_LIMITS
+        show_legend = analysis_ui_config.SHOW_LEGEND
+
+        # Set derivative toggle states
         for toggle in deriv_toggles:
-            deriv_toggles[toggle].setChecked(True)
+            deriv_toggles[toggle].setChecked(derivative_states[toggle])
+
+        self.deriv_toggle_widget.isolate_toggle.setChecked(isolate_derivative)
 
         # TO-DO: replace these settings with config settings
-        axis_toggles[axis_toggle_names[0]].setChecked(True)
-        self.axis_toggle_widget.isolate_toggle.setChecked(True)
+        for toggle in axis_toggles:
+            try:
+                axis_toggles[toggle].setChecked(axis_states[toggle])
+            except KeyError:  # There's no default for the given axis
+                axis_toggles[toggle].setChecked(external_axis_state)
 
-        aux_toggles['Legend'].setChecked(True)
+        self.axis_toggle_widget.isolate_toggle.setChecked(isolate_axis)
+
+        # Set auxiliary toggle states
+        aux_toggles['Limits'].setChecked(show_limits)
+        aux_toggles['Legend'].setChecked(show_legend)
 
 

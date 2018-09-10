@@ -14,6 +14,8 @@ global proc shelf_Mimic () {
         -preventOverride 0
         -annotation "Launches Mimic Robot UI" 
         -enableBackground 0
+        -backgroundColor 0 0 0 
+        -highlightColor 0.321569 0.521569 0.65098 
         -align "center" 
         -label "Mimic UI" 
         -labelOffset 0
