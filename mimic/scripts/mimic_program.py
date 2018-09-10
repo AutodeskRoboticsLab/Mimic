@@ -87,7 +87,8 @@ def execute_analysis():
                    'see Mimic installation instructions for more details')
 
     if violation_exception:
-        raise Exception("Limit violations found. See Mimic output window for details.")
+        raise Exception('Limit violations found. ' \
+                        'See Mimic output window for details.')
 
 
 def save_program(*args):
@@ -129,11 +130,22 @@ def execute_save():
     command_dicts = _get_command_dicts(*program_settings)
 
     violation_exception, violation_warning = _check_command_dicts(command_dicts, *program_settings)
+    if violation_exception:
+        _initialize_export_progress_bar(is_on=False)
+
+        pm.scrollField(OUTPUT_WINDOW_NAME,
+               insertText='\n\nNO PROGRAM EXPORTED!',
+               edit=True)
+
+        pm.headsUpMessage('WARNINGS: No Program Exported; ' \
+                          'See Mimic output window for details')
+        raise Exception('Limit violations found. ' \
+                        'No Program Exported. ' \
+                        'See Mimic output window for details.')
 
     # Continue to save program:
     _process_program(command_dicts, *program_settings)
 
-    _initialize_export_progress_bar(is_on=False)
 
     if violation_warning:
         pm.headsUpMessage('Program exported with warnings; ' \
