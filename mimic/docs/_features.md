@@ -68,7 +68,7 @@ At time of writing, the following features are available using the Mimic UI:
                     |-- Checksum
             |-- Overwrite existing file
             |-- Ignore warnings
-            |-- Check Program
+            |-- Analyze Program
             |-- Save Program
     |-- Setup
         |-- Add Robot
@@ -121,6 +121,8 @@ At time of writing, the following features are available using the Mimic UI:
             |-- Key IK/FK
         |-- UI
             |-- Shader Range
+        |-- Performance
+            |-- Execute Reconcile Rotation
     |-- Output Window
 ```
 

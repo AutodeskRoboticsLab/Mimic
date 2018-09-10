@@ -18,27 +18,76 @@ import math
 
 import general_utils
 import mimic_utils
+import mimic_external_axes
+
+from analysis import analysis
+from analysis import analysis_utils
+reload(analysis)
+reload(analysis_utils)
+
 from postproc import postproc
 from postproc import postproc_setup
 from postproc import postproc_options
-import mimic_external_axes
 
 OUTPUT_WINDOW_NAME = 'programOutputScrollField'
 
 
-def check_program(*args):
+def analyze_program(*args):
     """
     Check program parameters, raise exception on failure
     :return:
     """
     # Do this first upon button click!
     _clear_output_window()
+    _initialize_export_progress_bar()
 
     # Check program, commands, raise exception on failure
     program_settings = _get_settings()
-    command_dicts = _get_command_dicts(*program_settings)
 
-    _check_command_dicts(command_dicts, *program_settings)
+    animation_settings = program_settings[1]
+    start_frame = animation_settings['Start Frame']
+    pm.currentTime(start_frame)
+
+    
+    eval_str = 'import pymel.core as pm; ' \
+               'import mimic_program;' \
+               'reload(mimic_program);' \
+               'mimic_program.execute_analysis();'
+
+    pm.evalDeferred(eval_str)
+
+
+def execute_analysis():
+    """
+    This function must be run as a deferred evaluation to ensure proper axis 
+    rotation evaluation.
+
+    This allows Maya to reconcile any axis angles before saving. When axis
+    angles have been reconciled and Maya is idle, this function runs
+    """
+    robot_name = mimic_utils.get_selected_robot_name()
+    program_settings = _get_settings()
+
+    command_dicts = _get_command_dicts(*program_settings)
+    limit_data = mimic_utils.get_all_limits(robot_name)
+
+    violation_exception, violation_warning = _check_command_dicts(command_dicts, *program_settings)
+    _initialize_export_progress_bar(is_on=False)
+
+    # If PyQtGraph imports correctly, we can run the analysis graphing utility
+    # Likeliest cause of import failure is no or improper installation of numPy
+    # See Mimic installation instructions for more details on installing numPy
+    try:
+        import pyqtgraph as pg
+        analysis.run(robot_name, command_dicts, limit_data)
+    except ImportError:
+        pm.warning('MIMIC: Analysis module did not load successfully; ' \
+                   'analysis graphing feature disabled. ' \
+                   'Check that you have numPy installed properly; ' \
+                   'see Mimic installation instructions for more details')
+
+    if violation_exception:
+        raise Exception("Limit violations found. See Mimic output window for details.")
 
 
 def save_program(*args):
@@ -48,29 +97,58 @@ def save_program(*args):
     """
     # Do this first upon button click!
     _clear_output_window()
+    _initialize_export_progress_bar()
 
     # Check program, commands, raise exception on failure
     program_settings = _get_settings()
+
+    animation_settings = program_settings[1]
+    start_frame = animation_settings['Start Frame']
+    pm.currentTime(start_frame)
+
+    
+    eval_str = 'import pymel.core as pm; ' \
+               'import mimic_program;' \
+               'reload(mimic_program);' \
+               'mimic_program.execute_save();'
+
+    pm.evalDeferred(eval_str)
+
+
+def execute_save():
+    """
+    This function must be run as a deferred evaluation to ensure proper axis 
+    rotation evaluation.
+
+    This allows Maya to reconcile any axis angles before saving. When axis
+    angles have been reconciled and Maya is idle, this function runs
+    """
+
+    program_settings = _get_settings()
+
     command_dicts = _get_command_dicts(*program_settings)
-    warnings = _check_command_dicts(command_dicts, *program_settings)
+
+    violation_exception, violation_warning = _check_command_dicts(command_dicts, *program_settings)
 
     # Continue to save program:
     _process_program(command_dicts, *program_settings)
 
-    if warnings:
+    _initialize_export_progress_bar(is_on=False)
+
+    if violation_warning:
         pm.headsUpMessage('Program exported with warnings; ' \
                           'See Mimic output window for details')
     else:
         pm.headsUpMessage('Program exported successfuly; ' \
                           'See Mimic output window for details')
-
+    
 
 def _process_program(command_dicts, robot, animation_settings, postproc_settings, user_options):
     """
     Process a command dictionary as a program using the selected post processor.
     :param robot: Name of the robot
     :param animation_settings: User-defined animation settings.
-    :param animation_settings: User-defined program settings.
+    :param postproc_settings: User-defined program settings.
     :param user_options: User-defined postproc options.
     :return:
     """
@@ -171,17 +249,6 @@ def _get_settings_for_animation(robot):
 
     # Define the animation time in seconds.
     animation_time_sec = ((end_frame) - start_frame) / framerate
-    if end_frame <= start_frame:
-        warning = 'End Frame must be larger than Start Frame'
-        raise Exception(warning)
-    else:
-        # If no keyframes are set, exit the function.
-        closest_ik_key = mimic_utils.get_closest_ik_keyframe(robot, start_frame)[0]
-        if not type(closest_ik_key) == float:
-            warning = 'You must set an IK or FK keyframe to ensure ' \
-                      'proper evaluation when saving a program; ' \
-                      'no program written'
-            raise Exception(warning)
 
     # Raise warning if end frame and start frame incompatible
     if end_frame <= start_frame:
@@ -307,32 +374,62 @@ def _get_command_dicts(robot, animation_settings, postproc_settings, user_option
     # Get commands from sampled frames
     command_dicts = _sample_frames_get_command_dicts(robot, frames, animation_settings, time_interval_in_seconds,
                                                      user_options)
+    
+    if using_sample_rate:
+        # Check commands for axis flips and reconcile them if necessary
+        command_dicts = _check_command_rotations(robot, animation_settings, command_dicts)
+
     return command_dicts
 
 
 def _check_command_dicts(command_dicts, robot, animation_settings, postproc_settings, user_options):
     """
     Check command dictionary for warnings.
-    :param command_dicts:
+    :param command_dicts: A list of list of robot axes
+    :param robot_name: Name of the robot
+    :param animation_settings: User-defined animation settings.
+    :param postproc_settings: User-defined program settings.
+    :param user_options: User-defined postproc options.
     :return: True if warning, False otherwise
     """
     # Check to see if the user has elected to ignore warnings
     ignore_warnings = postproc_settings['Ignore Warnings']
     warning = ''  # Temporary holder
 
-    # TODO: write vel, acc, jerk algorithm for warnings, min/max, average, ...
     # Check if limits have been exceeded (i.e. velocity, acceleration)
     if user_options.Include_axes and not user_options.Ignore_motion:
-        command_dicts = _check_command_rotations(robot, animation_settings, command_dicts)
-        # TODO: max_velocities is awkwardly implemented...
-        warning, max_velocities = _check_velocity_of_axes(robot, command_dicts, animation_settings['Framerate'])
-        if warning != '':
-            # Print this one always
-            warning += '\n'
-            pm.scrollField(OUTPUT_WINDOW_NAME, insertText=warning, edit=True)
-            pm.headsUpMessage('WARNINGS: See Mimic output window for details')
-            if not ignore_warnings:
-                raise Exception(warning)
+        # TODO: Add UI options to select which violations, max/min/avg user wants to check
+
+        # Check velocity limits
+        velocity_limits = mimic_utils.get_velocity_limits(robot)
+        velocity_dicts = analysis_utils._generate_derivative_dicts(command_dicts, 1)
+        if velocity_limits['Axis 1']['Min Limit'] is None:
+            velocity_warning = 'Unable to check velocity limits. Robot rig does not contain velocity data.\n'
+            pm.scrollField(OUTPUT_WINDOW_NAME, insertText=velocity_warning, edit=True)
+        velocity_violations, velocity_stats = _check_command_dicts_limits(velocity_dicts, limits=velocity_limits, get_min=True, get_max=True, get_average=True)
+
+        # Check acceleration limits
+        acceleration_limits = mimic_utils.get_acceleration_limits(robot)
+        acceleration_dicts = analysis_utils._generate_derivative_dicts(velocity_dicts, 2)
+        if acceleration_limits['Axis 1']['Min Limit'] is None:
+            acceleration_warning = 'Unable to check acceleration limits. Robot rig does not contain acceleration data.\n'
+            pm.scrollField(OUTPUT_WINDOW_NAME, insertText=acceleration_warning, edit=True)
+        acceleration_violations, acceleration_stats = _check_command_dicts_limits(acceleration_dicts, limits=acceleration_limits, get_min=True, get_max=True, get_average=True)
+
+        # Check jerk limits
+        jerk_limits = mimic_utils.get_jerk_limits(robot)
+        jerk_dicts = analysis_utils._generate_derivative_dicts(acceleration_dicts, 3)
+        if jerk_limits['Axis 1']['Min Limit'] is None:
+            jerk_warning = 'Unable to check jerk limits. Robot rig does not contain jerk data.\n'
+            pm.scrollField(OUTPUT_WINDOW_NAME, insertText=jerk_warning, edit=True)
+        jerk_violations, jerk_stats = _check_command_dicts_limits(jerk_dicts, limits=jerk_limits, get_min=True, get_max=True, get_average=True)
+
+        # Format and print axis statistics
+        _print_axis_stats(velocity_stats, "Velocity")
+        _print_axis_stats(acceleration_stats, "Acceleration")
+        _print_axis_stats(jerk_stats, "Jerk")
+
+
     if user_options.Include_external_axes and not user_options.Ignore_motion:
         # TODO: Implement velocity check for external axes
         # warning = _check_velocity_of_external_axes(robot, command_dicts, animation_settings['Framerate'])
@@ -356,147 +453,179 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
         pass
 
     # If all checks passed then we don't have any warnings...
-    if warning == '':
+    # Format and print warnings
+    violation_exception = False
+    violation_warning = False
+    if velocity_violations or acceleration_violations or jerk_violations:
+        # Print this one always
+        pm.headsUpMessage('WARNINGS: See Mimic output window for details')
+        if velocity_violations:
+            _print_violations(velocity_violations, velocity_limits, "Velocity")
+        if acceleration_violations:
+            _print_violations(acceleration_violations, acceleration_limits, "Acceleration")
+        if jerk_violations:
+            _print_violations(jerk_violations, jerk_limits, "Jerk")
+        if not ignore_warnings:
+            violation_exception = True
+        violation_warning = True
+    else:
         no_warning = 'All checks passed!\n'
         pm.scrollField(OUTPUT_WINDOW_NAME, insertText=no_warning, edit=True)
         pm.headsUpMessage('All Checks Passed!')
-        return False
-    else:
-        return True
+        violation_warning = False
 
-'''
-def _check_derivatives(values, frames, framerate=0.012, depth=1):
+    return violation_exception, violation_warning 
+
+
+def _print_violations(violation_dicts, limits, limit_type):
     """
-    Compute the derivatives of a list of parameters. This is a very simple algorithm
-    and should be modified for scalability and functionality later on.
-    :param values:
-    :param frames:
-    :param framerate:
-    :param limit:
+    Format and print limit violations.
+    :param violation_dicts: A list of dicts of axis violations
+    :param limits: A list of robot robot axes limits
+    :param limit_type: Name string of the limit type
     :return:
     """
-    # Initialize params
-    _current_values = []
-    _current_frames = []
-    _previous_value = 0
-    _previous_frame = 0
-    derivatives = []
+    warning = ''
+    warning_template = '   {0:>{time_padding}}{1:>{frame_padding}}{2:>{limit_padding}}{3:>{val_padding}}\n'
+    padding = {'val_padding' : 13, 'limit_padding' : 10, 'time_padding' : 10, 'frame_padding' : 10}
     
-    # Execute loop
-    for n in range(depth):
-        
-        # Initialize
-        derivatives_n = []
-        
-        # Compute the derivatives
-        _current_values = values
-        _current_frames = frames
-        for i in range(len(values)):
-            if i > 0:  # skip zeroth
-                _current_value = values[i]
-                _current_frame = frames[i]
-                # Compute velocity
-                displacement = abs(_current_value - _previous_value)
-                displacement_time = abs(_current_frame - _previous_frame) / framerate
-                derivative = displacement / displacement_time
-                derivatives_n.append(derivative)
-                # Check if a limit has been violated
-                if limit is not None:
-                    if derivative > limit:
-                        violation = (_current_frame, derivative)
-                        violations.append(violation)
-            # Overwrite previous
-            _previous_value = _current_value
-            _previous_frame = _current_frame
-        derivatives.append(derivatives_n)
-        '''
+    for axis_name in sorted(violation_dicts):
+        warning += axis_name + " {} Warnings:\n".format(limit_type)
+        axis_num = int(axis_name.split(' ')[-1]) - 1  # This is super hacky... should fix.
+        warning += warning_template.format('Time', 'Frame', 'Limit', 'Actual', **padding)
+        for violation in violation_dicts[axis_name]:
+            if limits[axis_name]['Max Limit']:
+                axis_limit = general_utils.num_to_str(limits[axis_name]['Max Limit'], precision=3)
+            else:
+                return 
+
+            warning += warning_template.format(
+                general_utils.num_to_str(violation['Time Index'], precision=3),
+                general_utils.num_to_str(violation['Frame'], precision=3),
+                axis_limit,
+                general_utils.num_to_str(violation[postproc.AXES][axis_num], precision=3),
+                **padding)
+
+    pm.scrollField(OUTPUT_WINDOW_NAME, insertText=warning, edit=True)
 
 
-def _check_velocity_of_axes(robot, command_dicts, framerate):
+def _print_axis_stats(axis_stats, limit_type):
     """
-    Check a list of commands for velocity errors. Construct string to return
-    printable statement of all exceeded velocities for each axis; ex. range
-    [0, 1, 2, 3] will be formatted '0-3'.
-    :param robot: name string of the selected robot
-    :param command_dicts: A list of list of robot axes
-    :param framerate: Maya animation framerate (fps)
+    Format and print axis statistics.
+    :param axis_stats: A dict of axis statistics
+    :param limit_type: Name string of the limit type
     :return:
     """
-    frames = [c['Frame'] for c in command_dicts]
-    axes_at_each_frame = [c[postproc.AXES] for c in command_dicts]
-    velocity_limits = mimic_utils.get_velocity_limits(robot)
-    max_velocities = [0 for _ in range(6)]
-    max_velocities_frames = [0 for _ in range(6)]
+    # TODO: This function is a mess. Should definitely be cleaned up,
+    # but since this is all getting graphed anyway... 
+    # TODO: stop hardcoding num_axes
+    num_axes = 6
+    axis_template = '>>> {0:>{axis_padding}} '
+    axis_padding = {'axis_padding' : 2}
+
+    res = [None] * (num_axes + 1)
+
+    # Header        
+    res[0] = axis_template.format('A', **axis_padding)
+    for axis_index in range(num_axes):
+        res[axis_index + 1] = axis_template.format(axis_index + 1, **axis_padding)
+
+    # Min
+    min_max_template = '{0:>{time_padding}}{1:>{frame_padding}}{2:>{val_padding}}   |'
+    min_max_padding = {'val_padding' : 13, 'time_padding' : 10, 'frame_padding' : 10}
+    if axis_stats['min']:
+        res[0] += min_max_template.format('Time', 'Frame', 'Min', **min_max_padding)
+        for axis_index, command in enumerate(axis_stats['min']):
+            res[axis_index+1] += min_max_template.format(
+                general_utils.num_to_str(command['Time Index'], precision=3),
+                general_utils.num_to_str(command['Frame'], precision=3),
+                general_utils.num_to_str(command[postproc.AXES][axis_index], precision=3),
+                **min_max_padding)
+
+    # Max
+    if axis_stats['max']:
+        res[0] += min_max_template.format('Time', 'Frame', 'Max', **min_max_padding)
+        for axis_index, command in enumerate(axis_stats['max']):
+            res[axis_index+1] += min_max_template.format(
+                general_utils.num_to_str(command['Time Index'], precision=3),
+                general_utils.num_to_str(command['Frame'], precision=3),
+                general_utils.num_to_str(command[postproc.AXES][axis_index], precision=3),
+                **min_max_padding)
+
+    # Avg
+    avg_template = '{0:>{avg_padding}}'
+    avg_padding = {'avg_padding' : 10}
+    if axis_stats['avg']:
+        res[0] += avg_template.format('Avg', **avg_padding)
+        for axis_index, axis_avg in enumerate(axis_stats['avg']):
+            res[axis_index+1] += avg_template.format(
+                general_utils.num_to_str(axis_avg, precision=3), **avg_padding)
+
+    # Formatting
+    stats_str = '{} Stats:\n'.format(limit_type) + '\n'.join(res) + '\n'
+    pm.scrollField(OUTPUT_WINDOW_NAME, insertText=stats_str, edit=True)
+
+
+def _check_command_dicts_limits(command_dicts, limits=None, get_min=False, get_max=False, get_average=False):
+    """
+    Check a command dicts for limit errors. Return a dict of commands for all violations.
+    :param command_dicts: A list of list of robot axes
+    :param limits: A list of robot robot axes limits
+    :param get_min: Record min axis values 
+    :param get_max: Record max axis values
+    :param get_avg: Record avg axis values
+    :return:
+    """
+    # Seed initial values
+    # TODO: Stop hardcoding num_axes
+    num_axes = 6
     violations = {}
-    _previous_frame = 0
-    _previous_axes = []
+    min_vals = [command_dicts[0] for _ in range(num_axes)]
+    max_vals = [command_dicts[0] for _ in range(num_axes)]
+    running_totals = [0 for _ in range(num_axes)]
 
-    for i in range(len(axes_at_each_frame)):
-        # Get time and axes right now
-        _current_frame = frames[i]
-        _current_axes = axes_at_each_frame[i]
-        if i > 0:  # skip zeroth
-            displacement_time = abs(_current_frame - _previous_frame) / framerate
-            for j in range(len(_current_axes)):
-                _previous_axis = _previous_axes[j]
-                _current_axis = _current_axes[j]
-                displacement = abs(_current_axis - _previous_axis)
-                velocity = displacement / displacement_time
-                # Record max velocities
-                if velocity > max_velocities[j]:
-                    max_velocities[j] = velocity
-                    max_velocities_frames[j] = _current_frame
-                # Check if a limit has been violated
-                if velocity > velocity_limits[j]:
-                    # Add axis name to violations dict
-                    axis_name = 'Axis {}'.format(j + 1)
-                    if axis_name not in violations:
-                        violations[axis_name] = []
-                    # Add time to violations dict
-                    violations[axis_name].append(_current_frame)
-        _previous_frame = _current_frame
-        _previous_axes = _current_axes
+    for current_command in command_dicts:
+        current_axes = current_command[postproc.AXES]
+        for axis_index, current_axis in enumerate(current_axes):
+            axis_number = axis_index + 1  # Axis numbers are 1-indexed
+            axis_name = 'Axis {}'.format(axis_number)
 
-    # TODO: This is a hack!
-    print 'Max velocities:'
-    template_string = '>>> {0:>{padding1}}{1:>{padding2}}{2:>{padding3}}'
-    print template_string.format(
-        'A',
-        'Velocity',
-        'Frame',
-        padding1=2,
-        padding2=10,
-        padding3=10)
-    for i in range(6):
-        print template_string.format(
-            i + 1,
-            general_utils.num_to_str(max_velocities[i], precision=3),
-            general_utils.num_to_str(max_velocities_frames[i], precision=3),
-            padding1=2,
-            padding2=10,
-            padding3=10)
+            # Check limits
+            if limits:
+                if limits[axis_name]['Max Limit']:
+                    if current_axis > limits[axis_name]['Max Limit']:
+                        violations.setdefault(axis_name,[]).append(current_command)
+                    elif current_axis < limits[axis_name]['Min Limit']:
+                        violations.setdefault(axis_name,[]).append(current_command)
 
-    # Format a warning
-    warning_params = []
-    # Get axis keys in order
-    axes = violations.keys()
-    if axes:
-        axes.sort()
-        for axis_name in axes:
-            # Check if the axis key has values
-            times = violations[axis_name]
-            time_ranges = general_utils.list_as_range_strings(times)
-            time_ranges_formatted = '\n'.join('\t{}'.format(time_range) for time_range in time_ranges)
-            warning_params.append(axis_name)
-            warning_params.append(time_ranges_formatted)
-        # Create warning
-        warning = 'WARNING!\n' \
-                  'Velocity limits have been violated!\n' \
-                  'See the following frames:\n'
-        warning_params.insert(0, warning)
-        return '\n'.join(warning_params) + '\n', max_velocities
-    else:
-        return '', max_velocities
+            # Min
+            if get_min:
+                if current_axis < min_vals[axis_index][postproc.AXES][axis_index]:
+                    # TODO: this only records the first time a min val has been reached.
+                    # It doesn't account for multiple frames with the same min val
+                    min_vals[axis_index] = current_command
+
+            # Max
+            if get_max:
+                if current_axis > max_vals[axis_index][postproc.AXES][axis_index]:
+                    # TODO: this only records the first time a max val has been reached.
+                    # It doesn't account for multiple frames with the same max val
+                    max_vals[axis_index] = current_command
+
+            # Average
+            if get_average:
+                running_totals[axis_index] += current_axis
+
+    # TODO: This data structure should probably be better defined.
+    stats = {'min': None, 'max' : None, 'avg': None}
+    if get_min:
+        stats['min'] = min_vals
+    if get_max:
+        stats['max'] = max_vals
+    if get_average:
+        stats['avg'] = [axis_total / len(command_dicts) for axis_total in running_totals]
+
+    return violations, stats
 
 
 def _check_robot_postproc_compatibility(robot, processor):
@@ -598,6 +727,9 @@ def _get_frames_using_sample_rate(animation_settings, postproc_settings):
     return frames
  
 
+    return frames
+ 
+
 def _get_frames_using_keyframes_only(robot, animation_settings):
     """
     Get frames from animation using a robot's keyframes only.
@@ -639,6 +771,8 @@ def _sample_frames_get_command_dicts(robot_name, frames, animation_settings, tim
     # Initialize output array.
     command_dicts = []
     time_index_count = 0
+    start_frame = animation_settings['Start Frame']
+    end_frame = animation_settings['End Frame']
 
     for frame in frames:
         # Set the background to the current frame
@@ -689,7 +823,8 @@ def _sample_frames_get_command_dicts(robot_name, frames, animation_settings, tim
                 # command_dict[postproc.ANALOG_INPUT] = postproc.DigitalOutput(*analog_input)
                 pass
         command_dicts.append(command_dict)
-
+        pm.refresh()
+        _update_export_progress_bar(start_frame, end_frame, frame)
     # Reset current frame (just in case)
     pm.currentTime(frames[0])
     return command_dicts
@@ -702,13 +837,18 @@ def _sample_frame_get_axes(robot_name, frame):
     :param frame: Frame to sample
     :return:
     """
+
     axes = []
+    pm.currentTime(frame)
+
     target_ctrl_path = mimic_utils.get_target_ctrl_path(robot_name)
     for i in range(6):
         axis_number = i + 1  # Axis numbers are 1-indexed
         axis_path = target_ctrl_path + '.axis{}'.format(axis_number)
-        axis = pm.getAttr(axis_path, time=frame)
+        axis = pm.getAttr(axis_path)
+
         axes.append(axis)
+        
     return axes
 
 
@@ -848,19 +988,22 @@ def _sample_frame_get_configuration(robot_name, frame):
     return configuration
 
 
-'''
 def _initialize_export_progress_bar(is_on=True):
+    """
+    """
+    pm.progressBar('pb_exportProgress', edit=True, progress=0)
+    pm.progressBar('pb_exportProgress', edit=True, visible=is_on)
 
-	pm.progressBar('pb_exportProgress', edit=True, progress=0)
-	pm.progressBar('pb_exportProgress', edit=True, visible=is_on)
 
+def _update_export_progress_bar(start_frame, end_frame, frame_index):
+    """
+    """
+    frame_range = end_frame - start_frame
 
-def _update_export_progress_bar(frame_range, frame_index):
     if (frame_range == 0):
         step = 0
     else:
         export_bar_range = 100
-        step = ((frame_index * export_bar_range) / frame_range)
+        step = ((frame_index - start_frame) * export_bar_range) / frame_range
+        pm.progressBar('pb_exportProgress', edit=True, progress=int(step))
 
-	pm.progressBar('pb_exportProgress', edit=True, step=10)
-'''

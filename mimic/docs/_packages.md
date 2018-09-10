@@ -1,3 +1,4 @@
+
 # Mimic
 
 ### Package index
@@ -14,6 +15,11 @@ Packages contained in Mimic are as follows:
         |-- postproc
         |-- rigging *
         |-- robotmath
+        |-- analysis
+        |-- extern
+            |-- Qt.py
+            |-- pyqtgraph
+            |-- numpy **
         |-- ...
     |-- ...
 ```
@@ -25,7 +31,7 @@ Several Post Processor modules for interpreting and formatting commands created
 in Mimic and, from them, producing usable robot code.
 
 Documentation may be found in:
-[postproc.md](https://github.com/AutodeskRoboticsLab/Mimic/blob/master/mimic/scripts/postproc/postproc.md).
+[postproc.md](mimic/scripts/postproc/postproc.md).
 
 Subpackages contained in postproc are as follows:
 
@@ -48,7 +54,23 @@ Subpackages contained in postproc are as follows:
 Tools for assisted-rigging of robots in Autodesk Maya for use with Mimic.
 
 Documentation may be found in:
-[rigging.md]().
+[rigging.md](mimic/scripts/rigging/rigging.md).
+
+
+### analysis
+
+Tools for analyizing intended robot motion; primarily through graphical representations
+
+Documentation may be found in:
+[analysis.md](mimic/scripts/analysis/analysis.md).
+
+
+### extern
+
+External libraries leveraged by Mimic
+
+Documentation may be found in:
+[extern.md](mimic/scripts/extern/extern.md).
 
 
 ### robotmath
@@ -57,11 +79,12 @@ Algorithms for control of 6 DOF industrial robots including those for inverse
 kinematics, forward kinematics, matrix transforms, and more.
 
 Documentation may be found in:
-[references](https://github.com/AutodeskRoboticsLab/Mimic/tree/master/mimic/scripts/robotmath/references).
+[references](mimic/scripts/robotmath/references).
 
 
 #
 
 \* *Not integrated at time of writing*
+\** *If Necessary*
 
 #

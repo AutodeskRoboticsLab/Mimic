@@ -56,6 +56,7 @@ At time of writing, the following contents are located in the Mimic repository:
             |-- IRB 6640-235-255
             |-- IRB 6700-150-320
             |-- IRB 6700-205-280
+            |-- IRB 6700-245-300
         |-- KUKA
             |-- KL 100 6125
             |-- KL 1500-3 6000
@@ -64,12 +65,16 @@ At time of writing, the following contents are located in the Mimic repository:
             |-- KR 6 R900 sixx
             |-- KR 10 R900 sixx
             |-- KR 10 R1100 sixx
+            |-- KR 10 R1420
+            |-- KR 16 L6-2
             |-- KR 16 R2010
             |-- KR 16-arc HW
             |-- KR 60-3
             |-- KR 120 R2700 HA
+            |-- KR 150 R3100 Prime
             |-- KR 150-2
             |-- KR 200 L140-2
+            |-- KR 210 R3100
             |-- KR 210-2
             |-- KR 500-2
             |-- KR 500-2 RC
@@ -77,6 +82,7 @@ At time of writing, the following contents are located in the Mimic repository:
             |-- KR 1000 TITAN
         |-- Staubli
             |-- RX160
+            |-- RX160L
             |-- TX40
             |-- TX60
             |-- TX60L
@@ -85,12 +91,20 @@ At time of writing, the following contents are located in the Mimic repository:
     |-- scripts
         |-- __init__.py
         |-- general_utils.py
+        |-- ui_utils.py
         |-- mimic.py
         |-- mimic_config.py
         |-- mimic_external_axes.py
         |-- mimic_program.py
         |-- mimic_ui.py
         |-- mimic_utils.py
+        |-- analyis
+            |-- __init__.py
+            |-- analysis.py
+            |-- analysis_utils.py
+            |-- analysis_ui_utils.py
+            |-- analysis_ui.py
+            |-- analysis.md
         |-- postproc
             |-- __init__.py
             |-- postproc.py

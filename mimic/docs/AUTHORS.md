@@ -18,6 +18,7 @@ open-source project. For a complete list, see
 ### Contributors
 
 - [Heather Kerrick](https://github.com/hmkerrick), alpha/beta tester
-
+- [John Nierras](https://www.linkedin.com/in/jnportfolio/), alpha/beta tester
+- [Harry Souders](https://github.com/hsouders), derivative math, emily utilities
 
 #

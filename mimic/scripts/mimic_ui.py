@@ -21,6 +21,7 @@ import mimic_external_axes
 from postproc import postproc_config
 from postproc import postproc_setup
 from postproc import postproc_options
+from analysis import analysis
 
 reload(mimic_utils)
 reload(mimic_config)
@@ -30,6 +31,7 @@ reload(general_utils)
 reload(postproc_setup)
 reload(postproc_config)
 reload(postproc_options)
+reload(analysis)
 
 FONT = 'smallObliqueLabelFont'
 
@@ -629,11 +631,10 @@ def _build_program_settings_frame(parent_layout):
     pm.separator(height=3, style='none')
 
     pm.separator(height=3, style='none')
-    pm.button('Check Program',
-              command=mimic_program.check_program,
+    pm.button('Analyze Program',
+              command=mimic_program.analyze_program,
               height=25,
-              annotation='Evalutes if program violates any physical ' \
-                         'robot parameters like speed limits')
+              annotation='Launches graphical analysis tool')
     pm.button('Save Program',
               command=mimic_program.save_program,
               height=25,

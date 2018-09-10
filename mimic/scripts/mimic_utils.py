@@ -436,10 +436,9 @@ def get_reconciled_rotation_value(robot, axis, rotation_axis, current_frame):
     # assign that value as the keyed value.
     if closest_ik_key == current_frame:
         # Axis rotation value as given by the Dependency Graph
-        dg_val = pm.getAttr(target_ctrl_path + '.axis{}'.format(axis),
-                            time=current_frame)
-        # Axis rotation as approximated by an IK keyframe
+        dg_val = pm.getAttr(target_ctrl_path + '.axis{}'.format(axis))
 
+        # Axis rotation as approximated by an IK keyframe
         keyed_val = pm.getAttr(attr_path, time=current_frame)
         keyed_val = accumulate_rotation(dg_val, keyed_val)
 
@@ -458,6 +457,7 @@ def get_reconciled_rotation_value(robot, axis, rotation_axis, current_frame):
         for frame in range(int(closest_ik_key),
                            int(current_frame + count_direction),
                            count_direction):
+            #pm.refresh()
             # Find the axis value at the current frame as given by the
             # Dependency Graph.
             dg_val = pm.getAttr(target_ctrl_path + '.axis{}'.format(axis),
@@ -964,17 +964,13 @@ def invert_axis(axis_number, robots=[]):
         pm.warning('Nothing Selected; Select a valid robot')
         return
 
-    sel = pm.ls(selection=True, type='transform')
-
     try:
         for robot in robots:
             target_ctrl_attr = get_target_ctrl_path(robot) \
                              + '.invertAxis{}'.format(axis_number)
             pm.setAttr(target_ctrl_attr, 1)
-            pm.select(sel)
-            eval_str = 'import pymel.core as pm; ' \
-                       'pm.setAttr(\'' + target_ctrl_attr + '\', 0)'
-            pm.evalDeferred(eval_str)
+            pm.refresh()
+            pm.setAttr(target_ctrl_attr, 0)
     except:
         pm.warning('Error Inverting Axis')
 
@@ -1386,11 +1382,11 @@ def detach_tool_model(*args):
         return
 
 
-def get_axis_limits(*args):
+def get_axis_limits(write_to_ui=True, *args):
     """
     Gets the current axis limits and updates UI with those values.
     :param args:
-    :return:
+    :return axis_position_limits: dict containing axis position limits
     """
     robots = get_robot_roots()
     if not robots:
@@ -1407,12 +1403,24 @@ def get_axis_limits(*args):
     robot = robots[0]
     target_ctrl_path = get_target_ctrl_path(robot)
 
-    for i in range(num_axes):
-        val_min = int(pm.getAttr(target_ctrl_path + '.axis{}Min'.format(i+1)))
-        val_max = int(pm.getAttr(target_ctrl_path + '.axis{}Max'.format(i+1)))
+    axis_position_limits = {}
 
-        pm.textField('t_A{}Min'.format(i + 1), edit=True, text=val_min)
-        pm.textField('t_A{}Max'.format(i + 1), edit=True, text=val_max)
+    for i in range(num_axes):
+        axis_number = i + 1  # Axis numbers are 1-indexed
+        axis_name = 'Axis {}'.format(axis_number)
+        val_min = int(pm.getAttr(target_ctrl_path + '.axis{}Min'.format(axis_number)))
+        val_max = int(pm.getAttr(target_ctrl_path + '.axis{}Max'.format(axis_number)))
+
+        if write_to_ui:
+            pm.textField('t_A{}Min'.format(axis_number), edit=True, text=val_min)
+            pm.textField('t_A{}Max'.format(axis_number), edit=True, text=val_max)
+
+        # Save value to dictionary
+        axis_position_limits[axis_name] = {'Min Limit': val_min,
+                                           'Max Limit': val_max}
+    
+    # TO-DO: Add external axes
+    return axis_position_limits
 
 
 def set_axis_limit(axis_number, min_max):
@@ -1446,16 +1454,103 @@ def get_velocity_limits(robot):
     :param robot: name string of the selected robot
     :return:
     """
-    velocity_limits = []
+    return _get_limits(robot, "Velocity")
+
+
+def get_acceleration_limits(robot):
+    """
+    Gets the current acceleration limits and updates UI with those values.
+    :param robot: name string of the selected robot
+    :return:
+    """
+    return _get_limits(robot, "Acceleration")
+
+
+def get_jerk_limits(robot):
+    """
+    Gets the current jerk limits and updates UI with those values.
+    :param robot: name string of the selected robot
+    :return:
+    """
+    return _get_limits(robot, "Jerk")
+
+
+def _get_limits(robot, limit_type):
+    """
+    Gets the current velocity limits and updates UI with those values.
+    :param robot: name string of the selected robot
+    :param limit_type: name string of the limit type
+    :return:
+    """
+    limits = {}
 
     # HARD CODED - Number of robot axes; should include external axes
     num_axes = 6
-    # Create a list of robot's velocity limits
-    for i in range(num_axes):
-        velocity_limits.append(pm.getAttr(get_target_ctrl_path(robot)
-                             + '.axis{}VelocityLimit'.format(i + 1)))
 
-    return velocity_limits
+    target_ctrl_path = get_target_ctrl_path(robot)
+    # Create a list of robot's limits
+    for i in range(num_axes):
+        axis_number = i + 1  # Axis numbers are 1-indexed
+        axis_name = 'Axis {}'.format(axis_number)
+        limits[axis_name] = {'Min Limit': None, 'Max Limit': None}
+        
+        try:
+            limit = pm.getAttr(target_ctrl_path + '.axis{}' \
+                               '{}Limit'.format(axis_number, limit_type))
+        except AttributeError:
+            limit = None
+
+        if limit:
+            limits[axis_name] = {'Min Limit': -limit,
+                                 'Max Limit': limit}
+    
+    # TO-DO: Add external axes
+    return limits
+
+
+def get_all_limits(robot):
+    """
+    Gets all axis limits for the selected robot and places them in a dictionary
+    limits_data = {
+        "Position": {
+                   "Axis 1":{"Min Limit": limit, "Max Limit": limit},
+                   "Axis 2":{"Min Limit": limit, "Max Limit": limit},
+                ...
+                   "Axis n":{"Min Limit": limit, "Max Limit": limit}
+                   },
+            
+        "Velocity": {
+                   "Axis 1":{"Min Limit": limit, "Max Limit": limit},
+                   "Axis 2":{"Min Limit": limit, "Max Limit": limit},
+                ...
+                   "Axis n":{"Min Limit": limit, "Max Limit": limit}
+                   },
+
+        "Accel": {
+                   "Axis 1":{"Min Limit": limit, "Max Limit": limit},
+                   "Axis 2":{"Min Limit": limit, "Max Limit": limit},
+                ...
+                   "Axis n":{"Min Limit": limit, "Max Limit": limit}
+                   },
+
+        "Jerk": {
+                   "Axis 1":{"Min Limit": limit, "Max Limit": limit},
+                   "Axis 2":{"Min Limit": limit, "Max Limit": limit},
+                ...
+                   "Axis n":{"Min Limit": limit, "Max Limit": limit}
+                   }
+        }
+    :param robot: name string of the selected robot
+    :return limits_data: dict containing all limit data
+    """
+    limits_data = {}
+
+    limits_data['Position'] = get_axis_limits(write_to_ui=False)
+    limits_data['Velocity'] = get_velocity_limits(robot)
+    limits_data['Accel'] = get_acceleration_limits(robot)
+    limits_data['Jerk'] = get_jerk_limits(robot)
+
+    return limits_data
 
 #TO-DO: make set_velocity_limits function and connect it to the UI
 
