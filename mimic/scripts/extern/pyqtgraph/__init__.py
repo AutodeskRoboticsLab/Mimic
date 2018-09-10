@@ -16,8 +16,11 @@ from .Qt import QtGui, mkQApp
 #if QtGui.QApplication.instance() is None:
     #app = QtGui.QApplication([])
 
-import numpy  ## pyqtgraph requires numpy
-              ## (import here to avoid massive error dump later on if numpy is not available)
+try:
+    import numpy  ## pyqtgraph requires numpy
+                  ## (import here to avoid massive error dump later on if numpy is not available)
+except:
+    pass
 
 import os, sys
 
@@ -26,12 +29,15 @@ import os, sys
 if sys.version_info[0] < 2 or (sys.version_info[0] == 2 and sys.version_info[1] < 6):
     raise Exception("Pyqtgraph requires Python version 2.6 or greater (this is %d.%d)" % (sys.version_info[0], sys.version_info[1]))
 
-## helpers for 2/3 compatibility
-from . import python2_3
+try:
+    ## helpers for 2/3 compatibility
+    from . import python2_3
 
-## install workarounds for numpy bugs
-from . import numpy_fix
-
+    ## install workarounds for numpy bugs
+    from . import numpy_fix
+except:
+    pass
+    
 ## in general openGL is poorly supported with Qt+GraphicsView.
 ## we only enable it where the performance benefit is critical.
 ## Note this only applies to 2D graphics; 3D graphics always use OpenGL.

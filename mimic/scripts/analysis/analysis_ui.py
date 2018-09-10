@@ -11,7 +11,12 @@ except ImportError:  # Maya is not running
     mel = None
     MAYA_IS_RUNNING = False
 
-import pyqtgraph as pg
+try:
+    import pyqtgraph as pg
+    PYQTGRAPH_LOADED = True
+except ImportError:
+    PYQTGRAPH_LOADED = False
+
 import ui_utils
 import analysis_ui_utils
 import analysis_ui_config

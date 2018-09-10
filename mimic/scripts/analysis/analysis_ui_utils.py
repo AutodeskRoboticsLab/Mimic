@@ -21,7 +21,11 @@ from Qt import QtGui
 from Qt import QtCore
 from Qt import QtCompat
 
-import pyqtgraph as pg
+try:
+    import pyqtgraph as pg
+    PYQTGRAPH_LOADED = True
+except ImportError:
+    PYQTGRAPH_LOADED = False
 
 # create a font
 FONT = QtGui.QFont()

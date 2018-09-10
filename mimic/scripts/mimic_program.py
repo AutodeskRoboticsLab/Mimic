@@ -74,7 +74,17 @@ def execute_analysis():
     violation_exception, violation_warning = _check_command_dicts(command_dicts, *program_settings)
     _initialize_export_progress_bar(is_on=False)
 
-    analysis.run(robot_name, command_dicts, limit_data)
+    # If PyQtGraph imports correctly, we can run the analysis graphing utility
+    # Likeliest cause of import failure is no or improper installation of numPy
+    # See Mimic installation instructions for more details on installing numPy
+    try:
+        import pyqtgraph as pg
+        analysis.run(robot_name, command_dicts, limit_data)
+    except ImportError:
+        pm.warning('MIMIC: Analysis module did not load successfully; ' \
+                   'analysis graphing feature disabled. ' \
+                   'Check that you have numPy installed properly; ' \
+                   'see Mimic installation instructions for more details')
 
     if violation_exception:
         raise Exception("Limit violations found. See Mimic output window for details.")
