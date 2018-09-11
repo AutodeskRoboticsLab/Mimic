@@ -753,101 +753,180 @@ def _build_tool_setup_frame(parent_layout):
     pm.setParent(parent_layout)
 
 
-def _build_axis_limits_frame(parent_layout):
-    limits_frame = pm.frameLayout(label="Axis Limits", collapsable=True)
-
-    limits_frame_cols = pm.rowColumnLayout(numberOfColumns=2)
+def _build_position_limits_tab(parent_layout):
+    position_limits_tab = pm.rowColumnLayout('position_limits_tab',
+                                             numberOfColumns=2)
 
     # Input text field width for all axis limits
-    cell_width = 50
+    cell_width = 80
 
     # Set up primary axis limits UI
-    pm.columnLayout(adj=True, columnAttach=('left', 5))
-    pm.separator(height=5, style='none')
-
-    pm.text('      Position:', align='center')
+    pm.columnLayout(adj=True, columnAttach=('both', 5))
     pm.separator(height=5, style='none')
 
     for i in range(6):
         # Axis 1 Limit row
         pm.rowLayout(numberOfColumns=3,
-                     columnAttach=(1, 'left', 0),
+                     columnAttach=(1, 'left', 3),
                      columnWidth=[(2, cell_width), (3, cell_width)],
                      height=20)
-        pm.text(label='A{}: '.format(i + 1))
+        pm.text(label='Axis {}: '.format(i + 1))
 
         # Axis 1 Min limit
         pm.textField("t_A{}Min".format(i + 1),
                      font=FONT,
-                     placeholderText='Min',
+                     pht='Min',
                      width=cell_width,
                      changeCommand='import pymel.core as pm; ' \
-                                   'import mimic_utils; ' \
                                    'pm.setFocus("t_A{}Max"); ' \
-                                   'mimic_utils.set_axis_limit({},"Min")' \
-                     .format(i + 1, i + 1))
+                                   .format(i + 1))
         # Axis 1 Max limit
         set_focus_count = ((i + 1) % 6) + 1
         pm.textField("t_A{}Max".format(i + 1),
                      font=FONT,
-                     placeholderText='Max',
+                     pht='Max',
                      width=cell_width,
                      changeCommand='import pymel.core as pm; ' \
-                                   'import mimic_utils; ' \
                                    'pm.setFocus("t_A{}Min"); ' \
-                                   'mimic_utils.set_axis_limit({},"Max")' \
-                     .format(set_focus_count, i + 1))
+                                   .format(set_focus_count))
 
         pm.setParent('..')
 
-    pm.setParent(limits_frame_cols)
+    pm.setParent(parent_layout)
 
-    # Set up primary axis velocity limts tab
-    pm.columnLayout(adj=True, columnAttach=('right', 5))
-    pm.separator(height=5, style='none')
-    pm.text('Velocity:', align='center')
+    return position_limits_tab
+
+
+def _build_velocity_limits_tab(parent_layout):
+    velocity_limits_tab = pm.rowColumnLayout('velocity_limits_tab',
+                                             numberOfColumns=2)
+
+    # Set up primary axis velocity limits tab
+    pm.columnLayout(adj=True, columnAttach=('both', 5))
     pm.separator(height=5, style='none')
 
     # Input text field width for all axis limits
-    cell_width = 40
+    cell_width = 163
 
     for i in range(6):
         # Axis 1 Limit row
         pm.rowLayout(numberOfColumns=2,
                      columnAttach=(1, 'left', 3),
-                     columnWidth=[(2, 2 * cell_width)],
+                     adjustableColumn=2,
                      height=20)
+        pm.text(label='Axis {}: '.format(i + 1), enable=False)
+
         set_focus_count = ((i + 1) % 6) + 1
         # Axis 1 Min limit
-        pm.textField("t_A{}vel".format(i + 1),
+        pm.textField("t_A{}Velocity".format(i + 1),
                      font=FONT,
-                     placeholderText='deg/sec',
-                     width=2 * cell_width,
-                     enable=False,
+                     pht='deg/sec',
+                     width=cell_width,
                      changeCommand='import pymel.core as pm; ' \
                                    'import mimic_utils; ' \
-                                   'pm.setFocus("t_A{}vel"); ' \
+                                   'pm.setFocus("t_A{}Velocity"); ' \
                      .format(set_focus_count))
         pm.setParent('..')
 
-    pm.setParent(limits_frame)
+    pm.setParent(parent_layout)
 
-    pm.columnLayout(adj=True, columnAttach=('both', 3))
+    return velocity_limits_tab
+
+
+def _build_accel_limits_tab(parent_layout):
+    accel_limits_tab = pm.rowColumnLayout('accel_limits_tab',
+                                          numberOfColumns=2)
+
+    # Set up primary axis accel limits tab
+    pm.columnLayout(adj=True, columnAttach=('both', 5))
+    pm.separator(height=5, style='none')
+
+    # Input text field width for all axis limits
+    cell_width = 163
+
+    for i in range(6):
+        # Axis 1 Limit row
+        pm.rowLayout(numberOfColumns=2,
+                     columnAttach=(1, 'left', 3),
+                     adjustableColumn=2,
+                     height=20)
+        pm.text(label='Axis {}: '.format(i + 1), enable=False)
+
+        set_focus_count = ((i + 1) % 6) + 1
+        # Axis 1 Min limit
+        pm.textField("t_A{}Accel".format(i + 1),
+                     font=FONT,
+                     pht='deg/sec' + u'\xb2',
+                     width=cell_width,
+                     changeCommand='import pymel.core as pm; ' \
+                                   'import mimic_utils; ' \
+                                   'pm.setFocus("t_A{}Accel"); ' \
+                     .format(set_focus_count))
+        pm.setParent('..')
+
+    pm.setParent(parent_layout)
+
+    return accel_limits_tab
+
+
+def _build_jerk_limits_tab(parent_layout):
+    jerk_limits_tab = pm.rowColumnLayout('jerk_limits_tab', numberOfColumns=2)
+
+    # Set up primary axis accel limits tab
+    pm.columnLayout(adj=True, columnAttach=('both', 5))
+    pm.separator(height=5, style='none')
+
+    # Input text field width for all axis limits
+    cell_width = 163
+
+    for i in range(6):
+        # Axis 1 Limit row
+        pm.rowLayout(numberOfColumns=2,
+                     columnAttach=(1, 'left', 3),
+                     adjustableColumn=2,
+                     height=20)
+        pm.text(label='Axis {}: '.format(i + 1), enable=False)
+
+        set_focus_count = ((i + 1) % 6) + 1
+        # Axis 1 Min limit
+        pm.textField("t_A{}Jerk".format(i + 1),
+                     font=FONT,
+                     pht='deg/sec' + u'\xb3',
+                     width=cell_width,
+                     changeCommand='import pymel.core as pm; ' \
+                                   'import mimic_utils; ' \
+                                   'pm.setFocus("t_A{}Jerk"); ' \
+                     .format(set_focus_count))
+        pm.setParent('..')
+
+    pm.setParent(parent_layout)
+
+    return jerk_limits_tab
+
+
+def _build_axis_limits_frame(parent_layout):
+    limits_frame = pm.frameLayout(label="Axis Limits", collapsable=True)
+    limits_tab_layout = pm.tabLayout('limits_tab_layout')
+
+    position_limits_tab = _build_position_limits_tab(limits_tab_layout)
+    velocity_limits_tab = _build_velocity_limits_tab(limits_tab_layout)
+    accel_limits_tab = _build_accel_limits_tab(limits_tab_layout)
+    jerk_limits_tab = _build_jerk_limits_tab(limits_frame)
+
+    tabs = [(position_limits_tab, 'Position'),
+            (velocity_limits_tab, 'Vel'),
+            (accel_limits_tab, 'Accel'),
+            (jerk_limits_tab, 'Jerk')]
+
+    assign_tabs(tabs, limits_tab_layout)
+
+    pm.columnLayout()
     pm.gridLayout(nc=2, cw=114, ch=25)
-    pm.button(label='Get Axis Limits',
-              command=mimic_utils.get_axis_limits,
-              annotation='Gets axis limit values for selected robot and ' \
-                         'prints them above')
-    pm.button(label='Set Axis Limits',
-              command=mimic_utils.set_axis_limits,
-              annotation='Sets selected robot\'s axis limit values to the ' \
-                         'input values above')
+    pm.button(label='Get Axis Limits', command=mimic_utils.write_limits_to_ui)
+    pm.button(label='Set Axis Limits', command=mimic_utils.set_axis_limits)
 
     pm.setParent('..')
-    pm.button(label='Clear',
-              width=218,
-              command=mimic_utils.clear_limits_ui,
-              annotation='Clears the axis limits UI above')
+    pm.button(label='Clear', width=228, command=mimic_utils.clear_limits_ui)
 
     pm.setParent(parent_layout)
 

@@ -308,11 +308,21 @@ def clear_limits_ui(*args):
     :param args: Required for Maya to pass command from the UI
     :return:
     """
+    current_tab = pm.tabLayout('limits_tab_layout',
+                               query=True,
+                               selectTab=True)
+
     for i in range(6):
-        pm.textField('t_A{}Min'.format(i + 1), edit=True, text='')
-        pm.textField('t_A{}Max'.format(i + 1), edit=True, text='')
-        pm.textField('t_E{}Min'.format(i + 1), edit=True, text='')
-        pm.textField('t_E{}Max'.format(i + 1), edit=True, text='')
+        if current_tab == 'position_limits_tab':
+            pm.textField('t_A{}Min'.format(i + 1), edit=True, text='')
+            pm.textField('t_A{}Max'.format(i + 1), edit=True, text='')
+        elif current_tab == 'velocity_limits_tab':
+            pm.textField('t_A{}Velocity'.format(i + 1), edit=True, text='')
+        elif current_tab == 'accel_limits_tab':
+            pm.textField('t_A{}Accel'.format(i + 1), edit=True, text='')
+        elif current_tab == 'jerk_limits_tab':
+            pm.textField('t_A{}Jerk'.format(i + 1), edit=True, text='')
+
 
 
 def clear_fk_pose_ui(*args):
@@ -1382,22 +1392,85 @@ def detach_tool_model(*args):
         return
 
 
-def get_axis_limits(write_to_ui=True, *args):
+def write_limits_to_ui(*args):
     """
-    Gets the current axis limits and updates UI with those values.
+    """
+    current_tab = pm.tabLayout('limits_tab_layout',
+                               query=True,
+                               selectTab=True)
+
+    if current_tab == 'position_limits_tab':
+        write_position_limits_to_ui()
+    elif current_tab == 'velocity_limits_tab':
+        write_deriv_limits_to_ui('Velocity')
+    elif current_tab == 'accel_limits_tab':
+        write_deriv_limits_to_ui('Accel')
+    elif current_tab == 'jerk_limits_tab':
+        write_deriv_limits_to_ui('Jerk')
+    else:
+        raise MimicError('Derivative type limits not supported')
+
+
+def write_position_limits_to_ui():
+    """
+    """
+    axis_position_limits = get_axis_limits()
+
+    # TODO: HARD CODED - Number of robot axes; should include external axes
+    num_axes = 6
+    for i in range(num_axes):
+        axis_number = i + 1 
+        axis_name = 'Axis {}'.format(axis_number)
+
+        val_min = axis_position_limits[axis_name]['Min Limit']
+        val_max = axis_position_limits[axis_name]['Max Limit']
+
+        pm.textField('t_A{}Min'.format(axis_number), edit=True, text=val_min)
+        pm.textField('t_A{}Max'.format(axis_number), edit=True, text=val_max)
+
+
+def write_deriv_limits_to_ui(limit_type):
+    """
+    """
+    robots = get_robot_roots()
+    if not robots:
+        raise MimicError('Nothing Selected; Select a valid robot')
+        return
+
+    if len(robots) > 1:
+        MimicError('Too many selections: Select a single robot')
+        return
+
+    robot = robots[0]
+
+    axis_deriv_limits = _get_limits(robot, limit_type)
+
+   # TODO: HARD CODED - Number of robot axes; should include external axes
+    num_axes = 6
+    for i in range(num_axes):
+        axis_number = i + 1 
+        axis_name = 'Axis {}'.format(axis_number)
+
+        val = axis_deriv_limits[axis_name]['Max Limit']
+
+        pm.textField('t_A{}{}'.format(axis_number, limit_type),
+                     edit=True,
+                     text=round(val,3))
+
+
+def get_axis_limits():
+    """
+    Gets the current axis position limits and updates UI with those values.
     :param args:
     :return axis_position_limits: dict containing axis position limits
     """
     robots = get_robot_roots()
     if not robots:
-        pm.warning('Nothing Selected; Select a valid robot')
+        raise MimicError('Nothing Selected; Select a valid robot')
         return
 
-    # TODO: HARD CODED - Number of robot axes; should include external axes
-    num_axes = 6
-
     if len(robots) > 1:
-        pm.warning('Too many selections: Select a single robot')
+        MimicError('Too many selections: Select a single robot')
         return
 
     robot = robots[0]
@@ -1405,15 +1478,14 @@ def get_axis_limits(write_to_ui=True, *args):
 
     axis_position_limits = {}
 
+    # TODO: HARD CODED - Number of robot axes; should include external axes
+    num_axes = 6
+
     for i in range(num_axes):
         axis_number = i + 1  # Axis numbers are 1-indexed
         axis_name = 'Axis {}'.format(axis_number)
         val_min = int(pm.getAttr(target_ctrl_path + '.axis{}Min'.format(axis_number)))
         val_max = int(pm.getAttr(target_ctrl_path + '.axis{}Max'.format(axis_number)))
-
-        if write_to_ui:
-            pm.textField('t_A{}Min'.format(axis_number), edit=True, text=val_min)
-            pm.textField('t_A{}Max'.format(axis_number), edit=True, text=val_max)
 
         # Save value to dictionary
         axis_position_limits[axis_name] = {'Min Limit': val_min,
@@ -1421,6 +1493,47 @@ def get_axis_limits(write_to_ui=True, *args):
     
     # TO-DO: Add external axes
     return axis_position_limits
+
+
+def set_axis_limits(*args):
+    """
+    Gets user-input value from UI and sets all axis limits at once
+    :param args:
+    :return:
+    """
+    robots = get_robot_roots()
+    if not robots:
+        raise MimicError('Nothing Selected; Select a valid robot')
+        return
+
+    current_tab = pm.tabLayout('limits_tab_layout',
+                               query=True,
+                               selectTab=True)
+
+    if current_tab == 'position_limits_tab':
+        set_position_limits()
+    elif current_tab == 'velocity_limits_tab':
+        set_deriv_limits('Velocity')
+    elif current_tab == 'accel_limits_tab':
+        set_deriv_limits('Accel')
+    elif current_tab == 'jerk_limits_tab':
+        set_deriv_limits('Jerk')
+
+
+def set_position_limits():
+    """
+    """        
+    # number of robot axes; could include external axes potentially
+    num_axes = 6
+    try:
+        for i in range(num_axes):
+            axis_number = i + 1  # Axis numbers are 1-indexed
+            set_axis_limit(axis_number, 'Min')
+            set_axis_limit(axis_number, 'Max')
+    except:
+        pass
+    
+    pm.headsUpMessage('Axis Position Limits for {} set successfuly!'.format(robot_list_str))
 
 
 def set_axis_limit(axis_number, min_max):
@@ -1432,18 +1545,71 @@ def set_axis_limit(axis_number, min_max):
     :return:
     """
     robots = get_robot_roots()
+
     if not robots:
-        pm.warning('Nothing Selected; Select a valid robot')
+        raise MimicError('Nothing Selected; Select a valid robot')
         return
 
     try:
         val = float(pm.textField('t_A{}{}'.format(axis_number, min_max),
                                  query=True,
                                  text=True))
+        robot_list_str = ''
         for robot in robots:
             pm.setAttr(get_target_ctrl_path(robot)
                      + '.axis{}{}'.format(axis_number, min_max),
                        val)
+            robot_list_str += robot + ' '
+    except:
+        pass
+
+
+def set_deriv_limits(limit_type):
+    # number of robot axes; could include external axes potentially
+    num_axes = 6
+    try:
+        for i in range(num_axes):
+            axis_number = i + 1  # Axis numbers are 1-indexed
+            set_deriv_limit(axis_number, limit_type)
+    except:
+        pass
+
+    pm.headsUpMessage('Axis {} Limits set successfuly!'.format(limit_type))
+
+
+def set_deriv_limit(axis_number, limit_type):
+    """
+    Gets user-input value from UI and sets corresponding axis limits
+    on the robot
+    :param axis_number: Index of axis to effect (1 indexed)
+    :param min_max: string, limit type; ex. 'Velocity'
+    :return:
+    """
+    robots = get_robot_roots()
+
+    if not robots:
+        raise MimicError('Nothing Selected; Select a valid robot')
+        return
+
+    try:  # If there is not a float input in the UI box, do nothing
+        val = float(pm.textField('t_A{}{}'.format(axis_number, limit_type),
+                                 query=True,
+                                 text=True))
+        robot_list_str = ''
+        for robot in robots:
+            target_ctrl_path = get_target_ctrl_path(robot)
+
+            # Check if the rig has attributes for the input limit type
+            # If not, add the corresponding limit attributes
+            # This is mostly used for backwards-compatibility
+            if not pm.attributeQuery('axis{}Limits'.format(limit_type),
+                                     n=target_ctrl_path, ex=True):
+                add_limits_to_robot(robot, limit_type)
+
+            # Set the axis' limit to the user-input value
+            pm.setAttr(target_ctrl_path + '.axis{}{}Limit'.format(axis_number, limit_type), val)
+
+            robot_list_str += robot + ' '
     except:
         pass
 
@@ -1463,7 +1629,7 @@ def get_acceleration_limits(robot):
     :param robot: name string of the selected robot
     :return:
     """
-    return _get_limits(robot, "Acceleration")
+    return _get_limits(robot, "Accel")
 
 
 def get_jerk_limits(robot):
@@ -1480,20 +1646,30 @@ def _get_limits(robot, limit_type):
     Gets the current velocity limits and updates UI with those values.
     :param robot: name string of the selected robot
     :param limit_type: name string of the limit type
+                       'Velocity', 'Accel', or 'Jerk'
     :return:
     """
+    target_ctrl_path = get_target_ctrl_path(robot)
+
     limits = {}
+
+    # Check if the rig has attributes for the input limit type
+    # If not, add the corresponding limit attributes
+    # This is mostly used for backwards-compatibility
+
+    if not pm.attributeQuery('axis{}Limits'.format(limit_type),
+                             n=target_ctrl_path, ex=True):
+        add_limits_to_robot(robot, limit_type)
 
     # HARD CODED - Number of robot axes; should include external axes
     num_axes = 6
 
-    target_ctrl_path = get_target_ctrl_path(robot)
     # Create a list of robot's limits
     for i in range(num_axes):
         axis_number = i + 1  # Axis numbers are 1-indexed
         axis_name = 'Axis {}'.format(axis_number)
         limits[axis_name] = {'Min Limit': None, 'Max Limit': None}
-        
+
         try:
             limit = pm.getAttr(target_ctrl_path + '.axis{}' \
                                '{}Limit'.format(axis_number, limit_type))
@@ -1545,35 +1721,12 @@ def get_all_limits(robot):
     """
     limits_data = {}
 
-    limits_data['Position'] = get_axis_limits(write_to_ui=False)
+    limits_data['Position'] = get_axis_limits()
     limits_data['Velocity'] = get_velocity_limits(robot)
     limits_data['Accel'] = get_acceleration_limits(robot)
     limits_data['Jerk'] = get_jerk_limits(robot)
 
     return limits_data
-
-#TO-DO: make set_velocity_limits function and connect it to the UI
-
-def set_axis_limits(*args):
-    """
-    Gets user-input value from UI and sets all axis limits at once
-    :param args:
-    :return:
-    """
-    robots = get_robot_roots()
-    if not robots:
-        pm.warning('Nothing Selected; Select a valid robot')
-        return
-
-    # number of robot axes; could include external axes potentially
-    num_axes = 6
-
-    try:
-        for i in range(num_axes):
-            set_axis_limit(i + 1, 'Min')
-            set_axis_limit(i + 1, 'Max')
-    except:
-        pass
 
 
 def get_fk_pose(*args):
@@ -2593,6 +2746,35 @@ def get_maya_framerate():
         framerate = 24.
 
     return framerate
+
+
+def add_limits_to_robot(robot, limit_type):
+    """
+    Adds attributes for input limit_type to robot
+    """
+    target_ctrl_path = get_target_ctrl_path(robot)
+
+    print limit_type
+    # Get nominal limits from mimic config file
+    nominal_limit = mimic_config.NOMINAL_LIMIT[limit_type]
+
+    # Define Parent Attribute
+    parent_attr_path = 'axis{}Limits'.format(limit_type)
+    pm.addAttr(target_ctrl_path,
+               longName=parent_attr_path,
+               nc=6,
+               at='compound')
+
+    # Add an attribute for each axis
+    num_axes = 6
+    for i in range(num_axes):
+        axis_number = i + 1
+        pm.addAttr(target_ctrl_path,
+                   longName='axis{}{}Limit'.format(axis_number, limit_type),
+                   at='float',
+                   nn='Axis {}'.format(axis_number),
+                   defaultValue=nominal_limit,
+                   parent=parent_attr_path)
 
 
 class MimicError(Exception):

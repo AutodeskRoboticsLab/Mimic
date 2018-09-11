@@ -87,8 +87,8 @@ def execute_analysis():
                    'see Mimic installation instructions for more details')
 
     if violation_exception:
-        raise Exception('Limit violations found. ' \
-                        'See Mimic output window for details.')
+        raise mimic_utils.MimicError('Limit violations found. ' \
+                                     'See Mimic output window for details.')
 
 
 def save_program(*args):
@@ -139,9 +139,10 @@ def execute_save():
 
         pm.headsUpMessage('WARNINGS: No Program Exported; ' \
                           'See Mimic output window for details')
-        raise Exception('Limit violations found. ' \
-                        'No Program Exported. ' \
-                        'See Mimic output window for details.')
+        
+        raise mimic_utils.MimicError('Limit violations found. ' \
+                                     'No Program Exported. ' \
+                                     'See Mimic output window for details.')
 
     # Continue to save program:
     _process_program(command_dicts, *program_settings)
@@ -265,7 +266,7 @@ def _get_settings_for_animation(robot):
     # Raise warning if end frame and start frame incompatible
     if end_frame <= start_frame:
         warning = 'End Frame must be larger than Start Frame'
-        raise Exception(warning)
+        raise mimic_utils.MimicError(warning)
 
     # Raise warning if no keyframes are set
     closest_ik_key = mimic_utils.get_closest_ik_keyframe(robot, start_frame)[0]
@@ -273,7 +274,7 @@ def _get_settings_for_animation(robot):
         warning = 'You must set an IK or FK keyframe to ensure ' \
                   'proper evaluation when saving a program; ' \
                   'no program written'
-        raise Exception(warning)
+        raise mimic_utils.MimicError(warning)
 
     # All good, create output dictionary
     animation_settings = {'Start Frame': start_frame,
@@ -321,24 +322,24 @@ def _get_settings_for_postproc(robot):
         except ValueError:
             if time_interval_units == 'seconds':
                 warning = 'Time interval must be a float'
-                raise Exception(warning)
+                raise mimic_utils.MimicError(warning)
             else:  # time_interval_units == 'frames'
                 warning = 'Time interval must be a float'
-                raise Exception(warning)
+                raise mimic_utils.MimicError(warning)
         except AssertionError:
             if time_interval_units == 'seconds':
                 warning = 'Time interval must be greater than zero'
-                raise Exception(warning)
+                raise mimic_utils.MimicError(warning)
             else:  # time_interval_units = 'frames'
                 warning = 'Time interval must be greater than zero'
-                raise Exception(warning)
+                raise mimic_utils.MimicError(warning)
 
     # Check if the robot-postproc compatibility warning was triggered
     processor = postproc_setup.POST_PROCESSORS[processor_type]()
     warning = _check_robot_postproc_compatibility(robot, processor)
     if warning != '':
         if not ignore_warnings:
-            raise Exception(warning)
+            raise mimic_utils.MimicError(warning)
         else:
             warning += '\n'
             pm.scrollField(OUTPUT_WINDOW_NAME, insertText=warning, edit=True)
@@ -450,7 +451,7 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
         #     warning += '\n'
         #     pm.scrollField(OUTPUT_WINDOW_NAME, insertText=warning, edit=True)
         #     if not ignore_warnings:
-        #         raise Exception(warning)
+        #         raise mimic_utils.MimicError(warning)
         pass
 
     if user_options.Include_pose and not user_options.Ignore_motion:
@@ -461,7 +462,7 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
         #     warning += '\n'
         #     pm.scrollField(OUTPUT_WINDOW_NAME, insertText=warning, edit=True)
         #     if not ignore_warnings:
-        #         raise Exception(warning)
+        #         raise mimic_utils.MimicError(warning)
         pass
 
     # If all checks passed then we don't have any warnings...
@@ -946,7 +947,7 @@ def _sample_frame_get_pose(robot_name, frame):
     #         [-1, 0, 0]
     #     ]
     else:
-        raise Exception('Robot type not supported for Pose movement')
+        raise mimic_utils.MimicError('Robot type not supported for Pose movement')
 
     # Perform the conversion operation itself
     converted_rotation = general_utils.matrix_multiply(conversion_rotation, new_rotation)
