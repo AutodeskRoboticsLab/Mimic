@@ -206,7 +206,9 @@ def _generate_derivative_dicts(command_dicts, order):
         try:
             derivative_dicts[i][postproc.AXES] = postproc.Axes(*[0] * num_axes)
         except IndexError:
-            pm.warning("Insufficient number of sample points to generate derivatives. Increase sample rate or add additional IK/FK keys for proper analysis")
+            pm.warning('Insufficient number of sample points to generate derivatives. ' \
+                       'Increase sample rate or add additional IK/FK keys for proper ' \
+                       'analysis if using time-based post-processor')
 
     # If external axes exist, repeat derivative process on them
     if 'external_axes' in derivative_dicts[0]:

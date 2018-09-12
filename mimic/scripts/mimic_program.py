@@ -43,33 +43,18 @@ def analyze_program(*args):
 
     # Check program, commands, raise exception on failure
     program_settings = _get_settings()
+    robot_name = program_settings[0]
 
     animation_settings = program_settings[1]
     start_frame = animation_settings['Start Frame']
     pm.currentTime(start_frame)
 
+    # Force evaluation of reconcile rotation to ensure proper export
+    mimic_utils.reconcile_rotation(force_eval=True)
     
-    eval_str = 'import pymel.core as pm; ' \
-               'import mimic_program;' \
-               'reload(mimic_program);' \
-               'mimic_program.execute_analysis();'
-
-    pm.evalDeferred(eval_str)
-
-
-def execute_analysis():
-    """
-    This function must be run as a deferred evaluation to ensure proper axis 
-    rotation evaluation.
-
-    This allows Maya to reconcile any axis angles before saving. When axis
-    angles have been reconciled and Maya is idle, this function runs
-    """
-    robot_name = mimic_utils.get_selected_robot_name()
-    program_settings = _get_settings()
-
     command_dicts = _get_command_dicts(*program_settings)
     limit_data = mimic_utils.get_all_limits(robot_name)
+
 
     violation_exception, violation_warning = _check_command_dicts(command_dicts, *program_settings)
     _initialize_export_progress_bar(is_on=False)
@@ -86,7 +71,13 @@ def execute_analysis():
                    'Check that you have numPy installed properly; ' \
                    'see Mimic installation instructions for more details')
 
-    if violation_exception:
+    # If we're sampling keyframes only, we assume it's for a post-processor
+    # that's not time-dependent, and, therefore, we shouldn't raise exceptions
+    # for limit violations
+    postproc_settings = program_settings[2]
+    using_keyframes_only = postproc_settings['Using Keyframes Only']
+
+    if violation_exception and not using_keyframes_only:
         raise mimic_utils.MimicError('Limit violations found. ' \
                                      'See Mimic output window for details.')
 
@@ -105,56 +96,53 @@ def save_program(*args):
 
     animation_settings = program_settings[1]
     start_frame = animation_settings['Start Frame']
+
     pm.currentTime(start_frame)
 
-    
-    eval_str = 'import pymel.core as pm; ' \
-               'import mimic_program;' \
-               'reload(mimic_program);' \
-               'mimic_program.execute_save();'
-
-    pm.evalDeferred(eval_str)
-
-
-def execute_save():
-    """
-    This function must be run as a deferred evaluation to ensure proper axis 
-    rotation evaluation.
-
-    This allows Maya to reconcile any axis angles before saving. When axis
-    angles have been reconciled and Maya is idle, this function runs
-    """
-
-    program_settings = _get_settings()
+    # Force evaluation of reconcile rotation to ensure proper export
+    mimic_utils.reconcile_rotation(force_eval=True)
 
     command_dicts = _get_command_dicts(*program_settings)
 
     violation_exception, violation_warning = _check_command_dicts(command_dicts, *program_settings)
-    if violation_exception:
-        _initialize_export_progress_bar(is_on=False)
 
-        pm.scrollField(OUTPUT_WINDOW_NAME,
-               insertText='\n\nNO PROGRAM EXPORTED!',
-               edit=True)
+    # If we're sampling keyframes only, we assume it's for a post-processor
+    # that's not time-dependent, and, therefore, we shouldn't raise exceptions
+    # for limit violations
+    postproc_settings = program_settings[2]
+    using_keyframes_only = postproc_settings['Using Keyframes Only']
 
-        pm.headsUpMessage('WARNINGS: No Program Exported; ' \
-                          'See Mimic output window for details')
-        
-        raise mimic_utils.MimicError('Limit violations found. ' \
-                                     'No Program Exported. ' \
-                                     'See Mimic output window for details.')
+    if not using_keyframes_only:
+        if violation_exception:
+            _initialize_export_progress_bar(is_on=False)
+
+            pm.scrollField(OUTPUT_WINDOW_NAME,
+                   insertText='\n\nNO PROGRAM EXPORTED!',
+                   edit=True)
+
+            pm.headsUpMessage('WARNINGS: No Program Exported; ' \
+                              'See Mimic output window for details')
+            
+            raise mimic_utils.MimicError('Limit violations found. ' \
+                                         'No Program Exported. ' \
+                                         'See Mimic output window for details.')
 
     # Continue to save program:
     _process_program(command_dicts, *program_settings)
 
-
     if violation_warning:
-        pm.headsUpMessage('Program exported with warnings; ' \
-                          'See Mimic output window for details')
+        if not using_keyframes_only:
+            pm.headsUpMessage('Program exported with warnings; ' \
+                              'See Mimic output window for details')
+        else:
+            pm.headsUpMessage('Program exported successfuly; ' \
+                              'See Mimic output window for details')
     else:
         pm.headsUpMessage('Program exported successfuly; ' \
                           'See Mimic output window for details')
-    
+
+    _initialize_export_progress_bar(is_on=False)
+
 
 def _process_program(command_dicts, robot, animation_settings, postproc_settings, user_options):
     """
@@ -208,6 +196,7 @@ def _show_program_in_output_window(robot, processor, program):
     :param program:
     :return:
     """
+
     # Update the output-text viewer in the Mimic UI
     details = 'Type of robot     : {} {} ({})\n' \
               'Type of processor : {} {} ({})\n' \
@@ -370,6 +359,7 @@ def _get_command_dicts(robot, animation_settings, postproc_settings, user_option
     :param user_options: User-defined postproc options.
     :return:
     """
+    
     # Determine sample mode
     using_sample_rate = postproc_settings['Using Time Interval']
     using_keyframes_only = postproc_settings['Using Keyframes Only']
@@ -754,7 +744,7 @@ def _get_frames_using_keyframes_only(robot, animation_settings):
     start_frame = animation_settings['Start Frame']
     end_frame = animation_settings['End Frame']
     # Get list of keyframes on robots IK attribute for the given range
-    target_ctrl_path = get_target_ctrl_path(robot)
+    target_ctrl_path = mimic_utils.get_target_ctrl_path(robot)
     ik_keyframes = pm.keyframe(
         target_ctrl_path,
         attribute='ik',
@@ -764,7 +754,7 @@ def _get_frames_using_keyframes_only(robot, animation_settings):
     # attributes. If there's not, we remove it from the list
     # Note: we only need to check on controller as they are all keyframed
     # together
-    fk_test_handle_path = mimic_utils.format_path('{0}|{1}robot_GRP|{1}FK_CTRLS|{}a1FK_CTRL.rotateY', robot)
+    fk_test_handle_path = mimic_utils.format_path('{0}|{1}robot_GRP|{1}FK_CTRLS|{1}a1FK_CTRL.rotateY', robot)
     frames = [frame for frame in ik_keyframes if pm.keyframe(
         fk_test_handle_path,
         query=True,

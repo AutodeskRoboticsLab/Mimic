@@ -186,7 +186,6 @@ def format_path(path_string, selection):
     :param selection: selected robot transform
     :return:
     """
-
     return path_string.format(selection, selection.namespace())
 
 
@@ -322,7 +321,6 @@ def clear_limits_ui(*args):
             pm.textField('t_A{}Accel'.format(i + 1), edit=True, text='')
         elif current_tab == 'jerk_limits_tab':
             pm.textField('t_A{}Jerk'.format(i + 1), edit=True, text='')
-
 
 
 def clear_fk_pose_ui(*args):
@@ -482,7 +480,7 @@ def get_reconciled_rotation_value(robot, axis, rotation_axis, current_frame):
     return keyed_val, flip
 
 
-def reconcile_rotation():
+def reconcile_rotation(force_eval=False):
     """
     The robot's inverse kinematic solver can only solve rotation values theta,
     such that 180 deg > theta > -180 deg, even though some axes are capable
@@ -511,7 +509,10 @@ def reconcile_rotation():
 
     # If execute Reconcile Rotation is set to False, end the function
     if not execute_reconcile_rotation:
-        return
+        if force_eval:
+            pass
+        else:
+            return
 
     # Define which axes this function will operate on, along with their
     # corresponding axis of rotation. These are typically axes that have
