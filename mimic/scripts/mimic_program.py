@@ -830,6 +830,8 @@ def _sample_frames_get_command_dicts(robot_name, frames, animation_settings, tim
         _update_export_progress_bar(start_frame, end_frame, frame)
     # Reset current frame (just in case)
     pm.currentTime(frames[0])
+    mimic_utils.reconcile_rotation(force_eval=True)
+
     return command_dicts
 
 
