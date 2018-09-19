@@ -1,4 +1,4 @@
-# Mimic
+# Mimic Vocabulary
 
 ### Vocabulary
 

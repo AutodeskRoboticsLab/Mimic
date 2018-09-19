@@ -1,4 +1,4 @@
-# Mimic
+# Mimic Repository
 
 ### Repository index
 
@@ -35,6 +35,8 @@ At time of writing, the following contents are located in the Mimic repository:
         |-- mimic_logo_square_tesselated_dark_shelfIcon.png
         |-- mimic_logo_square_tesselated_light_shelfIcon.png
         |-- setDirectory_icon.png
+        |-- toggle_button_on.png
+        |-- toggle_button_off.png
     |-- logos
         |-- ...
     |-- plug-ins
@@ -152,6 +154,10 @@ At time of writing, the following contents are located in the Mimic repository:
             |-- __init__.py
             |-- inverse_kinematics.py
             |-- transforms.py
+        |-- extern
+            |-- Qt.py
+            |-- pyqtgraph
+            |-- numpy (if necessary)
     |-- shelves
         |-- shelf_Mimic.mel
         |-- shelves.md

@@ -91,7 +91,7 @@ def get_external_axis_info_simple(robot_name, external_axis_name, frame=None):
     :param robot_name: string, name of robot
     :param external_axis_name: string, name of external axis
     :param frame: optional frame parameter
-    :return info: dict, dictionary of input external axis' setting
+    :return info_simple: dict, dictionary of input external axis' setting
     """
     info_simple = {}
     external_axis_path = _get_external_axis_path(robot_name, external_axis_name)
@@ -106,7 +106,7 @@ def _get_external_axis_path(robot_name, external_axis_name):
     Get the path for an external axis.
     :param robot_name: string, name of robot
     :param external_axis_name: string, name of external axis
-    :return:
+    :return: str, external axis attribute path
     """
     return '{}.{}'.format(mimic_utils.get_target_ctrl_path(robot_name), external_axis_name)
 
@@ -116,7 +116,8 @@ def _get_external_axis_position(external_axis_path, frame=None):
     Get the position of an external axis.
     :param external_axis_path: string, attribute path using robot and external axis names
     :param frame: optional frame parameter
-    :return:
+    :return external_axis_position: float, external axis position at current
+                                    frame or input frame
     """
     attribute_path = external_axis_path + '_position'
     external_axis_position = mimic_utils.get_attribute_value(attribute_path, frame)
@@ -139,7 +140,7 @@ def _get_external_axis_number(external_axis_path):
     Get the number for an external axis. 1-indexed!
     :param external_axis_path: string, attribute path using robot and
     external axis names
-    :return:
+    :return: int, external axis number
     """
     attribute_path = external_axis_path + '_axisNumber'
     return mimic_utils.get_attribute_value(attribute_path)
@@ -187,7 +188,7 @@ def _get_external_axis_ignore(external_axis_path):
     Get the ignore (is-ignored) value for an external axis
     :param external_axis_path: string, attribute path using robot and
                                external axis names
-    :return:
+    :return: bool, True if "Ignore axis" is checked, false if not
     """
     attribute_path = external_axis_path + '_ignore'
     return mimic_utils.get_attribute_value(attribute_path)
@@ -198,7 +199,7 @@ def _get_external_axis_limits_min(external_axis_path):
     Get the minimum position limit for an external axis.
     :param external_axis_path: string, attribute path using robot and
                                external axis names
-    :return:
+    :return: float, axis minimum limit
     """
     attribute_path = external_axis_path + '_axisMin'
     return mimic_utils.get_attribute_value(attribute_path)
@@ -209,7 +210,7 @@ def _get_external_axis_limits_max(external_axis_path):
     Get the maximum position limit for an external axis.
     :param external_axis_path: string, attribute path using robot and
                                external axis names
-    :return:
+    :return: float, axis maximum limit
     """
     attribute_path = external_axis_path + '_axisMax'
     return mimic_utils.get_attribute_value(attribute_path)
@@ -220,7 +221,7 @@ def _get_external_axis_velocity_limit(external_axis_path):
     Get the velocity limit for an external axis.
     :param external_axis_path: string, attribute path using robot and
                                external axis names
-    :return:
+    :return: float, axis velocity limit
     """
     attribute_path = external_axis_path + '_maxVelocity'
     return mimic_utils.get_attribute_value(attribute_path)
@@ -232,8 +233,10 @@ def _get_external_axis_velocity_limit(external_axis_path):
 def _check_external_axis_name(robot_name, axis_name):
     """
     Determines if external axis name is unique
+    Raises an Exception if the input name is already taken by another
+    external axis on the input robot
     :param robot_name: string, name of robot
-    :return:
+    :param axis_name: str, filtered user-supplied external axis name
     """
 
     # Check that axis name isn't already taken
@@ -247,8 +250,10 @@ def _check_external_axis_name(robot_name, axis_name):
 def _check_external_axis_number(robot_name, axis_number):
     """
     Determines if external axis number is unique
+    Raises an Exception if the input axis number is already taken by another
+    external axis on the input robot
     :param robot_name: string, name of robot
-    :return:
+    :param axis_number: int, user-supplied external axis number
     """
 
     # Check that axis name isn't already taken
@@ -266,6 +271,7 @@ def _check_external_axis_params(external_axis_params):
     """
     Check to ensure that user inputs proper value types for external axis
     parameters.
+    Raises exceptions if criteria are not met
     """
 
     # Make sure the following parameters have user inputs
@@ -315,6 +321,8 @@ def _filter_external_axis_name(axis_name):
     Axis name must be formatted to match Maya's attribute name requirements
     This is typically cameCase. More specifially, the name can't contain spaces
     or special characters
+    :param axis_name: str, raw user input for external axis name
+    :return axis_name: str, filtered string for user-supplied axis name
     """
 
     # Replace spaces with underscores
@@ -328,6 +336,16 @@ def _filter_external_axis_name(axis_name):
 def _get_external_axis_params():
     """
     Finds the user-defined external axis parameters from the Mimic UI
+    Checks that user inputs meet parameter riteria 
+    :return external_axis_param_dict: dict containing external axis params
+        "Axis Name" (str)
+        "Axis Number" (int)
+        "Driving Attribute" (str)
+        "Position Limti Min" (float)
+        "Position Limti Max" (float)
+        "Velocity Limit" (float)
+        "Attach" (bool)
+        "Ignore" (bool)
     """
 
     external_axis_param_dict = {}
@@ -376,8 +394,11 @@ def _get_external_axis_params():
 
 def _get_selection_input():
     """
-
-    :return:
+    Takes Maya's viewport selection and filters it to a robot and external
+    axis controller. Raises exception of selection criteria is not met
+    :return robot: str, root node of robot in Maya viewport selection
+    :return external_axis_CTRL: str, name of external axis controller
+        selected in Maya's viewport
     """
     sel = pm.ls(selection=True, type='transform')
     robots = mimic_utils.get_robot_roots()
@@ -419,7 +440,6 @@ def _attach_robot_to_external_axis(robot, external_axis_CTRL):
     :param robot: string, name pointing to selected robot
     :param external_axis_CTRL: string, name pointing to selected external
     axis ctrl
-    :return:
     """
 
     # Create parent constraint between robot base's local control and
@@ -436,7 +456,12 @@ def _attach_robot_to_external_axis(robot, external_axis_CTRL):
 
 def _enable_external_axis_limits(external_axis_CTRL, driving_attribute_trunc, driving_axis, enable=True):
     """
-    Enables/Disables external axis' limit controls
+    Enables/Disables external axis' limit attributes
+    :param external_axis_CTRL: str, name of external axis control
+    :param driving_attribute_trunc: str, truncated name of driving attribute
+        (e.g. Trans, Rot)
+    :param driving_axis: str, 'X', 'Y', or 'Z'
+    :param enable: bool, default True
     """
 
     pm.setAttr('{}.min{}{}LimitEnable'.format(external_axis_CTRL,
@@ -453,10 +478,10 @@ def _enable_external_axis_limits(external_axis_CTRL, driving_attribute_trunc, dr
 def _set_external_axis_CTRL_limits(robot_name, external_axis_CTRL, external_axis_params):
     """
     Sets the selected external axis controller translation or rotation limits
+    :param robot_name: string, name of selected robot
     :param external_axis_CTRL: string, name of external axis controller
     :param external_axis_params: dict, axis parameters set by the user in the 
-    Mimic UI
-    :return:
+        Mimic UI
     """
 
     axis_name = external_axis_params['Axis Name']
@@ -501,10 +526,10 @@ def _set_external_axis_CTRL_limits(robot_name, external_axis_CTRL, external_axis
 
 def _clear_external_axis_CTRL_limits(robot_name, external_axis_CTRL, driving_attribute, axis_name):
     """
-    Disables the axis limits for the input controller.
+    Disables the axis limit attributes for the input controller.
+    :param robot_name: string, name of selected robot
     :param external_axis_CTRL: string, name of external axis controller
     :param driving_attribute: string, driving attribute e.g. 'rotateX'
-    :return:
     """
 
     # Break down driving attribute into transform and axis companents
@@ -541,9 +566,8 @@ def _clear_external_axis_CTRL_limits(robot_name, external_axis_CTRL, driving_att
 
 def add_external_axis(*args):
     """
-    Add an external axis to Mimic.
-    :param args:
-    :return:
+    Adds an external axis to a robot based on user inputs in Mimic UI.
+    :param args: required by Maya to call a function from UI button
     """
     # Get the External Axis' parameters from the Mimic UI
     external_axis_params = _get_external_axis_params()
@@ -674,9 +698,8 @@ def add_external_axis(*args):
 
 def update_external_axis(*args):
     """
-    Update external axis in Mimic.
-    :param args:
-    :return:
+    Updates an external based on user inputs in Mimic UI.
+    :param args: required by Maya to call a function from UI button
     """
     # Get the selected item from the Mimic UI
     selection = pm.textScrollList('tsl_externalAxes',
@@ -781,8 +804,8 @@ def update_external_axis(*args):
 
 def clear_external_axis_list(*args):
     """
-    Clear previous UI list
-    :param args:
+    Clears external axis list in Mimic UI
+    :param args: required by Maya to call a function from UI button
     :return:
     """
     pm.textScrollList('tsl_externalAxes', edit=True, removeAll=True)
@@ -791,8 +814,8 @@ def clear_external_axis_list(*args):
 
 def deselect_external_axis(*args):
     """
-    Clear UI list selection
-    :param args:
+    Deselects item from external axis list in Mimic UI
+    :param args: required by Maya to call a function from UI button
     :return:
     """
     pm.textScrollList('tsl_externalAxes', edit=True, deselectAll=True)
@@ -804,7 +827,8 @@ def remove_external_axis(*args):
     Removes external axis from the robot it's attached to by deleting all of
     its attributes. The axis controller and models are preserved.
     This function just breaks the connection between the robot and the axis
-    :param *args: required by Maya UI
+    controller
+    :param args: required by Maya to call a function from UI button required by Maya UI
     :return:
     """
 
@@ -866,8 +890,9 @@ def remove_external_axis(*args):
 
 def list_axes(*args):
     """
-
-    :param args:
+    If no robot is selected, prints list of all external axis in scene to Mimci UI
+    If robot is selected, prints external axes assigned to that robot to Mimic UI
+    :param args: required by Maya to call a function from UI button
     :return:
     """
     # Clear previus UI list
@@ -919,8 +944,9 @@ def list_axes(*args):
 
 def update_external_axis_UI(axis_info):
     """
-
-    :param axis_info:
+    Updates external axis inputs of Mimic UI based on external axis selection
+    in axis list
+    :param axis_info: dict containing info about selected axis
     :return:
     """
     # Change frame name from "Add" to "Update"
@@ -972,7 +998,7 @@ def update_external_axis_UI(axis_info):
 
 def reset_external_axis_UI():
     """
-
+    Restores externa axis UI inputs in Mimic UI to defaults
     :return:
     """
     pm.frameLayout('add_external_axis_frame',
@@ -1015,8 +1041,11 @@ def reset_external_axis_UI():
 
 def axis_selected(*args):
     """
-
-    :param args:
+    Command that is called when an axis is selected in external axis list
+    in Mimic UI, which gets the external axis name and info, and updates
+    the external axis Mimic UI accordingly
+    Selets the axis controller in Maya's viewport
+    :param args: required by Maya to call a function from UI button
     :return:
     """
     # Get the selected item from the Mimic UI

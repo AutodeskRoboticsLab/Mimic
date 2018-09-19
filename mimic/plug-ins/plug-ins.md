@@ -1,6 +1,4 @@
-# Mimic
-
-### Plug-ins
+# Mimic Plug-ins
 
 Scipts in this folder are Maya
 [Depend Graph Plug-ins](https://help.autodesk.com/view/MAYAUL/2017/ENU/?guid=__files_GUID_A9070270_9B5D_4511_8012_BC948149884D_htm)

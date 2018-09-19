@@ -33,12 +33,21 @@ from Qt import QtCompat
 
 
 class MimicAnalysisWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
+    """
+    Custom UI class that constructs the Mimic Analysis UI using PySide2
+    Inherits from MayaQWidgetDockableMixin to enable docking
+    Inherits from QtWidgets.QMainWindow
+    """
     def __init__(self, window_name, axis_numbers, parent=None):
+        # If a Mimic Analysis window already exists, delete it before
+        # instantiating a new one
         self._delete_instance(window_name)
 
         super(MimicAnalysisWindow, self).__init__(parent=parent)
+
         self.window_name = window_name
         self.axis_numbers = axis_numbers
+
         # Create and assign the central widget
         central_widget = QtWidgets.QWidget()
         self.setCentralWidget(central_widget)
@@ -52,16 +61,17 @@ class MimicAnalysisWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
         self.deriv_toggle_widget = None
         self.aux_toggle_widget = None
 
-
+        # Main utility function that constructs the UI
         self.__build_ui()
 
-        #print('# ' + mimic_analysis_window.showRepr())
-        #mimic_analysis_window.show(dockable=True, height = 600, width=1165, floating=True)
+        # Make the window visible in Maya
         self.show(dockable=True, height = 600, width=1165)
 
 
     def _delete_instance(self, window_name):
         """
+        Deletes any instances of the window that already exist
+        This is handles slightly differently from Maya 2016 and Maya 2017+
         """
         if versions.current() <201700:
             if pm.window(window_name, exists = True):
@@ -76,6 +86,15 @@ class MimicAnalysisWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
 
     def __build_ui(self):
         """
+        Main utility function that constructs the UI
+        The UI is made up of three frames:
+        - At the time of this writing, the "Data Output Frame" is not
+          implemented, so it just an empty frame hidden on the left side of the
+          Mimic Analysis UI. In the future, it will show numerical data that
+          corresponds with the graphical data on the plot
+        - The "Plot Frame" is the frame that holds the actual graph
+        - The "Data Control Frame" is the panel on the left that holds the
+          toggles and options for interracting with the data on the plot
         """
         main_layout = self.__build_main_layout()
 
@@ -93,6 +112,9 @@ class MimicAnalysisWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
 
     def __build_main_layout(self):
         """
+        Creates a Qt Horizontal Box Layout object to hold the main UI
+        frames
+        :return main_layout: QHBoxLayout
         """
         # Create a layout
         main_layout = QtWidgets.QHBoxLayout(self.centralWidget())
@@ -102,6 +124,10 @@ class MimicAnalysisWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
 
     def __build_data_output_frame(self):
         """
+        Creates a Qt Frame object to hold the data output UI elemets
+        Currently, this is just an empty frame used as a placeholder for
+        future UI plans
+        :return data_output_frame: QFrame
         """
         data_output_frame = QtWidgets.QFrame()
         data_output_frame.setFrameStyle(
@@ -112,43 +138,64 @@ class MimicAnalysisWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
 
     def __build_plot_frame(self):
         """
+        Creates a Qt Frame object to hold the plot UI elemets
+        |-- QFrame
+            |-- QVBoxLayout
+                |-- Analysis Plot (PyQtGraph Graphics Layout Widget)
+        :return plot_frame: QFrame
         """
+
+        # Create a QFrame object
         plot_frame = QtWidgets.QFrame()
         plot_frame.setFrameStyle(
                             QtWidgets.QFrame.Panel | QtWidgets.QFrame.Sunken)
         plot_frame.setMinimumWidth(200)
     
+        # Create a QVBoxLayout to populate with UI elements
         plot_frame_layout = QtWidgets.QVBoxLayout()
         
-        # Create the main plot window and add it to the plot frame layout
+        # Create the main plot window
         self.analysis_plot = analysis_ui_utils.AnalysisPlotWidget()
         self.analysis_plot.set_axis_numbers(self.axis_numbers)
 
         # Add a Legend to the plot
-        legend = pg.LegendItem( offset=(60, 5))
+        legend = pg.LegendItem(offset=(60, 5))
         self.analysis_plot.add_legend(legend)      
 
+        # Add the plot window to the QVBoxLayout
         plot_frame_layout.addWidget(self.analysis_plot.plot_window)
         
-        # Set the plot frames layout
+        # Add the QVBoxLayout to the QFrame
         plot_frame.setLayout(plot_frame_layout)
 
         return plot_frame
 
+
     def __build_data_control_frame(self):
         """
+        Creates a Qt Frame object to hold the data control UI elemets
+        |-- QFrame
+            |-- QVBoxLayout
+                |-- Axis Toggle Widget
+                |-- Derivative Toggle Widget
+                |-- Auxiliary Toggle Widget
+        :return data_control_frame: QFrame
         """
+        
+        # Create a QFrame object
         data_control_frame = QtWidgets.QFrame()
         data_control_frame.setFrameStyle(
                             QtWidgets.QFrame.Panel | QtWidgets.QFrame.Sunken)
         data_control_frame.setSizePolicy(QtWidgets.QSizePolicy.Maximum,
                                          QtWidgets.QSizePolicy.Minimum)
 
+        # Create a QVBoxLayout to populate with UI elements
         data_control_frame_layout = QtWidgets.QVBoxLayout()
         data_control_frame_layout.setAlignment(QtCore.Qt.AlignTop)
         data_control_frame_layout.setContentsMargins(3, 0, 3, 0)
         data_control_frame_layout.setSpacing(5)
-        
+
+        # Add the QVBoxLayout to the QFrame        
         data_control_frame.setLayout(data_control_frame_layout)        
         
         # Build and add the axis toggle widget
@@ -186,6 +233,30 @@ class MimicAnalysisWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
 
     def __build_axis_toggle_widget(self):
         """
+        Instantiates anlysis utility class 'DataControlWidget' using axis names
+        incuded in the program being analyzed.
+         --------------------------------
+        |   --------------------------   |
+        |  |   --------------------   |  |
+        W  C  |   Axis 1 | Toggle  |  |  |
+        I  O  G   Axis 2 | Toggle  |  |  |
+        D  L  R   Axis 3 | Toggle  |  |  |
+        G  U  I         ...        |  |  |
+        E  M  D         ...        |  |  |
+        T  N  |   Axis n | Toggle  |  |  |
+        |  |   --------------------   |  |
+        |  |                          |  |
+        |  |     Isolate | Toggle     |  |
+        |  |                          |  |
+        |  |     ---- Button ----     |  |
+        |  |    |    Show All    |    |  |
+        |  |     ----------------     |  |
+        |  |     ---- Button ----     |  |
+        |  |    |    Hide All    |    |  |
+        |  |     ----------------     |  |
+        |   --------------------------   |
+         --------------------------------
+        :return axis_toggle_widget: QWidget 
         """
         axis_toggle_names = []
 
@@ -203,6 +274,30 @@ class MimicAnalysisWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
 
     def __build_derivative_toggle_widget(self):
         """
+        Instantiates anlysis utility class 'DataControlWidget' using
+        derivatives types being
+         ----------------------------------
+        |   ----------------------------   |
+        |  |   ----------------------   |  |
+        W  C  |                      |  |  |
+        I  O  G   Position | Toggle  |  |  |
+        D  L  R   Velocity | Toggle  |  |  |
+        G  U  I   Accel    | Toggle  |  |  |
+        E  M  D   Jerk     | Toggle  |  |  |
+        T  N  |                      |  |  |
+        |  |   ----------------------   |  |
+        |  |                            |  |
+        |  |       Isolate | Toggle     |  |
+        |  |                            |  |
+        |  |       ---- Button ----     |  |
+        |  |      |    Show All    |    |  |
+        |  |       ----------------     |  |
+        |  |       ---- Button ----     |  |
+        |  |      |    Hide All    |    |  |
+        |  |       ----------------     |  |
+        |   ----------------------------   |
+         ----------------------------------
+        :return deriv_toggle_widget: QWidget 
         """
         deriv_toggles = ['Position', 'Velocity', 'Accel', 'Jerk']
         deriv_toggle_widget = analysis_ui_utils.DataControlWidget(
@@ -215,6 +310,21 @@ class MimicAnalysisWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
 
     def __build_aux_toggle_widget(self):
         """
+        Instantiates anlysis utility class 'AuxToggleWidget' for toggling axis
+        limits and plotlegend visibility
+         -------------------------------
+        |   -------------------------   |
+        |  |   -------------------   |  |
+        W  C  |                   |  |  |
+        I  O  G                   |  |  |
+        D  L  R  Limits | Toggle  |  |  |
+        G  U  I  Legend | Toggle  |  |  |
+        E  M  D                   |  |  |
+        T  N  |                   |  |  |
+        |  |   -------------------   |  |
+        |   -------------------------   |
+         -------------------------------
+        :return aux_toggle_widget: QWidget
         """
         aux_toggles = ['Limits', 'Legend']
         aux_toggle_widget = analysis_ui_utils.AuxToggleWidget(
@@ -226,11 +336,13 @@ class MimicAnalysisWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
 
     def initialize_toggle_states(self):
         """
+        Takes input from user config file 'analysis_ui_config.py' and
+        sets Mimic Analysis UI toggles accordingly
         """
+
+        # Get dicts of toggles assigned to each toggle widgets
         axis_toggles = self.axis_toggle_widget.get_toggles()
-
         deriv_toggles = self.deriv_toggle_widget.get_toggles()
-
         aux_toggles = self.aux_toggle_widget.get_toggles()
 
         # Get default toggle states from analysis_ui_config
@@ -246,15 +358,17 @@ class MimicAnalysisWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
         for toggle in deriv_toggles:
             deriv_toggles[toggle].setChecked(derivative_states[toggle])
 
+        # Set isolate derivative toggle state
         self.deriv_toggle_widget.isolate_toggle.setChecked(isolate_derivative)
 
-        # TO-DO: replace these settings with config settings
+        # Set axis toggle states
         for toggle in axis_toggles:
             try:
                 axis_toggles[toggle].setChecked(axis_states[toggle])
             except KeyError:  # There's no default for the given axis
                 axis_toggles[toggle].setChecked(external_axis_state)
 
+        # Set isolate axis toggle state
         self.axis_toggle_widget.isolate_toggle.setChecked(isolate_axis)
 
         # Set auxiliary toggle states

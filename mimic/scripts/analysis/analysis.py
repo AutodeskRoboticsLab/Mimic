@@ -18,6 +18,15 @@ reload(ui_utils)
 
 def run(robot_name, command_dicts, limit_data):
     """
+    Main function that runs Mimic Analysis graphing module
+    Takes input params and generates/formats the program's derivatives,
+    generates graphing UI, and adds data to the UI for the user to interract
+    with
+    :param robot_name: str, name of robot whose program is to be analyzed
+    :param command_dicts: list formatted by mimic_program containing dicts of
+        program info at each program timestep
+    :param limit_data: dict containing the position/velocity/acce;/jerk limits
+        for given robot
     """
     window_name='mimic_analysis_window'
 
@@ -42,6 +51,5 @@ def run(robot_name, command_dicts, limit_data):
     # TO-DO: add external axis limit data
     mimic_analysis_window.analysis_plot.add_limit_data(limit_data)
 
-    # TO-DO: Set toggles based on user config file
     mimic_analysis_window.initialize_toggle_states() 
 

@@ -1,5 +1,4 @@
-
-# Mimic
+# Mimic | Extern
 
 ### Overview
 
@@ -18,7 +17,7 @@ import pyqtgraph as pg
 ```
 
 When possible, use the most recent release from the package/module's repository
-If, for some reason the most recent release is not used, or the package/module 
+If, for some reason, the most recent release is not used, or the package/module 
 has been modified, make note of it here.
 
 
@@ -41,8 +40,13 @@ the fundamental package for scientific computing with Python
 _Used by PyQtGraph_
 **Notes:**
 	- NumPy is only included as a dependency of PyQtGraph. It should not be used by other modules to avoid dependency issues with the rest of Mimic 
-	- *Numpy is a library that must be compiled; as such, the version used is specific to the operating system, so must be installed by the user 
+	- *NumPy is a library that must be compiled; as such, the version used is specific to the operating system, so must be installed by the user 
 		- MacOS generally comes with Python and NumPy precompiled, so if you're using a Mac, you should _not_ need to add NumPy to the `/extern` directory 
-		-  For PC and Linux, see the latest [Mimic Release](https://github.com/AutodeskRoboticsLab/Mimic/releases) for precompiled versions. To install, download and unzip the appropriate version and place its root `/numpy` folder into the `/extern` directory
+		-  For PC and Linux, see the latest [Mimic Release](https://github.com/AutodeskRoboticsLab/Mimic/releases) for precompiled versions. To install, download and unzip the appropriate version and place its root `/numpy` folder into the `/extern` directory, such that the directory looks like the following:
+			```
+			|-- extern
+				|-- Qt.py
+				|-- pyqtgraph
+				|-- numpy
 >
 #

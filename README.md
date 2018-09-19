@@ -18,7 +18,7 @@ Download the latest [release](https://github.com/AutodeskRoboticsLab/Mimic/relea
 macOS   ~/Library/Preferences/Autodesk/maya/modules
 Windows ~/Documents/maya/modules
 ```
-If you're running Windows or Linux, you must install NumPy manually for Mimic's Analysis module to run properly. Download the correct version from the  [releases](https://github.com/AutodeskRoboticsLab/Mimic/releases) page and place the unzipped `numpy` folder in the `scripts/extern` directory. _note: macOS come with NumPy pre-installed, so if you're using a Mac, you do not have to install NumPy manually_
+If you're running Windows, you must install NumPy manually for Mimic's Analysis module to run properly. Download numpy for Windows from the [releases](https://github.com/AutodeskRoboticsLab/Mimic/releases) page and place the unzipped `numpy` root folder in the `scripts/extern` directory. _note: macOS come with NumPy pre-installed, so if you're using a Mac, you do not have to install NumPy manually_
 
 When you're done, open Maya, click on the Mimic shelf tab, and click on the Mimic icon; that's it!
 

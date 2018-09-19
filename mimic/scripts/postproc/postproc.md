@@ -1,4 +1,4 @@
-# Mimic
+# Mimic | Postprocessor
 
 ### Currently supported post processors
 

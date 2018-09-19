@@ -1,6 +1,4 @@
-# Mimic
-
-### Developer guide
+# Mimic Developer Guide
 
 This document is meant to provide an overview of the Mimic codebase so that
 its easier for programmers to start modifying or contributing to it. While it

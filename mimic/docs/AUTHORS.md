@@ -1,4 +1,4 @@
-# Mimic
+# Mimic Authors
 
 *Mimic was born at the Autodesk Robotics Lab, 2018.* It is now developed
 and contributed to by a community of animators, designers, engineers, architects,

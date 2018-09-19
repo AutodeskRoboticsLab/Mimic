@@ -1,5 +1,4 @@
-
-# Mimic
+# Mimic Packages
 
 ### Package index
 
@@ -33,7 +32,7 @@ in Mimic and, from them, producing usable robot code.
 Documentation may be found in:
 [postproc.md](mimic/scripts/postproc/postproc.md).
 
-Subpackages contained in postproc are as follows:
+Subpackages contained in `postproc` are as follows:
 
 
 ```
@@ -72,6 +71,17 @@ External libraries leveraged by Mimic
 Documentation may be found in:
 [extern.md](mimic/scripts/extern/extern.md).
 
+Subpackages contained in `extern` are as follows:
+
+
+```
+|-- extern
+    |-- Qt.py
+    |-- pyqtgraph
+        |-- ...
+    |-- numpy **
+        |-- ...
+```
 
 ### robotmath
 

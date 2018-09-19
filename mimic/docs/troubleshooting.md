@@ -1,6 +1,4 @@
-# Mimic
-
-### Troubleshooting
+# Mimic | Troubleshooting
 
 In case of problems, see the below. If all else fails, copy the error you
 receive and send a detailed description to us at [mimic@autodesk.com](mailto:mimic@autodesk.com).
@@ -59,7 +57,7 @@ receive and send a detailed description to us at [mimic@autodesk.com](mailto:mim
 
 ### General tips
 
-- Try closing and reopening Mimic and/or Autodesk Maya.
+- Try closing and reopening Mimic and/or Autodesk Maya after new install.
 
 - If you get an error, launch the Maya Script Editor to track it down. Follow the
   instructions provided [here](https://knowledge.autodesk.com/support/maya/learn-explore/caas/CloudHelp/cloudhelp/2016/ENU/Maya/files/GUID-7C861047-C7E0-4780-ACB5-752CD22AB02E-htm.html).
@@ -69,5 +67,10 @@ receive and send a detailed description to us at [mimic@autodesk.com](mailto:mim
   Hover your cursor over an element to view these details. *At time of writing,
   this kind of documentation is not yet implemented for all UI elements.*
 
+- If you're using Maya 2016, and it continually crashes when you  analyze or 
+  save a program , try  changing Maya's evaluation mode from *Parallel* to *DG* by going to: 
+  `Windows > Settings/Preferencs > Preferences` > 
+  `Settings > Animation` > 
+  `Evaluation > Evaluation Mode > DG`
 
 #

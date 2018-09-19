@@ -14,24 +14,35 @@ import math
 
 from postproc import postproc
 
-'''
-class Program(object):
-    """
-    """
-    def __init__(self, program_data):
-        super(Program, self).__init__()
-        self.program_data = program_data
-'''
 
 def get_program_data(command_dicts):
     """
+    Parses command_dicts to generate a dictionary of program values for each 
+    axis, at every frame specified by the program settings; includes
+    Position, Velocity, Acceleration, and Jerk 
+    :param command_dicts: list formatted by mimic_program containing dicts of
+        program info at each program timestep
+    :return program_data: dict {
+        'Axis 1': {'Position':[], 'Velocity':[], 'Accel':[], 'Jerk':[]},
+        'Axis 2': {'Position':[], 'Velocity':[], 'Accel':[], 'Jerk':[]},
+                                   ...
+        'Axis n': {'Position':[], 'Velocity':[], 'Accel':[], 'Jerk':[]}
+        }
+    :return frames: list of frame numbers representing the given program
     """
+
+    # Get structure definitions from postproc module
     axes = postproc.Axes
     external_axes = postproc.ExternalAxes
 
+    # Generate analysis data (Velocity, Accel, Jerk) and store corresponding
+    # command_dicts in a list
     combined_command_dicts = generate_data_for_analysis(command_dicts)
+
+    # Get a list of frame numbers representing the program
     frames = get_program_frames(command_dicts)
 
+    # Format the program data for graphing
     program_data = _format_program_data(combined_command_dicts)
 
     return program_data, frames 
@@ -39,11 +50,22 @@ def get_program_data(command_dicts):
 
 def generate_data_for_analysis(command_dicts):
     """
+    Takes program data from command_dicts and generates the derivative values
+    Velocity, Accel, and Jerk and writes their corresponding command_dicts to
+    a combined dictionary
+    :param command_dicts: list formatted by mimic_program containing dicts of
+        program info at each program timestep
+    :return combined_command_dicts: dict {
+        'Position': position_dicts,
+        'Velocity': velocity_dicts,
+        'Accel': accel_dicts,
+        'Jerk': jerk_dicts}
+        }
     """
-    position_dicts = command_dicts
-    velocity_dicts = _generate_derivative_dicts(command_dicts, 1)
-    accel_dicts = _generate_derivative_dicts(velocity_dicts, 2)
-    jerk_dicts = _generate_derivative_dicts(accel_dicts, 3)
+    position_dicts = command_dicts  # command_dicts is the position data
+    velocity_dicts = _generate_derivative_dicts(command_dicts, 1)  # 1st order
+    accel_dicts = _generate_derivative_dicts(velocity_dicts, 2)  # 2nd order
+    jerk_dicts = _generate_derivative_dicts(accel_dicts, 3)  # 3rd order
 
     combined_command_dicts = {'Position': position_dicts,
                               'Velocity': velocity_dicts,
@@ -55,7 +77,11 @@ def generate_data_for_analysis(command_dicts):
 
 def get_program_frames(command_dicts):
     """
-    Produces an array of frames that represent the programs timestep
+    Parces command_dicts to produce a list of frames that represent the
+    programs timestep
+    :param command_dicts: list formatted by mimic_program containing dicts of
+        program info at each program timestep
+    :return frames: list
     """
     frames = []
 
@@ -67,7 +93,10 @@ def get_program_frames(command_dicts):
 
 def _format_program_data(combined_command_dicts):
     """
-    program_data = {
+    Takes input data and formats it in a way that's condusive to graphing
+    :param combined_command_dicts: dict containing commmand_dicts for
+        Position, Velocity, Acceleration, and Jerk values for the given program
+    :return program_data: {
     'Axis 1': {'Position':[], 'Velocity':[], 'Accel':[], 'Jerk':[]},
     'Axis 2': {'Position':[], 'Velocity':[], 'Accel':[], 'Jerk':[]},
                                    ...
@@ -75,24 +104,32 @@ def _format_program_data(combined_command_dicts):
     }
     """
 
+    # All command_dicts in combined_coomand_dicts share some program data
+    # parameters, so we can get those parameters by sampling a
+    # single command_dict
     sample_command_dict = combined_command_dicts['Position']
     # Get the total number of axes
     num_primary_axes = _get_num_primary_axes(sample_command_dict)
     num_external_axes = _get_num_external_axes(sample_command_dict)
     total_num_axes = _get_total_num_axes(sample_command_dict)
 
+    # Initialize program_data dict
     program_data = {}
 
     # Format axis data for each primary axis and derivative
     for axis_index in range(num_primary_axes):
         axis_number = axis_index + 1  # Axis numbers are 1-indexed
+        # Initializes program_data 'Axis n' key with an empty dict
         program_data['Axis {}'.format(axis_number)] = {}
             
         for derivative in combined_command_dicts:
             program_data['Axis {}'.format(axis_number)][derivative] = []
             
             for command in combined_command_dicts[derivative]:
-                axis_val = command[postproc.AXES][axis_index]                          
+                # Get the axis value for the current command line, axis, and derivative
+                axis_val = command[postproc.AXES][axis_index]
+
+                # Place the value in the program_data dict
                 program_data['Axis {}'.format(axis_number)][derivative].append(axis_val)
 
     # If external axes exist, format axis data for each external axis
@@ -116,12 +153,21 @@ def _format_program_data(combined_command_dicts):
 
 def _get_num_primary_axes(command_dicts):
     """
+    Returns the number of primary axis the robot has
+    Typically 6 for a standard industrial arm
+    :param command_dicts: list formatted by mimic_program containing dicts of
+        program info at each program timestep
+    :return:
     """
     return len(command_dicts[0][postproc.AXES])
 
 
 def _get_num_external_axes(command_dicts):
     """
+    Returns the number of external axes that are included in the robot program
+    :param command_dicts: list formatted by mimic_program containing dicts of
+        program info at each program timestep
+    :return:
     """
     try:
         return len(_get_external_axes_indeces(command_dicts))
@@ -131,17 +177,27 @@ def _get_num_external_axes(command_dicts):
 
 def _get_external_axes_indeces(command_dicts):
     """
+    Get's a list of external axis numbers for external axes that are included 
+    in the current program
+    :param command_dicts: list formatted by mimic_program containing dicts of
+        program info at each program timestep
+    :return external_axis_indeces: list of external axis numbers
     """
     try:
-        a = [i for i, x in enumerate(command_dicts[0][postproc.EXTERNAL_AXES]) if not x is None]
+        external_axis_indeces = [i for i, x in enumerate(command_dicts[0][postproc.EXTERNAL_AXES]) if not x is None]
     except KeyError:
-        a = None
+        external_axis_indeces = None
 
-    return a
+    return external_axis_indeces
 
 
 def _get_total_num_axes(command_dicts):
     """
+    Gets the combined number of primary and external axes included in the 
+    current program
+    :param command_dicts: list formatted by mimic_program containing dicts of
+        program info at each program timestep
+    :return total_num_axes: int, total number of axes in current program
     """
     num_primary_axes = _get_num_primary_axes(command_dicts)
     num_external_axes = _get_num_external_axes(command_dicts)
@@ -153,14 +209,22 @@ def _get_total_num_axes(command_dicts):
 
 def get_axis_numbers(command_dicts):
     """
-    e.g. [1, 2, 3, 4, 5, 6, 8, 10, 11]
+    Produces a list of axis number included in the current program
+    :param command_dicts: list formatted by mimic_program containing dicts of
+        program info at each program timestep
+    :return axis_numbers: list of ints representing axis numbers for given
+        program. e.g. [1, 2, 3, 4, 5, 6, 8, 10, 11]
     """
     axis_numbers = []
     num_primary_axes = _get_num_primary_axes(command_dicts)
 
+    # Primary axes are always sequential
     for i in range(num_primary_axes):
         axis_numbers.append(i+1)  # Axis numbers are 1-indexed
 
+    # External axis numbers are not always sequential
+    # We get the numbers with the _get_external_axes_indeces then append them
+    # to the axis_numbers list
     external_axis_numbers = _get_external_axes_indeces(command_dicts)
     if external_axis_numbers:
         for i in external_axis_numbers:
@@ -171,10 +235,13 @@ def get_axis_numbers(command_dicts):
 
 def _generate_derivative_dicts(command_dicts, order):
     """
-    Generate a command dicts that is a derivitive of a command dicts.
-    :param command_dicts: A list of list of robot axes
-    :param order: int specifying the order of the derivative
-    :return:
+    Generate a command dicts list that is the derivitive of the input 
+    command_dicts
+    :param command_dicts: list formatted by mimic_program containing dicts of
+        program info at each program timestep
+    :param order: int specifying the order of the derivative (e.g. 1, 2, 3)
+    :return derivative_dicts: list containing command dicts for the current
+        derivative. Follows the same structure as command_dicts
     """
     import copy
     derivative_dicts = copy.deepcopy(command_dicts)
@@ -257,8 +324,5 @@ def _generate_derivative_dicts(command_dicts, order):
 
         for i in range(order):
             derivative_dicts[i][postproc.EXTERNAL_AXES] = postproc.ExternalAxes(*axis_pop)
-        
-
-        # num_external_axes = len([x for x in command_dicts[0][postproc.EXTERNAL_AXES] if not x is None])
         
     return derivative_dicts

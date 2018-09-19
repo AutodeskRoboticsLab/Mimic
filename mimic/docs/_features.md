@@ -1,4 +1,4 @@
-# Mimic
+# Mimic Features
 
 ### Feature index
 
@@ -93,12 +93,6 @@ At time of writing, the following features are available using the Mimic UI:
                 |-- Configure A4
                 |-- Configure A5
                 |-- Configure A6
-                |-- Configure E1
-                |-- Configure E2
-                |-- Configure E3
-                |-- Configure E4
-                |-- Configure E5
-                |-- Configure E6
             |-- Velocity
                 |-- Configure A1
                 |-- Configure A2
@@ -106,12 +100,20 @@ At time of writing, the following features are available using the Mimic UI:
                 |-- Configure A4
                 |-- Configure A5
                 |-- Configure A6
-                |-- Configure E1
-                |-- Configure E2
-                |-- Configure E3
-                |-- Configure E4
-                |-- Configure E5
-                |-- Configure E6
+            |-- Accel
+                |-- Configure A1
+                |-- Configure A2
+                |-- Configure A3
+                |-- Configure A4
+                |-- Configure A5
+                |-- Configure A6
+            |-- Jerk
+                |-- Configure A1
+                |-- Configure A2
+                |-- Configure A3
+                |-- Configure A4
+                |-- Configure A5
+                |-- Configure A6                
             |-- Get Axis Limits
             |-- Set Axis Limits
             |-- Clear
