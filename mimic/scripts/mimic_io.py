@@ -67,7 +67,7 @@ def get_io_info(robot_name, io_name):
     info['IO Name'] = io_name
     info['IO Number'] = _get_io_number(io_path)
     info['Postproc ID'] = _get_postproc_id(io_path)
-    # info['Type'] = _get_io_type(io_path)
+    info['Type'] = _get_io_type(io_path)
     info['Ignore'] = _get_io_ignore(io_path)
 
     return info
@@ -84,6 +84,8 @@ def get_io_info_simple(robot_name, io_name, frame=None):
     info_simple = {}
     io_path = _get_io_path(robot_name, io_name)
     info_simple['IO Number'] = _get_io_number(io_path)
+    info_simple['Postproc ID'] = _get_postproc_id(io_path)
+    info_simple['Type'] = _get_io_type(io_path)
     info_simple['Value'] = _get_io_value(io_path, frame)
     info_simple['Ignore'] = _get_io_ignore(io_path)
     return info_simple
@@ -106,9 +108,14 @@ def _get_io_type(io_path):
     :return io_type: string, e.g. 'digital' or 'analog'
     """
 
-    attribute_path = io_path + '_type'
+    attribute_path = io_path + '_value'
 
-    return pm.getAttr(attribute_path)
+    if pm.getAttr(attribute_path, type=True) == 'bool':
+        io_type = 'digital'
+    else:
+        io_type = 'analog'
+
+    return io_type
 
 
 def _get_io_value(io_path, frame=None):
@@ -588,11 +595,10 @@ def update_io_UI(io_info):
     pm.optionMenu('ioNumberMenu',
                   edit=True,
                   value=str(io_info['IO Number']))
-    '''
     pm.optionMenu('ioTypeMenu',
                   edit=True,
-                  value=str(io_info['Type']))
-    '''
+                  value=io_info['Type'],
+                  enable=False)
     pm.checkBox('cb_ignoreIO',
                 edit=True,
                 value=io_info['Ignore'])
@@ -629,7 +635,8 @@ def reset_io_UI():
                   value='1')
     pm.optionMenu('ioTypeMenu',
                   edit=True,
-                  value='digital')
+                  value='digital',
+                  enable=True)
     pm.checkBox('cb_ignoreIO',
                 edit=True,
                 value=0)

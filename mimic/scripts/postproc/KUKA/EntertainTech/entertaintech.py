@@ -177,6 +177,7 @@ class SimpleEntertainTechProcessor(postproc.PostProcessor):
             use_nonlinear_motion=True,
             include_axes=True,
             include_external_axes=True,
+            include_digital_outputs=True,
             include_checksum=True
         )
 

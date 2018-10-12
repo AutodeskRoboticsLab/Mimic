@@ -1166,7 +1166,7 @@ def _build_add_io_frame(parent_layout):
                   label='IO Type:     ',
                   height=18)
 
-    io_type = ['digital']
+    io_type = ['digital', 'analog']
     for attr in io_type:
         pm.menuItem(label=attr)
 
@@ -1200,7 +1200,7 @@ def _build_io_info_frame(parent_layout):
 
     pm.textScrollList('tsl_ios',
                       allowMultiSelection=False,
-                      height=185,
+                      height=219,
                       selectCommand=mimic_io.io_selected)
 
     pm.gridLayout(nc=2, cw=109, ch=25)
