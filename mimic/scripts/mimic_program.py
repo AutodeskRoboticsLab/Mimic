@@ -809,7 +809,6 @@ def _sample_frames_get_command_dicts(robot_name, frames, animation_settings, tim
             if user_options.Include_digital_outputs:
                 digital_output = _sample_frame_get_outs(robot_name, frame, 'digital')
                 command_dict[postproc.DIGITAL_OUTPUT] = digital_output
-                print command_dict[postproc.DIGITAL_OUTPUT]
             if user_options.Include_digital_inputs:
                 # TODO: Implement digital inputs
                 # digital_input = None
