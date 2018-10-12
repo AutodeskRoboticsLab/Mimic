@@ -18,6 +18,7 @@ import mimic_config
 import mimic_program
 import mimic_utils
 import mimic_external_axes
+import mimic_io
 from postproc import postproc_config
 from postproc import postproc_setup
 from postproc import postproc_options
@@ -27,6 +28,7 @@ reload(mimic_utils)
 reload(mimic_config)
 reload(mimic_program)
 reload(mimic_external_axes)
+reload(mimic_io)
 reload(general_utils)
 reload(postproc_setup)
 reload(postproc_config)
@@ -642,6 +644,7 @@ def _build_program_settings_frame(parent_layout):
     pm.separator(height=3, style='none')
 
     export_progress_bar = pm.progressBar('pb_exportProgress',
+                                         isInterruptable=True,
                                          maxValue=100,
                                          visible=0)
 
@@ -951,9 +954,9 @@ def build_setup_tab(parent_layout):
 
 # EXTERNAL TAB
 def _build_add_external_axis_frame(parent_layout):
-    add_external_axis_frame = pm.frameLayout('add_external_axis_frame',
-                                             label="Add External Axis",
-                                             collapsable=True)
+    pm.frameLayout('add_external_axis_frame',
+                   label="Add External Axis",
+                   collapsable=True)
     add_external_axis_col = pm.columnLayout(adj=True, columnAttach=('both', 5))
     pm.separator(height=5, style='none')
 
@@ -1066,25 +1069,6 @@ def _build_add_external_axis_frame(parent_layout):
     pm.setParent(parent_layout)
 
 
-'''
-def _build_external_axis_tools_frame(parent_layout):
-    external_axis_tools_frame = pm.frameLayout(label="External Axis Tools",
-                                               collapsable=True)
-    external_axis_tools_column = pm.columnLayout(adj=True,
-                                                 columnAttach=('both', 5))
-    pm.separator(height=5, style='none')
-
-    pm.button('Attach Robot to Axis Controller')
-
-    pm.button('Remove External Axis from Robot')
-
-    pm.button('Active | Inactive')
-
-    pm.separator(height=5, style='none')
-    pm.setParent(parent_layout)
-'''
-
-
 def _build_axis_info_frame(parent_layout):
     # Axis Info
     pm.frameLayout(label="Axis Info",
@@ -1124,17 +1108,131 @@ def _build_external_axes_tab(parent_layout):
                                                adj=True,
                                                width=100)
     _build_add_external_axis_frame(external_axes_tab_layout)
-    # _build_external_axis_tools_frame(external_axes_tab_layout)
     _build_axis_info_frame(external_axes_tab_layout)
 
     pm.setParent(parent_layout)
     return external_axes_tab_layout
 
 
+def _build_add_io_frame(parent_layout):
+    pm.frameLayout('add_io_frame',
+                    label="Add IO",
+                    collapsable=True)
+    add_io_col = pm.columnLayout(adj=True, columnAttach=('both', 5))
+    pm.separator(height=5, style='none')
+
+    pm.rowLayout(numberOfColumns=2,
+                 adjustableColumn=2,
+                 columnAlign=[(1, 'left'),
+                              (2, 'left')],
+                 columnAttach=[(1, 'both', -1),
+                               (2, 'both', 0),
+                               (3, 'both', 0)])
+
+    pm.text(label='IO Name: ')
+    pm.textField('t_ioNameText',
+                 placeholderText='ioName',
+                 font=FONT)
+    pm.setParent('..')
+
+    pm.separator(height=3, style='none')
+
+    pm.rowLayout(numberOfColumns=2,
+                 adjustableColumn=2,
+                 columnAlign=[(1, 'left'),
+                              (2, 'left')],
+                 columnAttach=[(1, 'both', -1),
+                               (2, 'both', 0),
+                               (3, 'both', 0)])
+    pm.text(label='Postproc ID: ')
+    pm.textField('t_ioPostprocIDText',
+                 placeholderText='postprocID',
+                 font=FONT)
+    pm.setParent('..')
+
+    pm.separator(height=3, style='none')
+
+    pm.optionMenu('ioNumberMenu',
+                  label='IO Number:',
+                  height=18)
+
+    io_number_list = [i + 1 for i in range(12)]
+    for io_number in io_number_list:
+        pm.menuItem(label=io_number)
+
+    pm.separator(height=3, style='none')
+
+    pm.optionMenu('ioTypeMenu',
+                  label='IO Type:     ',
+                  height=18)
+
+    io_type = ['digital']
+    for attr in io_type:
+        pm.menuItem(label=attr)
+
+    pm.separator(height=3, style='none')
+
+    pm.rowLayout(numberOfColumns=1)
+    pm.checkBox('cb_ignoreIO',
+                label="Ignore in prostprocessor", value=0)
+    pm.setParent('..')
+
+    pm.separator(height=4, style='none')
+
+    pm.setParent(add_io_col)
+
+    pm.button('b_add_io',
+              label='Add IO',
+              height=25,
+              backgroundColor=[.361, .361, .361],
+              command=mimic_io.add_io)
+    pm.separator(height=5, style='none')
+
+    pm.setParent(parent_layout)
+
+
+def _build_io_info_frame(parent_layout):
+    # IO Info
+    pm.frameLayout(label="IO Info",
+                   # height=215,
+                   collapsable=True)
+    pm.columnLayout(adj=True, columnAttach=('both', 5))
+
+    pm.textScrollList('tsl_ios',
+                      allowMultiSelection=False,
+                      height=185,
+                      selectCommand=mimic_io.io_selected)
+
+    pm.gridLayout(nc=2, cw=109, ch=25)
+    pm.button(label='List IOs',
+              annotation='Lists all IOs on selected robot',
+              command=mimic_io.list_ios)
+
+    pm.button(label='Clear List',
+              annotation='Clears list above',
+              command=mimic_io.clear_io_list)
+
+    pm.setParent('..')
+
+    pm.button(label='Deselect',
+              annotation='Deselects all axes in list above',
+              command=mimic_io.deselect_io)
+
+    pm.separator(height=10, style='out')
+
+    pm.button(label='Remove IO',
+              annotation='Removes selected axis from robot',
+              command=mimic_io.remove_io)
+
+    pm.setParent(parent_layout)
+
+
 def _build_io_tab(parent_layout):
     io_tab_layout = pm.columnLayout('ioTab',
                                     adj=True,
                                     width=100)
+    _build_add_io_frame(io_tab_layout)
+    _build_io_info_frame(io_tab_layout)
     pm.setParent(parent_layout)
     return io_tab_layout
 
@@ -1164,11 +1262,11 @@ def build_external_tab(parent_layout):
                               (external_tabs_layout, "right", 0)])
 
     external_axes_tab_layout = _build_external_axes_tab(external_tabs_layout)
-    # io_tab_layout = _build_io_tab(external_tabs_layout)
+    io_tab_layout = _build_io_tab(external_tabs_layout)
     # comms_tab_layout = _build_comms_tab(external_tabs_layout)
 
     tabs = [[external_axes_tab_layout, 'External Axes'],
-            # [io_tab_layout, 'IOs'],
+            [io_tab_layout, 'IOs'],
             # [comms_tab_layout, 'Comms']
             ]
 

@@ -579,7 +579,7 @@ def add_external_axis(*args):
     position_limit_max = external_axis_params['Position Limit Max']
     velocity_limit = external_axis_params['Velocity Limit']
     attach_robot_to_external = external_axis_params['Attach']
-    ingnore_in_postproc = external_axis_params['Ignore']
+    ignore_in_postproc = external_axis_params['Ignore']
 
     # Get and check the proper controllers from viewport selection
     robot, external_axis_CTRL = _get_selection_input()
@@ -671,7 +671,7 @@ def add_external_axis(*args):
     pm.setAttr(axis_parent_attribute + '_axisMin', position_limit_min)
     pm.setAttr(axis_parent_attribute + '_axisMax', position_limit_max)
     pm.setAttr(axis_parent_attribute + '_maxVelocity', velocity_limit)
-    pm.setAttr(axis_parent_attribute + '_ignore', ingnore_in_postproc)
+    pm.setAttr(axis_parent_attribute + '_ignore', ignore_in_postproc)
 
     # Connect position attribute to driving attribute
     driving_attribute_name = external_axis_CTRL + '.' + driving_attribute
@@ -719,7 +719,7 @@ def update_external_axis(*args):
     position_limit_max = external_axis_params['Position Limit Max']
     velocity_limit = external_axis_params['Velocity Limit']
     attach_robot_to_external = external_axis_params['Attach']
-    ingnore_in_postproc = external_axis_params['Ignore']
+    ignore_in_postproc = external_axis_params['Ignore']
 
     target_CTRL = mimic_utils.get_target_ctrl_path(robot)
 
@@ -793,7 +793,7 @@ def update_external_axis(*args):
     pm.setAttr(axis_parent_attribute + '_axisMin', position_limit_min)
     pm.setAttr(axis_parent_attribute + '_axisMax', position_limit_max)
     pm.setAttr(axis_parent_attribute + '_maxVelocity', velocity_limit)
-    pm.setAttr(axis_parent_attribute + '_ignore', ingnore_in_postproc)
+    pm.setAttr(axis_parent_attribute + '_ignore', ignore_in_postproc)
 
     # Select the external axis
     pm.select(external_axis_CTRL)
