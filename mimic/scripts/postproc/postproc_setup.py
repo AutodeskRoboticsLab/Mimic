@@ -6,20 +6,12 @@ Configuration for post processors
 import postproc_config
 
 # Import your processor as private here:
-from ABB.RAPID.rapid \
-    import SimpleRAPIDProcessor \
-    as __SimpleRAPIDProcessor
 from KUKA.EntertainTech.entertaintech \
     import SimpleEntertainTechProcessor \
     as __SimpleEntertainTechProcessor
-from KUKA.KRL.krl \
-    import SimpleKRLProcessor \
-    as __SimpleKRLProcessor
 
 # Add your processor to private list here:
 __supported_processors = [
-    __SimpleRAPIDProcessor,
-    __SimpleKRLProcessor,
     __SimpleEntertainTechProcessor
 ]
 

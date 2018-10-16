@@ -1,8 +1,0 @@
-DEF example()
-  BAS(#INITMOV, 0)
-  $ADVANCE=3
-  ; Go to start position
-{}
-  ; Go to programmed positions
-{}
-END

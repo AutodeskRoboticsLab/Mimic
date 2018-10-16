@@ -91,6 +91,10 @@ class robotIKS(OpenMaya.MPxNode):
     j5FKAttr = OpenMaya.MAngle()
     j6FKAttr = OpenMaya.MAngle()
 
+    # Custom axis-3 controls for 4-axis Variant
+    constrainAxis3Attr             = OpenMaya.MObject()
+    axis3ConstraintOffsetAngleAttr = OpenMaya.MAngle()
+
     # Outputs 
     theta1Attr = OpenMaya.MAngle()
     theta2Attr = OpenMaya.MAngle()
@@ -155,7 +159,11 @@ class robotIKS(OpenMaya.MPxNode):
         j5FKDataHandle = pDataBlock.inputValue( robotIKS.j5FKAttr )
         j6FKDataHandle = pDataBlock.inputValue( robotIKS.j6FKAttr )
 
-        
+        # Custom axis-3 controls for 4-axis Variant
+        constrainAxis3DataHandle = pDataBlock.inputValue( robotIKS.constrainAxis3Attr )
+        axis3ConstraintOffsetAngleDataHandle =  pDataBlock.inputValue( robotIKS.axis3ConstraintOffsetAngleAttr )
+
+
         # Extract the actual value associated to our input attribute
         tcpX      = tcpXDataHandle.asFloat()
         tcpY      = tcpYDataHandle.asFloat()
@@ -210,6 +218,10 @@ class robotIKS(OpenMaya.MPxNode):
         j5FK = j5FKDataHandle.asAngle().asDegrees()
         j6FK = j6FKDataHandle.asAngle().asDegrees()
         
+        # Custom axis-3 controls for 4-axis Variant
+        constrainAxis3 = constrainAxis3DataHandle.asBool()
+        axis3ConstraintOffsetAngle = axis3ConstraintOffsetAngleDataHandle.asAngle().asDegrees()
+
         ## Output Data Handles ##
         theta1OutDataHandle = pDataBlock.outputValue( robotIKS.theta1Attr )
         theta2OutDataHandle = pDataBlock.outputValue( robotIKS.theta2Attr )
@@ -555,6 +567,13 @@ class robotIKS(OpenMaya.MPxNode):
                     jointVals[4] = jointVals[4] * (-1)
                 if flipA6 :
                     jointVals[5] = jointVals[5] * (-1)
+
+
+                # SPECIAL ADDITION for 4A VARIANT
+                # Constrains the third axis parallel to the groud (or with an offset) to control carriage view angle
+                if constrainAxis3:
+                    # If we want axis 3 to be parallel to the ground, we can set axis 3 == - axis 2 because they are (inverse) corresponding angles
+                    jointVals[2] = (-jointVals[1]) + axis3ConstraintOffsetAngle
                 
                 # Convert to MAngle data type for output (the "2" is for data type degrees. 1 = radians)
                 j1 = OpenMaya.MAngle( jointVals[0], 2 )
@@ -624,6 +643,22 @@ def nodeInitializer():
     #==================================#
     #      INPUT NODE ATTRIBUTE(S)     #
     #==================================#
+
+    robotIKS.carriageViewControls = compoundAttributeFn.create( 'carriageViewControls', 'carriageViewControls' )
+
+    robotIKS.constrainAxis3Attr = numericAttributeFn.create( 'constrainAxis3', 'constrainAxis3', OpenMaya.MFnNumericData.kBoolean, 0 )
+    numericAttributeFn.writable = True 
+    numericAttributeFn.storable = True 
+    numericAttributeFn.hidden   = False
+    compoundAttributeFn.addChild( robotIKS.constrainAxis3Attr ) 
+
+    robotIKS.axis3ConstraintOffsetAngleAttr = angleAttributeFn.create( 'axis3ConstraintOffsetAngle', 'axis3ConstraintOffsetAngle', OpenMaya.MFnUnitAttribute.kAngle )
+    angleAttributeFn.storable = True 
+    angleAttributeFn.writable = True
+    angleAttributeFn.hidden   = False
+    compoundAttributeFn.addChild( robotIKS.axis3ConstraintOffsetAngleAttr ) 
+
+    robotIKS.addAttribute( robotIKS.carriageViewControls )  # Add Parent Attr 
 
     #--------------------#
     #  Robot Definition  #
@@ -1022,6 +1057,24 @@ def nodeInitializer():
     #===================================#
     #    NODE ATTRIBUTE DEPENDENCIES    #
     #===================================#
+
+    robotIKS.attributeAffects( robotIKS.constrainAxis3Attr, robotIKS.theta1Attr ) 
+    robotIKS.attributeAffects( robotIKS.constrainAxis3Attr, robotIKS.theta2Attr ) 
+    robotIKS.attributeAffects( robotIKS.constrainAxis3Attr, robotIKS.theta3Attr ) 
+    robotIKS.attributeAffects( robotIKS.constrainAxis3Attr, robotIKS.theta4Attr ) 
+    robotIKS.attributeAffects( robotIKS.constrainAxis3Attr, robotIKS.theta5Attr ) 
+    robotIKS.attributeAffects( robotIKS.constrainAxis3Attr, robotIKS.theta6Attr ) 
+    robotIKS.attributeAffects( robotIKS.constrainAxis3Attr, robotIKS.theta ) 
+
+    robotIKS.attributeAffects( robotIKS.axis3ConstraintOffsetAngleAttr, robotIKS.theta1Attr ) 
+    robotIKS.attributeAffects( robotIKS.axis3ConstraintOffsetAngleAttr, robotIKS.theta2Attr ) 
+    robotIKS.attributeAffects( robotIKS.axis3ConstraintOffsetAngleAttr, robotIKS.theta3Attr ) 
+    robotIKS.attributeAffects( robotIKS.axis3ConstraintOffsetAngleAttr, robotIKS.theta4Attr ) 
+    robotIKS.attributeAffects( robotIKS.axis3ConstraintOffsetAngleAttr, robotIKS.theta5Attr ) 
+    robotIKS.attributeAffects( robotIKS.axis3ConstraintOffsetAngleAttr, robotIKS.theta6Attr ) 
+    robotIKS.attributeAffects( robotIKS.axis3ConstraintOffsetAngleAttr, robotIKS.theta ) 
+
+
 
     #-------------#
     #  Robot Def  #

@@ -1,9 +1,0 @@
-DEF example()
-  BAS(#INITMOV, 0)
-  ; Go to start position
-  PTP {{A1 0, A2 -90, A3 90, A4 0, A5 90, A6 0}}
-  ; Go to programmed positions
-{}
-  ; Go to end position
-  PTP {{A1 0, A2 -90, A3 90, A4 0, A5 90, A6 0}}
-END
