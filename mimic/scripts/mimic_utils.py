@@ -66,6 +66,10 @@ __TOOL_CTRL_FK_PATH = __TCP_HDL_PATH + '|{1}tool_CTRL_FK'
 __TARGET_HDL_PATH = '{0}|{1}robot_GRP|{1}target_HDL'
 
 
+# These are specific to how the robots are rigged in relation to Maya's coordinate system
+__ROTATION_AXES = ['Y', 'X', 'X', 'Z', 'X', 'Z']
+
+
 def get_robot_roots(all_robots=False, sel=[]):
     """
     Gets the root node name of the robot(s) in the scene (e.g. 'KUKA_KR60_0')
@@ -1787,12 +1791,8 @@ def set_axis(axis_number):
         pm.warning('Nothing Selected; Select a valid robot')
         return
 
-    # These are specific to how the robots are rigged in relation to Maya's
-    # coordinate system
-    rotation_axes = ['Y', 'X', 'X', 'Z', 'X', 'Z']
-
     try:  # if the text field is empty, or not a float value, skip it
-        rotation_axis = rotation_axes[axis_number - 1]
+        rotation_axis = __ROTATION_AXES[axis_number - 1]
         val = float(pm.textField('t_a{}'.format(axis_number),
                                  query=True,
                                  text=True))
@@ -1989,7 +1989,7 @@ def toggle_ik_fk(*args):
     else:
         ik_tab = 0
 
-    robots = get_robot_roots(1)
+    robots = get_robot_roots(all_robots=True)
     if not robots:
         return
 
@@ -2776,6 +2776,44 @@ def add_limits_to_robot(robot, limit_type):
                    nn='Axis {}'.format(axis_number),
                    defaultValue=nominal_limit,
                    parent=parent_attr_path)
+
+
+def set_pose(pose, set_key=False):
+    """
+    Sets the pose of the selected robots to the input argument.
+    Sets the pose in whichever mode, ik or fk, the robot is in
+    :param pose: list, list of axis values representing a robot pose
+    """
+    robots = get_robot_roots()
+    if not robots:
+        raise MimicError('No robots selected; select at least one valid robot')
+
+    for robot in robots:
+        target_ctrl_path = get_target_ctrl_path(robot)
+
+        # Check if the robot is in IK-mode
+        in_ik_mode = pm.getAttr(target_ctrl_path + '.ik')
+        
+        # If the robot is in IK-mode, we have to switch to FK mode to set the 
+        # pose, then we switch back
+        if in_ik_mode:
+            switch_to_fk(robot)
+
+        # TODO: HARD CODED - Number of robot axes; should include external axes
+        num_axes = 6
+        for i in range(num_axes):
+            rotation_axis = __ROTATION_AXES[i]
+            axis_number = i + 1  # Axes are 1-indexed
+
+            val = pose[i]
+
+            ns = robot.namespace()
+            pm.setAttr('{0}|{1}robot_GRP|{1}FK_CTRLS|{1}a{2}FK_CTRL.rotate{3}'
+                       .format(robot, ns, axis_number, rotation_axis), val)
+
+        # Switch back to IK-mode if necessary
+        if in_ik_mode:
+            switch_to_ik(robot)
 
 
 class MimicError(Exception):
