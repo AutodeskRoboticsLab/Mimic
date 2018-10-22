@@ -1538,8 +1538,6 @@ def set_position_limits():
     except:
         pass
     
-    pm.headsUpMessage('Axis Position Limits for {} set successfuly!'.format(robot_list_str))
-
 
 def set_axis_limit(axis_number, min_max):
     """
@@ -1567,6 +1565,8 @@ def set_axis_limit(axis_number, min_max):
             robot_list_str += robot + ' '
     except:
         pass
+
+    pm.headsUpMessage('Axis Position Limits for {} set successfuly!'.format(robot_list_str))
 
 
 def set_deriv_limits(limit_type):
