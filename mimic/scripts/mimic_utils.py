@@ -2337,6 +2337,29 @@ def toggle_ik_fk_ui(*args):
         pm.warning('Error toggling IK/FK tabs')
 
 
+def get_ui_ik_fk_state(*args):
+    """
+    Get the control mode of Inverse Kinematics or Forward Kinematics
+    in the Mimic UI.
+    :param args:
+    :return: either None, 'ik' or 'fk'
+    """
+    if not pm.window("mimic_win", exists=True):
+        return None
+
+    current_tab = pm.tabLayout('switcher_tab_layout',
+                               query=True,
+                               selectTabIndex=True)
+
+    if current_tab == 1:
+        return 'ik'
+    elif current_tab == 2:
+        return 'fk'
+    else:
+        pm.warning('Error getting IK/FK tabs status')
+        return None
+
+
 def key_ik_fk(*args):
     """
     Key the Inverse Kinematic or Forward Kinematic pose of a robot in the Maya
