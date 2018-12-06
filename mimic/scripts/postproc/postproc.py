@@ -50,8 +50,8 @@ Axes = namedtuple(
         __axis_2,  # float
         __axis_3,  # float
         __axis_4,  # float
-        __axis_5,  # float
-        __axis_6,  # float
+        # __axis_5,  # float
+        # __axis_6,  # float
     ]
 )
 

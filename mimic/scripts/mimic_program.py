@@ -522,7 +522,7 @@ def _print_axis_stats(axis_stats, limit_type):
     # TODO: This function is a mess. Should definitely be cleaned up,
     # but since this is all getting graphed anyway... 
     # TODO: stop hardcoding num_axes
-    num_axes = 6
+    num_axes = 4
     axis_template = '>>> {0:>{axis_padding}} '
     axis_padding = {'axis_padding' : 2}
 
@@ -581,7 +581,7 @@ def _check_command_dicts_limits(command_dicts, limits=None, get_min=False, get_m
     """
     # Seed initial values
     # TODO: Stop hardcoding num_axes
-    num_axes = 6
+    num_axes = 4
     violations = {}
     min_vals = [command_dicts[0] for _ in range(num_axes)]
     max_vals = [command_dicts[0] for _ in range(num_axes)]
@@ -669,7 +669,7 @@ def _check_command_rotations(robot, animation_settings, command_dicts):
         start_frame = animation_settings['Start Frame']
         # Get indices for command and axis
         for command_index in range(len(command_dicts)):
-            for axis_index in range(6):
+            for axis_index in range(4):
                 # Get the initial value
                 value = command_axes[command_index][axis_index]
                 # Operate on the value depending on conditional
@@ -847,7 +847,7 @@ def _sample_frame_get_axes(robot_name, frame):
     pm.currentTime(frame)
 
     target_ctrl_path = mimic_utils.get_target_ctrl_path(robot_name)
-    for i in range(6):
+    for i in range(4):
         axis_number = i + 1  # Axis numbers are 1-indexed
         axis_path = target_ctrl_path + '.axis{}'.format(axis_number)
         axis = pm.getAttr(axis_path)

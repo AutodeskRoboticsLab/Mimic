@@ -658,13 +658,14 @@ class AnalysisPlotWidget(QtWidgets.QWidget):
         :return plot_limit_data: dict of position, velocity, accel, jerk
             limits as pg.LinearRegionItems
         """
-        num_axes = max(self.axis_numbers)
+        num_axes = 4
         pens = Palette(num_axes).pens
         brushes = Palette(num_axes).brushes
 
         region_buffer = 100
 
         plot_limit_data = {}
+
 
         for deriv in self.derivative_names:
             plot_limit_data[deriv] = {}

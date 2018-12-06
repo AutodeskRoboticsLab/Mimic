@@ -1418,7 +1418,7 @@ def write_position_limits_to_ui():
     axis_position_limits = get_axis_limits()
 
     # TODO: HARD CODED - Number of robot axes; should include external axes
-    num_axes = 6
+    num_axes = 4
     for i in range(num_axes):
         axis_number = i + 1 
         axis_name = 'Axis {}'.format(axis_number)
@@ -1447,7 +1447,7 @@ def write_deriv_limits_to_ui(limit_type):
     axis_deriv_limits = _get_limits(robot, limit_type)
 
    # TODO: HARD CODED - Number of robot axes; should include external axes
-    num_axes = 6
+    num_axes = 4
     for i in range(num_axes):
         axis_number = i + 1 
         axis_name = 'Axis {}'.format(axis_number)
@@ -1480,7 +1480,7 @@ def get_axis_limits():
     axis_position_limits = {}
 
     # TODO: HARD CODED - Number of robot axes; should include external axes
-    num_axes = 6
+    num_axes = 4
 
     for i in range(num_axes):
         axis_number = i + 1  # Axis numbers are 1-indexed
@@ -1525,7 +1525,7 @@ def set_position_limits():
     """
     """        
     # number of robot axes; could include external axes potentially
-    num_axes = 6
+    num_axes = 4
     try:
         for i in range(num_axes):
             axis_number = i + 1  # Axis numbers are 1-indexed
@@ -1567,7 +1567,7 @@ def set_axis_limit(axis_number, min_max):
 
 def set_deriv_limits(limit_type):
     # number of robot axes; could include external axes potentially
-    num_axes = 6
+    num_axes = 4
     try:
         for i in range(num_axes):
             axis_number = i + 1  # Axis numbers are 1-indexed
@@ -1663,7 +1663,7 @@ def _get_limits(robot, limit_type):
         add_limits_to_robot(robot, limit_type)
 
     # HARD CODED - Number of robot axes; should include external axes
-    num_axes = 6
+    num_axes = 4
 
     # Create a list of robot's limits
     for i in range(num_axes):
@@ -1811,7 +1811,7 @@ def set_fk_pose(*args):
     :return:
     """
     # Number of robot axes; could include external axes potentially.
-    num_axes = 6
+    num_axes = 4
 
     try:
         for i in range(num_axes):
@@ -2767,7 +2767,7 @@ def add_limits_to_robot(robot, limit_type):
                at='compound')
 
     # Add an attribute for each axis
-    num_axes = 6
+    num_axes = 4
     for i in range(num_axes):
         axis_number = i + 1
         pm.addAttr(target_ctrl_path,
