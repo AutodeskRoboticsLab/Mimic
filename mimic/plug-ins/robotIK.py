@@ -46,7 +46,6 @@ kPluginNodeId = OpenMaya.MTypeId( 0x87001 ) # A unique ID associated to this nod
 class robotIKS(OpenMaya.MPxNode):    
     # Static variables which will later be replaced by the node's attributes.
     # Inputs
-    
     tcpXAttr       = OpenMaya.MObject()
     tcpYAttr       = OpenMaya.MObject()
     tcpZAttr       = OpenMaya.MObject()
@@ -75,12 +74,9 @@ class robotIKS(OpenMaya.MPxNode):
     flipA2Attr = OpenMaya.MObject()
     flipA3Attr = OpenMaya.MObject()
     flipA4Attr = OpenMaya.MObject()
-    flipA5Attr = OpenMaya.MObject()
-    flipA6Attr = OpenMaya.MObject()
     
     soln1Attr = OpenMaya.MObject()
     soln2Attr = OpenMaya.MObject()
-    soln3Attr = OpenMaya.MObject()
     
     ikAttr = OpenMaya.MObject()
     
@@ -88,8 +84,7 @@ class robotIKS(OpenMaya.MPxNode):
     j2FKAttr = OpenMaya.MAngle()
     j3FKAttr = OpenMaya.MAngle()
     j4FKAttr = OpenMaya.MAngle()
-    j5FKAttr = OpenMaya.MAngle()
-    j6FKAttr = OpenMaya.MAngle()
+
 
     # Custom axis-3 controls for 4-axis Variant
     constrainAxis3Attr             = OpenMaya.MObject()
@@ -100,8 +95,6 @@ class robotIKS(OpenMaya.MPxNode):
     theta2Attr = OpenMaya.MAngle()
     theta3Attr = OpenMaya.MAngle()
     theta4Attr = OpenMaya.MAngle()
-    theta5Attr = OpenMaya.MAngle()
-    theta6Attr = OpenMaya.MAngle()
 
     
     def __init__(self):
@@ -143,12 +136,9 @@ class robotIKS(OpenMaya.MPxNode):
         flipA2DataHandle = pDataBlock.inputValue( robotIKS.flipA2Attr )
         flipA3DataHandle = pDataBlock.inputValue( robotIKS.flipA3Attr )
         flipA4DataHandle = pDataBlock.inputValue( robotIKS.flipA4Attr )
-        flipA5DataHandle = pDataBlock.inputValue( robotIKS.flipA5Attr )
-        flipA6DataHandle = pDataBlock.inputValue( robotIKS.flipA6Attr )
         
         soln1DataHandle = pDataBlock.inputValue( robotIKS.soln1Attr )
         soln2DataHandle = pDataBlock.inputValue( robotIKS.soln2Attr )
-        soln3DataHandle = pDataBlock.inputValue( robotIKS.soln3Attr )
 
         ikDataHandle = pDataBlock.inputValue( robotIKS.ikAttr )
 
@@ -156,8 +146,7 @@ class robotIKS(OpenMaya.MPxNode):
         j2FKDataHandle = pDataBlock.inputValue( robotIKS.j2FKAttr )
         j3FKDataHandle = pDataBlock.inputValue( robotIKS.j3FKAttr )
         j4FKDataHandle = pDataBlock.inputValue( robotIKS.j4FKAttr )
-        j5FKDataHandle = pDataBlock.inputValue( robotIKS.j5FKAttr )
-        j6FKDataHandle = pDataBlock.inputValue( robotIKS.j6FKAttr )
+
 
         # Custom axis-3 controls for 4-axis Variant
         constrainAxis3DataHandle = pDataBlock.inputValue( robotIKS.constrainAxis3Attr )
@@ -200,13 +189,11 @@ class robotIKS(OpenMaya.MPxNode):
         flipA2 = flipA2DataHandle.asBool()
         flipA3 = flipA3DataHandle.asBool()
         flipA4 = flipA4DataHandle.asBool()
-        flipA5 = flipA5DataHandle.asBool()
-        flipA6 = flipA6DataHandle.asBool()
+
         
         # Joint config bools
         soln1 = soln1DataHandle.asBool()
         soln2 = soln2DataHandle.asBool()
-        soln3 = soln3DataHandle.asBool()
         
         ik = ikDataHandle.asBool()
 
@@ -215,8 +202,7 @@ class robotIKS(OpenMaya.MPxNode):
         j2FK = j2FKDataHandle.asAngle().asDegrees()
         j3FK = j3FKDataHandle.asAngle().asDegrees()
         j4FK = j4FKDataHandle.asAngle().asDegrees()
-        j5FK = j5FKDataHandle.asAngle().asDegrees()
-        j6FK = j6FKDataHandle.asAngle().asDegrees()
+
         
         # Custom axis-3 controls for 4-axis Variant
         constrainAxis3 = constrainAxis3DataHandle.asBool()
@@ -227,8 +213,7 @@ class robotIKS(OpenMaya.MPxNode):
         theta2OutDataHandle = pDataBlock.outputValue( robotIKS.theta2Attr )
         theta3OutDataHandle = pDataBlock.outputValue( robotIKS.theta3Attr )
         theta4OutDataHandle = pDataBlock.outputValue( robotIKS.theta4Attr )
-        theta5OutDataHandle = pDataBlock.outputValue( robotIKS.theta5Attr )
-        theta6OutDataHandle = pDataBlock.outputValue( robotIKS.theta6Attr )
+
         
         if ik:
             #========================================================#
@@ -247,9 +232,7 @@ class robotIKS(OpenMaya.MPxNode):
             theta1_Sol = [[0] * 2 for i in range(1)][0]
             theta2_Sol = [[0] * 4 for i in range(1)][0] 
             theta3_Sol = [[0] * 4 for i in range(1)][0]
-            theta4_Sol = [[0] * 8 for i in range(1)][0]
-            theta5_Sol = [[0] * 8 for i in range(1)][0]
-            theta6_Sol = [[0] * 8 for i in range(1)][0]
+
     
             jointVals  = [[0] * 6 for i in range(1)][0]
             
@@ -369,73 +352,6 @@ class robotIKS(OpenMaya.MPxNode):
                 theta3_3 = -(math.pi - (math.pi - math.atan2(a2, c3)))
                 theta3_4 = -(math.pi - (-math.pi - math.atan2(a2, c3)))
 
-            
-            sin11 = math.sin(theta1_1)
-            sin12 = math.sin(theta1_1)
-            sin13 = math.sin(theta1_2)
-            sin14 = math.sin(theta1_2)
-            
-            cos11 = math.cos(theta1_1)
-            cos12 = math.cos(theta1_1)
-            cos13 = math.cos(theta1_2)
-            cos14 = math.cos(theta1_2)
-            
-            sin231 = math.sin(theta2_1 + theta3_1)
-            sin232 = math.sin(theta2_2 + theta3_2)
-            sin233 = math.sin(theta2_3 + theta3_3)
-            sin234 = math.sin(theta2_4 + theta3_4)
-            
-            cos231 = math.cos(theta2_1 + theta3_1)
-            cos232 = math.cos(theta2_2 + theta3_2)
-            cos233 = math.cos(theta2_3 + theta3_3)
-            cos234 = math.cos(theta2_4 + theta3_4)
-            
-            m11 = Re[0][2] * sin231 * cos11 + Re[1][2] * sin231 * sin11 + Re[2][2] * cos231
-            m12 = Re[0][2] * sin232 * cos12 + Re[1][2] * sin232 * sin12 + Re[2][2] * cos232
-            m13 = Re[0][2] * sin233 * cos13 + Re[1][2] * sin233 * sin13 + Re[2][2] * cos233
-            m14 = Re[0][2] * sin234 * cos14 + Re[1][2] * sin234 * sin14 + Re[2][2] * cos234
-            
-            # Theta 4
-            theta4_1 = math.atan2((Re[1][2] * cos11 - Re[0][2] * sin11), Re[0][2] * cos231 * cos11 + Re[1][2] * cos231 * sin11 - Re[2][2] * sin231)
-            theta4_5 = theta4_1 + math.pi
-
-            theta4_2 = math.atan2((Re[1][2] * cos12 - Re[0][2] * sin12), Re[0][2] * cos232 * cos12 + Re[1][2] * cos232 * sin12 - Re[2][2] * sin232)
-            theta4_6 = theta4_2 + math.pi
-
-            theta4_3 = math.atan2((Re[1][2] * cos13 - Re[0][2] * sin13), Re[0][2] * cos233 * cos13 + Re[1][2] * cos233 * sin13 - Re[2][2] * sin233)
-            theta4_7 = theta4_3 + math.pi
-
-            theta4_4 = math.atan2((Re[1][2] * cos14 - Re[0][2] * sin14), Re[0][2] * cos234 * cos14 + Re[1][2] * cos234 * sin14 - Re[2][2] * sin234)
-            theta4_8 = theta4_4 + math.pi
-
-            
-            # Theta 5
-            theta5_1 = math.atan2((math.sqrt(1 - math.pow(m11, 2))), m11)
-            theta5_5 = -theta5_1
-
-            theta5_2 = math.atan2((math.sqrt(1 - math.pow(m12, 2))), m12)
-            theta5_6 = -theta5_2
-
-            theta5_3 = math.atan2((math.sqrt(1 - math.pow(m13, 2))), m13)
-            theta5_7 = -theta5_3
-
-            theta5_4 = math.atan2((math.sqrt(1 - math.pow(m14, 2))), m14)
-            theta5_8 = -theta5_4
-            
-            
-            # Theta 6
-            theta6_1 = math.atan2((Re[0][1] * sin231 * cos11 + Re[1][1] * sin231 * sin11 + Re[2][1] * cos231), (-Re[0][0] * sin231 * cos11 - Re[1][0] * sin231 * sin11 - Re[2][0] * cos231))
-            theta6_5 = theta6_1 - math.pi
-
-            theta6_2 = math.atan2((Re[0][1] * sin232 * cos12 + Re[1][1] * sin232 * sin12 + Re[2][1] * cos232), (-Re[0][0] * sin232 * cos12 - Re[1][0] * sin232 * sin12 - Re[2][0] * cos232))
-            theta6_6 = theta6_2 - math.pi
-
-            theta6_3 = math.atan2((Re[0][1] * sin233 * cos13 + Re[1][1] * sin233 * sin13 + Re[2][1] * cos233), (-Re[0][0] * sin233 * cos13 - Re[1][0] * sin233 * sin13 - Re[2][0] * cos233))
-            theta6_7 = theta6_3 - math.pi
-
-            theta6_4 = math.atan2((Re[0][1] * sin234 * cos14 + Re[1][1] * sin234 * sin14 + Re[2][1] * cos234), (-Re[0][0] * sin234 * cos14 - Re[1][0] * sin234 * sin14 - Re[2][0] * cos234))
-            theta6_8 = theta6_4 - math.pi
-
                     
             theta1_Sol[0] = math.degrees(theta1_1)
             theta1_Sol[1] = math.degrees(theta1_2)
@@ -448,34 +364,7 @@ class robotIKS(OpenMaya.MPxNode):
             theta3_Sol[0] = math.degrees(theta3_1)
             theta3_Sol[1] = math.degrees(theta3_2)
             theta3_Sol[2] = math.degrees(theta3_3)
-            theta3_Sol[3] = math.degrees(theta3_4)
-            
-            theta4_Sol[0] = math.degrees(theta4_1)
-            theta4_Sol[1] = math.degrees(theta4_2)
-            theta4_Sol[2] = math.degrees(theta4_3)
-            theta4_Sol[3] = math.degrees(theta4_4)
-            theta4_Sol[4] = math.degrees(theta4_5)
-            theta4_Sol[5] = math.degrees(theta4_6)
-            theta4_Sol[6] = math.degrees(theta4_7)
-            theta4_Sol[7] = math.degrees(theta4_8)
-            
-            theta5_Sol[0] = math.degrees(theta5_1)
-            theta5_Sol[1] = math.degrees(theta5_2)
-            theta5_Sol[2] = math.degrees(theta5_3)
-            theta5_Sol[3] = math.degrees(theta5_4)
-            theta5_Sol[4] = math.degrees(theta5_5)
-            theta5_Sol[5] = math.degrees(theta5_6)
-            theta5_Sol[6] = math.degrees(theta5_7)
-            theta5_Sol[7] = math.degrees(theta5_8)
-            
-            theta6_Sol[0] = math.degrees(theta6_1)
-            theta6_Sol[1] = math.degrees(theta6_2)
-            theta6_Sol[2] = math.degrees(theta6_3)
-            theta6_Sol[3] = math.degrees(theta6_4)
-            theta6_Sol[4] = math.degrees(theta6_5)
-            theta6_Sol[5] = math.degrees(theta6_6)
-            theta6_Sol[6] = math.degrees(theta6_7)
-            theta6_Sol[7] = math.degrees(theta6_8)        
+            theta3_Sol[3] = math.degrees(theta3_4)    
             
             
             # select one of the 8 solutions        
@@ -486,28 +375,11 @@ class robotIKS(OpenMaya.MPxNode):
                 if soln2: 
                     jointVals[1] = theta2_Sol[0];
                     jointVals[2] = theta3_Sol[0];
-            
-                    if soln3: 
-                        jointVals[3] = theta4_Sol[0];
-                        jointVals[4] = theta5_Sol[0];
-                        jointVals[5] = theta6_Sol[0];
-                    else:
-                        jointVals[3] = theta4_Sol[4];
-                        jointVals[4] = theta5_Sol[4];
-                        jointVals[5] = theta6_Sol[4];
                                 
                 else:
                     jointVals[1] = theta2_Sol[1];
                     jointVals[2] = theta3_Sol[1];
             
-                    if soln3:
-                        jointVals[3] = theta4_Sol[1];
-                        jointVals[4] = theta5_Sol[1];
-                        jointVals[5] = theta6_Sol[1];
-                    else:
-                        jointVals[3] = theta4_Sol[5];
-                        jointVals[4] = theta5_Sol[5];
-                        jointVals[5] = theta6_Sol[5];
                        
             else:
                 jointVals[0] = theta1_Sol[1];
@@ -516,36 +388,18 @@ class robotIKS(OpenMaya.MPxNode):
                     jointVals[1] = theta2_Sol[2];
                     jointVals[2] = theta3_Sol[2];
             
-                    if soln3:
-                        jointVals[3] = theta4_Sol[2];
-                        jointVals[4] = theta5_Sol[2];
-                        jointVals[5] = theta6_Sol[2];
-                    else:
-                        jointVals[3] = theta4_Sol[6];
-                        jointVals[4] = theta5_Sol[6];
-                        jointVals[5] = theta6_Sol[6];
                               
                 else:
                     jointVals[1] = theta2_Sol[3];
                     jointVals[2] = theta3_Sol[3];
-            
-                    if soln3:
-                        jointVals[3] = theta4_Sol[3];
-                        jointVals[4] = theta5_Sol[3];
-                        jointVals[5] = theta6_Sol[3];
-                    else:
-                        jointVals[3] = theta4_Sol[7];
-                        jointVals[4] = theta5_Sol[7];
-                        jointVals[5] = theta6_Sol[7];            
+                       
             
             if math.degrees(999) in jointVals:
                 cmds.warning( "Not a valid configuration" )
                 theta1OutDataHandle.setClean()
                 theta2OutDataHandle.setClean()
                 theta3OutDataHandle.setClean()
-                theta4OutDataHandle.setClean()
-                theta5OutDataHandle.setClean()
-                theta6OutDataHandle.setClean()
+
             else:
                 ##########################################################            
                 
@@ -561,12 +415,6 @@ class robotIKS(OpenMaya.MPxNode):
                     jointVals[1] = jointVals[1] * (-1)
                 if flipA3:
                     jointVals[2] = jointVals[2] * (-1)
-                if flipA4:
-                    jointVals[3] = jointVals[3] * (-1)
-                if flipA5:
-                    jointVals[4] = jointVals[4] * (-1)
-                if flipA6 :
-                    jointVals[5] = jointVals[5] * (-1)
 
 
                 # SPECIAL ADDITION for 4A VARIANT
@@ -579,44 +427,36 @@ class robotIKS(OpenMaya.MPxNode):
                 j1 = OpenMaya.MAngle( jointVals[0], 2 )
                 j2 = OpenMaya.MAngle( jointVals[1], 2 )
                 j3 = OpenMaya.MAngle( jointVals[2], 2 )
-                j4 = OpenMaya.MAngle( jointVals[3], 2 )
-                j5 = OpenMaya.MAngle( jointVals[4], 2 )
-                j6 = OpenMaya.MAngle( jointVals[5], 2 )
+
                 
                 # Set the Output Values
                 theta1 = theta1OutDataHandle.setMAngle( j1 )
                 theta2 = theta2OutDataHandle.setMAngle( j2 )
                 theta3 = theta3OutDataHandle.setMAngle( j3 )
-                theta4 = theta4OutDataHandle.setMAngle( j4 )
-                theta5 = theta5OutDataHandle.setMAngle( j5 )
-                theta6 = theta6OutDataHandle.setMAngle( j6 ) 
-                
+                theta4 = theta4OutDataHandle.setMAngle( ( OpenMaya.MAngle(0, 2) ) )  # Placeholder
+
                     
                 # Mark the output data handle as being clean; it need not be computed given its input.
                 theta1OutDataHandle.setClean()
                 theta2OutDataHandle.setClean()
                 theta3OutDataHandle.setClean()
                 theta4OutDataHandle.setClean()
-                theta5OutDataHandle.setClean()
-                theta6OutDataHandle.setClean()
+
 
         else:
             # Set the Output Values
             theta1 = theta1OutDataHandle.setMAngle( OpenMaya.MAngle(j1FK, 2) )
             theta2 = theta2OutDataHandle.setMAngle( OpenMaya.MAngle(j2FK, 2) )
             theta3 = theta3OutDataHandle.setMAngle( OpenMaya.MAngle(j3FK, 2) )
-            theta4 = theta4OutDataHandle.setMAngle( OpenMaya.MAngle(j4FK, 2) )
-            theta5 = theta5OutDataHandle.setMAngle( OpenMaya.MAngle(j5FK, 2) )
-            theta6 = theta6OutDataHandle.setMAngle( OpenMaya.MAngle(j6FK, 2) ) 
-            
+            theta4 = theta3OutDataHandle.setMAngle( OpenMaya.MAngle(j4FK, 2) )
+ 
                 
             # Mark the output data handle as being clean; it need not be computed given its input.
             theta1OutDataHandle.setClean()
             theta2OutDataHandle.setClean()
             theta3OutDataHandle.setClean()
             theta4OutDataHandle.setClean()
-            theta5OutDataHandle.setClean()
-            theta6OutDataHandle.setClean()
+
 
 #========================================================#
 #                 Plug-in initialization.                #
@@ -774,20 +614,6 @@ def nodeInitializer():
     numericAttributeFn.hidden   = False
     compoundAttributeFn.addChild( robotIKS.flipA4Attr ) 
 
-    # Flip Axis 5 Direction #
-    robotIKS.flipA5Attr = numericAttributeFn.create( 'flipA5', 'flipA5', OpenMaya.MFnNumericData.kBoolean, 0 )                                                            
-    numericAttributeFn.writable = True 
-    numericAttributeFn.storable = True 
-    numericAttributeFn.hidden   = False
-    compoundAttributeFn.addChild( robotIKS.flipA5Attr ) 
-
-    # Flip Axis 6 Direction #
-    robotIKS.flipA6Attr = numericAttributeFn.create( 'flipA6', 'flipA6', OpenMaya.MFnNumericData.kBoolean, 0 )                                                            
-    numericAttributeFn.writable = True 
-    numericAttributeFn.storable = True 
-    numericAttributeFn.hidden   = False
-    compoundAttributeFn.addChild( robotIKS.flipA6Attr ) 
-
     robotIKS.addAttribute( robotIKS.axisDirections )  # Add Parent Attr 
 
 
@@ -811,13 +637,7 @@ def nodeInitializer():
     numericAttributeFn.storable = True 
     numericAttributeFn.hidden   = False
     compoundAttributeFn.addChild( robotIKS.soln2Attr )     
-
-    # soln3 # 
-    robotIKS.soln3Attr = numericAttributeFn.create( 'soln3', 'soln3', OpenMaya.MFnNumericData.kBoolean, 1 )                                                            
-    numericAttributeFn.writable = True 
-    numericAttributeFn.storable = True 
-    numericAttributeFn.hidden   = False
-    compoundAttributeFn.addChild( robotIKS.soln3Attr )     
+   
 
     # ik #
     robotIKS.ikAttr = numericAttributeFn.create( 'ik', 'ik', OpenMaya.MFnNumericData.kBoolean, 1 )                                                            
@@ -860,20 +680,7 @@ def nodeInitializer():
     angleAttributeFn.writable = True
     angleAttributeFn.hidden   = False
     compoundAttributeFn.addChild( robotIKS.j4FKAttr )     
-
-    # J5 FK #  
-    robotIKS.j5FKAttr = angleAttributeFn.create( 'j5_FK', 'j5_FK', OpenMaya.MFnUnitAttribute.kAngle )
-    angleAttributeFn.storable = True 
-    angleAttributeFn.writable = True
-    angleAttributeFn.hidden   = False
-    compoundAttributeFn.addChild( robotIKS.j5FKAttr )     
-
-    # J6 FK #  
-    robotIKS.j6FKAttr = angleAttributeFn.create( 'j6_FK', 'j6_FK', OpenMaya.MFnUnitAttribute.kAngle )
-    angleAttributeFn.storable = True 
-    angleAttributeFn.writable = True
-    angleAttributeFn.hidden   = False
-    compoundAttributeFn.addChild( robotIKS.j6FKAttr )     
+   
 
 
     robotIKS.addAttribute( robotIKS.fkControls ) 
@@ -1034,21 +841,6 @@ def nodeInitializer():
     #robotIKS.addAttribute( robotIKS.theta4Attr )  
     compoundAttributeFn.addChild( robotIKS.theta4Attr )
 
-    robotIKS.theta5Attr = angleAttributeFn.create( 'theta5', 'J5', OpenMaya.MFnUnitAttribute.kAngle )
-    angleAttributeFn.storable = False 
-    angleAttributeFn.writable = False
-    angleAttributeFn.readable = True 
-    angleAttributeFn.hidden   = False
-    #robotIKS.addAttribute( robotIKS.theta5Attr )  
-    compoundAttributeFn.addChild( robotIKS.theta5Attr )
-
-    robotIKS.theta6Attr = angleAttributeFn.create( 'theta6', 'J6', OpenMaya.MFnUnitAttribute.kAngle )
-    angleAttributeFn.storable = False 
-    angleAttributeFn.writable = False
-    angleAttributeFn.readable = True 
-    angleAttributeFn.hidden   = False
-    #robotIKS.addAttribute( robotIKS.theta6Attr )  
-    compoundAttributeFn.addChild( robotIKS.theta6Attr )
     
     robotIKS.addAttribute( robotIKS.theta )  # Add parent Attr
 
@@ -1061,17 +853,13 @@ def nodeInitializer():
     robotIKS.attributeAffects( robotIKS.constrainAxis3Attr, robotIKS.theta1Attr ) 
     robotIKS.attributeAffects( robotIKS.constrainAxis3Attr, robotIKS.theta2Attr ) 
     robotIKS.attributeAffects( robotIKS.constrainAxis3Attr, robotIKS.theta3Attr ) 
-    robotIKS.attributeAffects( robotIKS.constrainAxis3Attr, robotIKS.theta4Attr ) 
-    robotIKS.attributeAffects( robotIKS.constrainAxis3Attr, robotIKS.theta5Attr ) 
-    robotIKS.attributeAffects( robotIKS.constrainAxis3Attr, robotIKS.theta6Attr ) 
+    robotIKS.attributeAffects( robotIKS.constrainAxis3Attr, robotIKS.theta4Attr )  
     robotIKS.attributeAffects( robotIKS.constrainAxis3Attr, robotIKS.theta ) 
 
     robotIKS.attributeAffects( robotIKS.axis3ConstraintOffsetAngleAttr, robotIKS.theta1Attr ) 
     robotIKS.attributeAffects( robotIKS.axis3ConstraintOffsetAngleAttr, robotIKS.theta2Attr ) 
     robotIKS.attributeAffects( robotIKS.axis3ConstraintOffsetAngleAttr, robotIKS.theta3Attr ) 
     robotIKS.attributeAffects( robotIKS.axis3ConstraintOffsetAngleAttr, robotIKS.theta4Attr ) 
-    robotIKS.attributeAffects( robotIKS.axis3ConstraintOffsetAngleAttr, robotIKS.theta5Attr ) 
-    robotIKS.attributeAffects( robotIKS.axis3ConstraintOffsetAngleAttr, robotIKS.theta6Attr ) 
     robotIKS.attributeAffects( robotIKS.axis3ConstraintOffsetAngleAttr, robotIKS.theta ) 
 
 
@@ -1084,9 +872,7 @@ def nodeInitializer():
     robotIKS.attributeAffects( robotIKS.a1Attr, robotIKS.theta1Attr )
     robotIKS.attributeAffects( robotIKS.a1Attr, robotIKS.theta2Attr )
     robotIKS.attributeAffects( robotIKS.a1Attr, robotIKS.theta3Attr )
-    robotIKS.attributeAffects( robotIKS.a1Attr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.a1Attr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.a1Attr, robotIKS.theta6Attr )        
+    robotIKS.attributeAffects( robotIKS.a1Attr, robotIKS.theta4Attr )        
     robotIKS.attributeAffects( robotIKS.a1Attr, robotIKS.theta      )        
 
     # a2 #
@@ -1094,8 +880,6 @@ def nodeInitializer():
     robotIKS.attributeAffects( robotIKS.a2Attr, robotIKS.theta2Attr )
     robotIKS.attributeAffects( robotIKS.a2Attr, robotIKS.theta3Attr )
     robotIKS.attributeAffects( robotIKS.a2Attr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.a2Attr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.a2Attr, robotIKS.theta6Attr )
     robotIKS.attributeAffects( robotIKS.a2Attr, robotIKS.theta      )        
      
 
@@ -1103,9 +887,7 @@ def nodeInitializer():
     robotIKS.attributeAffects( robotIKS.bAttr, robotIKS.theta1Attr )
     robotIKS.attributeAffects( robotIKS.bAttr, robotIKS.theta2Attr )
     robotIKS.attributeAffects( robotIKS.bAttr, robotIKS.theta3Attr )
-    robotIKS.attributeAffects( robotIKS.bAttr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.bAttr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.bAttr, robotIKS.theta6Attr )      
+    robotIKS.attributeAffects( robotIKS.bAttr, robotIKS.theta4Attr )     
     robotIKS.attributeAffects( robotIKS.bAttr, robotIKS.theta      )      
 
     # c1 #
@@ -1113,17 +895,13 @@ def nodeInitializer():
     robotIKS.attributeAffects( robotIKS.c1Attr, robotIKS.theta2Attr )
     robotIKS.attributeAffects( robotIKS.c1Attr, robotIKS.theta3Attr )
     robotIKS.attributeAffects( robotIKS.c1Attr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.c1Attr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.c1Attr, robotIKS.theta6Attr ) 
     robotIKS.attributeAffects( robotIKS.c1Attr, robotIKS.theta      ) 
 
     # c2 #
     robotIKS.attributeAffects( robotIKS.c2Attr, robotIKS.theta1Attr )
     robotIKS.attributeAffects( robotIKS.c2Attr, robotIKS.theta2Attr )
     robotIKS.attributeAffects( robotIKS.c2Attr, robotIKS.theta3Attr )
-    robotIKS.attributeAffects( robotIKS.c2Attr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.c2Attr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.c2Attr, robotIKS.theta6Attr ) 
+    robotIKS.attributeAffects( robotIKS.c2Attr, robotIKS.theta4Attr ) 
     robotIKS.attributeAffects( robotIKS.c2Attr, robotIKS.theta      ) 
 
     # c3 #
@@ -1131,8 +909,6 @@ def nodeInitializer():
     robotIKS.attributeAffects( robotIKS.c3Attr, robotIKS.theta2Attr )
     robotIKS.attributeAffects( robotIKS.c3Attr, robotIKS.theta3Attr )
     robotIKS.attributeAffects( robotIKS.c3Attr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.c3Attr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.c3Attr, robotIKS.theta6Attr ) 
     robotIKS.attributeAffects( robotIKS.c3Attr, robotIKS.theta      ) 
 
     # c4 #
@@ -1140,8 +916,6 @@ def nodeInitializer():
     robotIKS.attributeAffects( robotIKS.c4Attr, robotIKS.theta2Attr )
     robotIKS.attributeAffects( robotIKS.c4Attr, robotIKS.theta3Attr )
     robotIKS.attributeAffects( robotIKS.c4Attr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.c4Attr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.c4Attr, robotIKS.theta6Attr )
     robotIKS.attributeAffects( robotIKS.c4Attr, robotIKS.theta      )
 
     #----------------#
@@ -1153,8 +927,6 @@ def nodeInitializer():
     robotIKS.attributeAffects( robotIKS.axis2OffsetAttr, robotIKS.theta2Attr )
     robotIKS.attributeAffects( robotIKS.axis2OffsetAttr, robotIKS.theta3Attr )
     robotIKS.attributeAffects( robotIKS.axis2OffsetAttr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.axis2OffsetAttr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.axis2OffsetAttr, robotIKS.theta6Attr )
     robotIKS.attributeAffects( robotIKS.axis2OffsetAttr, robotIKS.theta      )
 
     # axis 3 #
@@ -1162,8 +934,6 @@ def nodeInitializer():
     robotIKS.attributeAffects( robotIKS.axis3OffsetAttr, robotIKS.theta2Attr )
     robotIKS.attributeAffects( robotIKS.axis3OffsetAttr, robotIKS.theta3Attr )
     robotIKS.attributeAffects( robotIKS.axis3OffsetAttr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.axis3OffsetAttr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.axis3OffsetAttr, robotIKS.theta6Attr )
     robotIKS.attributeAffects( robotIKS.axis3OffsetAttr, robotIKS.theta      )
 
     #------------------------#
@@ -1175,8 +945,6 @@ def nodeInitializer():
     robotIKS.attributeAffects( robotIKS.flipA1Attr, robotIKS.theta2Attr )
     robotIKS.attributeAffects( robotIKS.flipA1Attr, robotIKS.theta3Attr )
     robotIKS.attributeAffects( robotIKS.flipA1Attr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.flipA1Attr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.flipA1Attr, robotIKS.theta6Attr )
     robotIKS.attributeAffects( robotIKS.flipA1Attr, robotIKS.theta      )
  
     # axis 2 #
@@ -1184,8 +952,6 @@ def nodeInitializer():
     robotIKS.attributeAffects( robotIKS.flipA2Attr, robotIKS.theta2Attr )
     robotIKS.attributeAffects( robotIKS.flipA2Attr, robotIKS.theta3Attr )
     robotIKS.attributeAffects( robotIKS.flipA2Attr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.flipA2Attr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.flipA2Attr, robotIKS.theta6Attr )
     robotIKS.attributeAffects( robotIKS.flipA2Attr, robotIKS.theta      )
     
     # axis 3 #
@@ -1193,8 +959,6 @@ def nodeInitializer():
     robotIKS.attributeAffects( robotIKS.flipA3Attr, robotIKS.theta2Attr )
     robotIKS.attributeAffects( robotIKS.flipA3Attr, robotIKS.theta3Attr )
     robotIKS.attributeAffects( robotIKS.flipA3Attr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.flipA3Attr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.flipA3Attr, robotIKS.theta6Attr )
     robotIKS.attributeAffects( robotIKS.flipA3Attr, robotIKS.theta      )
 
     # axis 4 #
@@ -1202,28 +966,9 @@ def nodeInitializer():
     robotIKS.attributeAffects( robotIKS.flipA4Attr, robotIKS.theta2Attr )
     robotIKS.attributeAffects( robotIKS.flipA4Attr, robotIKS.theta3Attr )
     robotIKS.attributeAffects( robotIKS.flipA4Attr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.flipA4Attr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.flipA4Attr, robotIKS.theta6Attr )
     robotIKS.attributeAffects( robotIKS.flipA4Attr, robotIKS.theta      )
 
 
-    # axis 5 #
-    robotIKS.attributeAffects( robotIKS.flipA5Attr, robotIKS.theta1Attr )
-    robotIKS.attributeAffects( robotIKS.flipA5Attr, robotIKS.theta2Attr )
-    robotIKS.attributeAffects( robotIKS.flipA5Attr, robotIKS.theta3Attr )
-    robotIKS.attributeAffects( robotIKS.flipA5Attr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.flipA5Attr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.flipA5Attr, robotIKS.theta6Attr )
-    robotIKS.attributeAffects( robotIKS.flipA5Attr, robotIKS.theta      )
-
-    # axis 6 #
-    robotIKS.attributeAffects( robotIKS.flipA6Attr, robotIKS.theta1Attr )
-    robotIKS.attributeAffects( robotIKS.flipA6Attr, robotIKS.theta2Attr )
-    robotIKS.attributeAffects( robotIKS.flipA6Attr, robotIKS.theta3Attr )
-    robotIKS.attributeAffects( robotIKS.flipA6Attr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.flipA6Attr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.flipA6Attr, robotIKS.theta6Attr )
-    robotIKS.attributeAffects( robotIKS.flipA6Attr, robotIKS.theta      )
     
     #----------------------#
     #  Joint Congig Bools  #
@@ -1233,36 +978,22 @@ def nodeInitializer():
     robotIKS.attributeAffects( robotIKS.soln1Attr, robotIKS.theta1Attr )
     robotIKS.attributeAffects( robotIKS.soln1Attr, robotIKS.theta2Attr )
     robotIKS.attributeAffects( robotIKS.soln1Attr, robotIKS.theta3Attr )
-    robotIKS.attributeAffects( robotIKS.soln1Attr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.soln1Attr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.soln1Attr, robotIKS.theta6Attr )        
+    robotIKS.attributeAffects( robotIKS.soln1Attr, robotIKS.theta4Attr )       
     robotIKS.attributeAffects( robotIKS.soln1Attr, robotIKS.theta      )
     
     # soln2 #
     robotIKS.attributeAffects( robotIKS.soln2Attr, robotIKS.theta1Attr )
     robotIKS.attributeAffects( robotIKS.soln2Attr, robotIKS.theta2Attr )
     robotIKS.attributeAffects( robotIKS.soln2Attr, robotIKS.theta3Attr )
-    robotIKS.attributeAffects( robotIKS.soln2Attr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.soln2Attr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.soln2Attr, robotIKS.theta6Attr )        
+    robotIKS.attributeAffects( robotIKS.soln2Attr, robotIKS.theta4Attr )       
     robotIKS.attributeAffects( robotIKS.soln2Attr, robotIKS.theta      )
     
-    # soln3 #
-    robotIKS.attributeAffects( robotIKS.soln3Attr, robotIKS.theta1Attr )
-    robotIKS.attributeAffects( robotIKS.soln3Attr, robotIKS.theta2Attr )
-    robotIKS.attributeAffects( robotIKS.soln3Attr, robotIKS.theta3Attr )
-    robotIKS.attributeAffects( robotIKS.soln3Attr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.soln3Attr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.soln3Attr, robotIKS.theta6Attr )        
-    robotIKS.attributeAffects( robotIKS.soln3Attr, robotIKS.theta      )
     
     # ik #
     robotIKS.attributeAffects( robotIKS.ikAttr, robotIKS.theta1Attr )
     robotIKS.attributeAffects( robotIKS.ikAttr, robotIKS.theta2Attr )
     robotIKS.attributeAffects( robotIKS.ikAttr, robotIKS.theta3Attr )
-    robotIKS.attributeAffects( robotIKS.ikAttr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.ikAttr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.ikAttr, robotIKS.theta6Attr )        
+    robotIKS.attributeAffects( robotIKS.ikAttr, robotIKS.theta4Attr )       
     robotIKS.attributeAffects( robotIKS.ikAttr, robotIKS.theta      )
 
 
@@ -1274,55 +1005,29 @@ def nodeInitializer():
     robotIKS.attributeAffects( robotIKS.j1FKAttr, robotIKS.theta1Attr )
     robotIKS.attributeAffects( robotIKS.j1FKAttr, robotIKS.theta2Attr )
     robotIKS.attributeAffects( robotIKS.j1FKAttr, robotIKS.theta3Attr )
-    robotIKS.attributeAffects( robotIKS.j1FKAttr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.j1FKAttr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.j1FKAttr, robotIKS.theta6Attr )        
+    robotIKS.attributeAffects( robotIKS.j1FKAttr, robotIKS.theta4Attr )        
     robotIKS.attributeAffects( robotIKS.j1FKAttr, robotIKS.theta      )
 
     # J2 FK #
     robotIKS.attributeAffects( robotIKS.j2FKAttr, robotIKS.theta1Attr )
     robotIKS.attributeAffects( robotIKS.j2FKAttr, robotIKS.theta2Attr )
     robotIKS.attributeAffects( robotIKS.j2FKAttr, robotIKS.theta3Attr )
-    robotIKS.attributeAffects( robotIKS.j2FKAttr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.j2FKAttr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.j2FKAttr, robotIKS.theta6Attr )        
+    robotIKS.attributeAffects( robotIKS.j2FKAttr, robotIKS.theta4Attr )        
     robotIKS.attributeAffects( robotIKS.j2FKAttr, robotIKS.theta      )
 
     # J3 FK #
     robotIKS.attributeAffects( robotIKS.j3FKAttr, robotIKS.theta1Attr )
     robotIKS.attributeAffects( robotIKS.j3FKAttr, robotIKS.theta2Attr )
     robotIKS.attributeAffects( robotIKS.j3FKAttr, robotIKS.theta3Attr )
-    robotIKS.attributeAffects( robotIKS.j3FKAttr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.j3FKAttr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.j3FKAttr, robotIKS.theta6Attr )        
+    robotIKS.attributeAffects( robotIKS.j3FKAttr, robotIKS.theta4Attr )       
     robotIKS.attributeAffects( robotIKS.j3FKAttr, robotIKS.theta      )
 
     # J4 FK #
     robotIKS.attributeAffects( robotIKS.j4FKAttr, robotIKS.theta1Attr )
     robotIKS.attributeAffects( robotIKS.j4FKAttr, robotIKS.theta2Attr )
     robotIKS.attributeAffects( robotIKS.j4FKAttr, robotIKS.theta3Attr )
-    robotIKS.attributeAffects( robotIKS.j4FKAttr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.j4FKAttr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.j4FKAttr, robotIKS.theta6Attr )        
+    robotIKS.attributeAffects( robotIKS.j4FKAttr, robotIKS.theta4Attr )       
     robotIKS.attributeAffects( robotIKS.j4FKAttr, robotIKS.theta      )
-
-    # J5 FK #
-    robotIKS.attributeAffects( robotIKS.j5FKAttr, robotIKS.theta1Attr )
-    robotIKS.attributeAffects( robotIKS.j5FKAttr, robotIKS.theta2Attr )
-    robotIKS.attributeAffects( robotIKS.j5FKAttr, robotIKS.theta3Attr )
-    robotIKS.attributeAffects( robotIKS.j5FKAttr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.j5FKAttr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.j5FKAttr, robotIKS.theta6Attr )        
-    robotIKS.attributeAffects( robotIKS.j5FKAttr, robotIKS.theta      )
-
-    # J6 FK #
-    robotIKS.attributeAffects( robotIKS.j6FKAttr, robotIKS.theta1Attr )
-    robotIKS.attributeAffects( robotIKS.j6FKAttr, robotIKS.theta2Attr )
-    robotIKS.attributeAffects( robotIKS.j6FKAttr, robotIKS.theta3Attr )
-    robotIKS.attributeAffects( robotIKS.j6FKAttr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.j6FKAttr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.j6FKAttr, robotIKS.theta6Attr )        
-    robotIKS.attributeAffects( robotIKS.j6FKAttr, robotIKS.theta      )
 
                  
     #-------#
@@ -1334,8 +1039,6 @@ def nodeInitializer():
     robotIKS.attributeAffects( robotIKS.tcpXAttr, robotIKS.theta2Attr )
     robotIKS.attributeAffects( robotIKS.tcpXAttr, robotIKS.theta3Attr )
     robotIKS.attributeAffects( robotIKS.tcpXAttr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.tcpXAttr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.tcpXAttr, robotIKS.theta6Attr )
     robotIKS.attributeAffects( robotIKS.tcpXAttr, robotIKS.theta      )
 
     
@@ -1344,8 +1047,6 @@ def nodeInitializer():
     robotIKS.attributeAffects( robotIKS.tcpYAttr, robotIKS.theta2Attr )
     robotIKS.attributeAffects( robotIKS.tcpYAttr, robotIKS.theta3Attr )
     robotIKS.attributeAffects( robotIKS.tcpYAttr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.tcpYAttr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.tcpYAttr, robotIKS.theta6Attr )
     robotIKS.attributeAffects( robotIKS.tcpYAttr, robotIKS.theta      )
     
     # TCP Z #
@@ -1353,17 +1054,13 @@ def nodeInitializer():
     robotIKS.attributeAffects( robotIKS.tcpZAttr, robotIKS.theta2Attr )
     robotIKS.attributeAffects( robotIKS.tcpZAttr, robotIKS.theta3Attr )
     robotIKS.attributeAffects( robotIKS.tcpZAttr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.tcpZAttr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.tcpZAttr, robotIKS.theta6Attr )
     robotIKS.attributeAffects( robotIKS.tcpZAttr, robotIKS.theta      )
  
     # Tcp Matrix #
     robotIKS.attributeAffects( robotIKS.tcpMatAttr, robotIKS.theta1Attr )    
     robotIKS.attributeAffects( robotIKS.tcpMatAttr, robotIKS.theta2Attr )    
     robotIKS.attributeAffects( robotIKS.tcpMatAttr, robotIKS.theta3Attr )    
-    robotIKS.attributeAffects( robotIKS.tcpMatAttr, robotIKS.theta4Attr )    
-    robotIKS.attributeAffects( robotIKS.tcpMatAttr, robotIKS.theta5Attr )    
-    robotIKS.attributeAffects( robotIKS.tcpMatAttr, robotIKS.theta6Attr )       
+    robotIKS.attributeAffects( robotIKS.tcpMatAttr, robotIKS.theta4Attr )          
     robotIKS.attributeAffects( robotIKS.tcpMatAttr, robotIKS.theta      )       
 
     #-------#
@@ -1375,8 +1072,6 @@ def nodeInitializer():
     robotIKS.attributeAffects( robotIKS.lcsXAttr, robotIKS.theta2Attr )
     robotIKS.attributeAffects( robotIKS.lcsXAttr, robotIKS.theta3Attr )
     robotIKS.attributeAffects( robotIKS.lcsXAttr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.lcsXAttr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.lcsXAttr, robotIKS.theta6Attr )
     robotIKS.attributeAffects( robotIKS.lcsXAttr, robotIKS.theta      )
     
     # LCS Y #
@@ -1384,8 +1079,6 @@ def nodeInitializer():
     robotIKS.attributeAffects( robotIKS.lcsYAttr, robotIKS.theta2Attr )
     robotIKS.attributeAffects( robotIKS.lcsYAttr, robotIKS.theta3Attr )
     robotIKS.attributeAffects( robotIKS.lcsYAttr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.lcsYAttr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.lcsYAttr, robotIKS.theta6Attr )
     robotIKS.attributeAffects( robotIKS.lcsYAttr, robotIKS.theta      )
     
     # LCS Z #
@@ -1393,8 +1086,6 @@ def nodeInitializer():
     robotIKS.attributeAffects( robotIKS.lcsZAttr, robotIKS.theta2Attr )
     robotIKS.attributeAffects( robotIKS.lcsZAttr, robotIKS.theta3Attr )
     robotIKS.attributeAffects( robotIKS.lcsZAttr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.lcsZAttr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.lcsZAttr, robotIKS.theta6Attr )
     robotIKS.attributeAffects( robotIKS.lcsZAttr, robotIKS.theta      )
  
     # LCS Matrix #
@@ -1402,8 +1093,6 @@ def nodeInitializer():
     robotIKS.attributeAffects( robotIKS.lcsMatAttr, robotIKS.theta2Attr )    
     robotIKS.attributeAffects( robotIKS.lcsMatAttr, robotIKS.theta3Attr )    
     robotIKS.attributeAffects( robotIKS.lcsMatAttr, robotIKS.theta4Attr )    
-    robotIKS.attributeAffects( robotIKS.lcsMatAttr, robotIKS.theta5Attr )    
-    robotIKS.attributeAffects( robotIKS.lcsMatAttr, robotIKS.theta6Attr ) 
     robotIKS.attributeAffects( robotIKS.lcsMatAttr, robotIKS.theta      ) 
 
     #----------#
@@ -1415,8 +1104,6 @@ def nodeInitializer():
     robotIKS.attributeAffects( robotIKS.targetXAttr, robotIKS.theta2Attr )
     robotIKS.attributeAffects( robotIKS.targetXAttr, robotIKS.theta3Attr )
     robotIKS.attributeAffects( robotIKS.targetXAttr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.targetXAttr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.targetXAttr, robotIKS.theta6Attr )
     robotIKS.attributeAffects( robotIKS.targetXAttr, robotIKS.theta      )
     
     # Target Y #
@@ -1424,8 +1111,6 @@ def nodeInitializer():
     robotIKS.attributeAffects( robotIKS.targetYAttr, robotIKS.theta2Attr )
     robotIKS.attributeAffects( robotIKS.targetYAttr, robotIKS.theta3Attr )
     robotIKS.attributeAffects( robotIKS.targetYAttr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.targetYAttr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.targetYAttr, robotIKS.theta6Attr )
     robotIKS.attributeAffects( robotIKS.targetYAttr, robotIKS.theta      )
     
     # Target Z #
@@ -1433,8 +1118,6 @@ def nodeInitializer():
     robotIKS.attributeAffects( robotIKS.targetZAttr, robotIKS.theta2Attr )
     robotIKS.attributeAffects( robotIKS.targetZAttr, robotIKS.theta3Attr )
     robotIKS.attributeAffects( robotIKS.targetZAttr, robotIKS.theta4Attr )
-    robotIKS.attributeAffects( robotIKS.targetZAttr, robotIKS.theta5Attr )
-    robotIKS.attributeAffects( robotIKS.targetZAttr, robotIKS.theta6Attr )
     robotIKS.attributeAffects( robotIKS.targetZAttr, robotIKS.theta      )
   
 
@@ -1442,9 +1125,7 @@ def nodeInitializer():
     robotIKS.attributeAffects( robotIKS.targetMatAttr, robotIKS.theta1Attr )    
     robotIKS.attributeAffects( robotIKS.targetMatAttr, robotIKS.theta2Attr )    
     robotIKS.attributeAffects( robotIKS.targetMatAttr, robotIKS.theta3Attr )    
-    robotIKS.attributeAffects( robotIKS.targetMatAttr, robotIKS.theta4Attr )    
-    robotIKS.attributeAffects( robotIKS.targetMatAttr, robotIKS.theta5Attr )    
-    robotIKS.attributeAffects( robotIKS.targetMatAttr, robotIKS.theta6Attr )    
+    robotIKS.attributeAffects( robotIKS.targetMatAttr, robotIKS.theta4Attr )   
     robotIKS.attributeAffects( robotIKS.targetMatAttr, robotIKS.theta      )    
            
 def initializePlugin( mobject ):
