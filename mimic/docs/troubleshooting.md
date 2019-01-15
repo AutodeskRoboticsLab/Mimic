@@ -24,8 +24,7 @@ receive and send a detailed description to us at [mimic@autodesk.com](mailto:mim
  
   So, to make the user Library folder appear, follow these [instructions](http://osxdaily.com/2013/10/28/show-user-library-folder-os-x-mavericks/)
  
-
-That will give you the correct folder structure that matches mine in the tutorial video.
+  That will give you the correct folder structure that matches mine in the [tutorial video](https://youtu.be/bc3SqEXcE5Q).
 
 - If you're using Maya 2017 update 3 or earlier, you must
   [manually load the Mimic shelf](https://youtu.be/bc3SqEXcE5Q?t=1m46s).
