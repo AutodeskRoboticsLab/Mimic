@@ -22,7 +22,7 @@ receive and send a detailed description to us at [mimic@autodesk.com](mailto:mim
   The correct Library folder is the user Library folder in Mac HD > Users > User Name, 
   not the one that’s on the main HD
  
-  So, to make the user Library folder appear, follow these [instructions]:(http://osxdaily.com/2013/10/28/show-user-library-folder-os-x-mavericks/)
+  So, to make the user Library folder appear, follow these [instructions](http://osxdaily.com/2013/10/28/show-user-library-folder-os-x-mavericks/)
  
 
 That will give you the correct folder structure that matches mine in the tutorial video.
