@@ -17,6 +17,16 @@ receive and send a detailed description to us at [mimic@autodesk.com](mailto:mim
 
 - If the `modules` directory above does not exist, create it.
 
+- If you're on a Mac and dont see the path listed above, it's likely that
+  your user Library folder is hidden (there are multiple Library folders on Macs).
+  The correct Library folder is the user Library folder in Mac HD > Users > User Name, 
+  not the one that’s on the main HD
+ 
+  So, to make the user Library folder appear, follow these [instructions]:(http://osxdaily.com/2013/10/28/show-user-library-folder-os-x-mavericks/)
+ 
+
+That will give you the correct folder structure that matches mine in the tutorial video.
+
 - If you're using Maya 2017 update 3 or earlier, you must
   [manually load the Mimic shelf](https://youtu.be/bc3SqEXcE5Q?t=1m46s).
   
