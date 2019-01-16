@@ -177,6 +177,7 @@ class SimpleEntertainTechProcessor(postproc.PostProcessor):
             use_nonlinear_motion=True,
             include_axes=True,
             include_external_axes=True,
+            include_digital_outputs=True,
             include_checksum=True
         )
 
@@ -210,15 +211,18 @@ def _process_records_command(command, opts):
 
     if command.digital_output is not None:
         digital_output = [io for io in command.digital_output if io is not None]
-        formatted_params = [general_utils.num_to_str(io.value, include_sign=True, padding=padding)
-                            for io in digital_output]
+
+        bitfield = 0
+        for output in digital_output:
+            bitfield |= output.value << int(output.identifier)
+
+        formatted_params = "\t{}".format(bitfield)
         params.extend(formatted_params)
 
     template = ''.join([TEMPLATES[RECORDS] for _ in params])
 
     # Structure and format data, command
     formatted_record = template.format(*params)
-
     return formatted_record
 
 

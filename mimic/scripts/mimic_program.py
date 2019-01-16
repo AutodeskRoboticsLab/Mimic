@@ -19,6 +19,7 @@ import math
 import general_utils
 import mimic_utils
 import mimic_external_axes
+import mimic_io
 
 from analysis import analysis
 from analysis import analysis_utils
@@ -806,20 +807,16 @@ def _sample_frames_get_command_dicts(robot_name, frames, animation_settings, tim
         # Get IO parameters
         if not user_options.Ignore_IOs:
             if user_options.Include_digital_outputs:
-                # TODO: Implement digital outputs
-                # digital_output = None
-                # command_dict[postproc.DIGITAL_OUTPUT] = postproc.DigitalOutput(*digital_output)
-                pass
+                digital_output = _sample_frame_get_outs(robot_name, frame, 'digital')
+                command_dict[postproc.DIGITAL_OUTPUT] = digital_output
             if user_options.Include_digital_inputs:
                 # TODO: Implement digital inputs
                 # digital_input = None
                 # command_dict[postproc.DIGITAL_INPUT'] = postproc.DigitalOutput(*digital_input)
                 pass
             if user_options.Include_analog_outputs:
-                # TODO: Implement analog outputs
-                # analog_output = None
-                # command_dict[postproc.ANALOG_OUTPUT] = postproc.DigitalOutput(*analog_output)
-                pass
+                analog_output = _sample_frame_get_outs(robot_name, frame, 'analog')
+                command_dict[postproc.ANALOG_OUTPUT] = analog_output
             if user_options.Include_analog_inputs:
                 # TODO: Implement analog inputs
                 # analog_input = None
@@ -980,6 +977,55 @@ def _sample_frame_get_external_axes(robot_name, frame):
             external_axes[axis_index] = position
     # Return an ordered list of Nones and/or positions
     return external_axes
+
+
+def _sample_frame_get_outs(robot_name, frame, out_type='digital'):
+    """
+    Get robot Digital Out from an animation frame.
+    :param robot_name: Name of the robot
+    :param frame: Frame to sample
+    :return:
+    """
+    # Set up keys
+    key_ignore = 'Ignore'
+    key_io_number = 'IO Number'
+    key_value = 'Value'
+    key_postproc_id = 'Postproc ID'
+    key_type = 'Type'
+
+    # Create a list of Nones for initial external axes
+    io_dict = {}
+    ios = []
+
+    # Get all external axes for this robot
+    io_names = mimic_io.get_io_names(robot_name)
+    # Get info dict for each of those IOs
+    for io_name in io_names:
+        info = mimic_io.get_io_info_simple(robot_name, io_name, frame)
+        # Get values from info dict
+        ignore = info[key_ignore]
+        if not ignore:
+            # Put it in the right place
+            io_number = info[key_io_number]
+            postproc_id = info[key_postproc_id]
+            value = info[key_value]
+            io_type = info[key_type]
+
+            if io_type == out_type:
+                # Convert bool values to integers for digital outs
+                if out_type == 'digital':
+                    value = int(value)
+                    io_dict[io_number] = postproc.DigitalOutput(postproc_id, value)
+                else:
+                    io_dict[io_number] = postproc.AnalogOutput(postproc_id, value)
+
+    # Convert io_dict to ordered list
+    io_sorted_numbers = sorted(io_dict)
+    for io_number in io_sorted_numbers:
+        ios.append(io_dict[io_number])
+        
+    # Return an ordered list of Nones and/or positions
+    return ios
 
 
 def _sample_frame_get_configuration(robot_name, frame):
