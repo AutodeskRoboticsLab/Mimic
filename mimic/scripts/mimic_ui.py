@@ -56,13 +56,11 @@ def build_mimic_ui():
     animate_tab_layout = build_animate_tab(mimic_tab_layout)
     program_tab_layout = build_program_tab(mimic_tab_layout)
     setup_tab_layout = build_setup_tab(mimic_tab_layout)
-    external_tab_layout = build_external_tab(mimic_tab_layout)
     prefs_tab_layout = build_prefs_tab(mimic_win)
 
     tabs = [(animate_tab_layout, "Animate"),
             (program_tab_layout, "Program"),
             (setup_tab_layout, "Setup"),
-            (external_tab_layout, "External"),
             (prefs_tab_layout, "Prefs")]
 
     assign_tabs(tabs, mimic_tab_layout)
@@ -664,6 +662,7 @@ def build_program_tab(parent_layout):
 
 
 # SETUP TAB
+# SETUP - General
 def _build_add_robot_frame(parent_layout):
     # Create frame layout with one column
     add_robot_frame = pm.frameLayout(label="Add Robot", collapsable=True)
@@ -934,25 +933,24 @@ def _build_axis_limits_frame(parent_layout):
     pm.setParent(parent_layout)
 
 
-def build_setup_tab(parent_layout):
-    # Create setup tab Layout
-    setup_tab_layout = pm.columnLayout(adj=True, height=525, width=200)
-
+def _build_general_setup_tab(parent_layout):
+    general_setup_tab_layout = pm.columnLayout('generalSetupTab',
+                                               adj=True,
+                                               width=100)
     # Add robot frame
-    _build_add_robot_frame(setup_tab_layout)
+    _build_add_robot_frame(general_setup_tab_layout)
 
     # Add tool setup frame
-    _build_tool_setup_frame(setup_tab_layout)
+    _build_tool_setup_frame(general_setup_tab_layout)
 
     # Axis Limits frame
-    _build_axis_limits_frame(parent_layout)
+    _build_axis_limits_frame(general_setup_tab_layout)
 
     pm.setParent(parent_layout)
 
-    return setup_tab_layout
+    return general_setup_tab_layout
 
-
-# EXTERNAL TAB
+# SETUP - External Axes
 def _build_add_external_axis_frame(parent_layout):
     pm.frameLayout('add_external_axis_frame',
                    label="Add External Axis",
@@ -1113,7 +1111,7 @@ def _build_external_axes_tab(parent_layout):
     pm.setParent(parent_layout)
     return external_axes_tab_layout
 
-
+# SETUP = IOs
 def _build_add_io_frame(parent_layout):
     pm.frameLayout('add_io_frame',
                     label="Add IO",
@@ -1236,7 +1234,7 @@ def _build_io_tab(parent_layout):
     pm.setParent(parent_layout)
     return io_tab_layout
 
-
+# SETUP - Comms
 def _build_comms_tab(parent_layout):
     comms_tab_layout = pm.columnLayout('commsTab',
                                        adj=True,
@@ -1245,36 +1243,38 @@ def _build_comms_tab(parent_layout):
     return comms_tab_layout
 
 
-def build_external_tab(parent_layout):
-    # Create preferences tab Layout
-    external_tab_layout = pm.columnLayout(adj=True, height=525, width=200)
+def build_setup_tab(parent_layout):
+    # Create setup tab Layout
+    setup_tab_layout = pm.columnLayout(adj=True, height=525, width=200)
 
     # Create Form Layout with embeded Tab Layout
-    external_tabs_form = pm.formLayout()
-    external_tabs_layout = pm.tabLayout('external_tabs_layout',
+    setup_tabs_form = pm.formLayout()
+    setup_tabs_layout = pm.tabLayout('setup_tabs_layout',
                                         height=100,
                                         borderStyle='none')
-    pm.formLayout(external_tabs_form,
+    pm.formLayout(setup_tabs_form,
                   edit=True,
-                  attachForm=[(external_tabs_layout, "top", 0),
-                              (external_tabs_layout, "bottom", 0),
-                              (external_tabs_layout, "left", 0),
-                              (external_tabs_layout, "right", 0)])
+                  attachForm=[(setup_tabs_layout, "top", 0),
+                              (setup_tabs_layout, "bottom", 0),
+                              (setup_tabs_layout, "left", 0),
+                              (setup_tabs_layout, "right", 0)])
 
-    external_axes_tab_layout = _build_external_axes_tab(external_tabs_layout)
-    io_tab_layout = _build_io_tab(external_tabs_layout)
-    # comms_tab_layout = _build_comms_tab(external_tabs_layout)
+    general_setup_tab_layout = _build_general_setup_tab(setup_tabs_layout)
+    external_axes_tab_layout = _build_external_axes_tab(setup_tabs_layout)
+    io_tab_layout = _build_io_tab(setup_tabs_layout)
+    # comms_tab_layout = _build_comms_tab(setup_tabs_layout)
 
-    tabs = [[external_axes_tab_layout, 'External Axes'],
+    tabs = [[general_setup_tab_layout, 'General'],
+            [external_axes_tab_layout, 'External Axes'],
             [io_tab_layout, 'IOs'],
             # [comms_tab_layout, 'Comms']
             ]
 
-    assign_tabs(tabs, external_tabs_layout)
+    assign_tabs(tabs, setup_tabs_layout)
 
     pm.setParent(parent_layout)
 
-    return external_tab_layout
+    return setup_tab_layout
 
 
 # PREFS TAB
