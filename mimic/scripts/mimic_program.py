@@ -50,7 +50,7 @@ def analyze_program(*args):
     pm.currentTime(start_frame)
 
     # Force evaluation of reconcile rotation to ensure proper export
-    mimic_utils.reconcile_rotation(force_eval=True)
+    # mimic_utils.reconcile_rotation(force_eval=True)
     
     command_dicts = _get_command_dicts(*program_settings)
     limit_data = mimic_utils.get_all_limits(robot_name)
@@ -100,7 +100,7 @@ def save_program(*args):
     pm.currentTime(start_frame)
 
     # Force evaluation of reconcile rotation to ensure proper export
-    mimic_utils.reconcile_rotation(force_eval=True)
+    # mimic_utils.reconcile_rotation(force_eval=True)
 
     command_dicts = _get_command_dicts(*program_settings)
 
@@ -257,6 +257,7 @@ def _get_settings_for_animation(robot):
         warning = 'End Frame must be larger than Start Frame'
         raise mimic_utils.MimicError(warning)
 
+    '''
     # Raise warning if no keyframes are set
     closest_ik_key = mimic_utils.get_closest_ik_keyframe(robot, start_frame)[0]
     if not type(closest_ik_key) == float:
@@ -264,7 +265,7 @@ def _get_settings_for_animation(robot):
                   'proper evaluation when saving a program; ' \
                   'no program written'
         raise mimic_utils.MimicError(warning)
-
+    '''
     # All good, create output dictionary
     animation_settings = {'Start Frame': start_frame,
                           'End Frame': end_frame,
@@ -669,11 +670,12 @@ def _check_command_rotations(robot, animation_settings, command_dicts):
         start_frame = animation_settings['Start Frame']
         # Get indices for command and axis
         for command_index in range(len(command_dicts)):
+            '''
             for axis_index in range(4):
                 # Get the initial value
                 value = command_axes[command_index][axis_index]
                 # Operate on the value depending on conditional
-                if axis_index == 3 or axis_index == 5:  # zero-indexed
+                                if axis_index == 3 or axis_index == 5:  # zero-indexed
                     rotation_axis = 'Z'
                     if command_index == 0:  # Get initial value
                         axis_number = axis_index + 1
@@ -691,6 +693,7 @@ def _check_command_rotations(robot, animation_settings, command_dicts):
                     command_axes[command_index][axis_index] = value
                 else:  # Not a problem axis
                     pass
+            '''
             # Replace the original commands with the new commands
             reconciled_axes = postproc.Axes(*command_axes[command_index])
             command_dicts[command_index][postproc.AXES] = reconciled_axes
@@ -830,7 +833,7 @@ def _sample_frames_get_command_dicts(robot_name, frames, animation_settings, tim
         _update_export_progress_bar(start_frame, end_frame, frame)
     # Reset current frame (just in case)
     pm.currentTime(frames[0])
-    mimic_utils.reconcile_rotation(force_eval=True)
+    # mimic_utils.reconcile_rotation(force_eval=True)
 
     return command_dicts
 

@@ -151,7 +151,8 @@ def _build_ik_tab(parent_layout):
                     annotation='Changes IK solution by flipping robot\'s elbow')
     # FLip robot wrist button
     pm.symbolButton(image='flipWristIcon.png',
-                    command=mimic_utils.flip_robot_wrist,
+                    # command=mimic_utils.flip_robot_wrist,
+                    enable=False,
                     annotation='Changes IK solution by flipping robot\'s wrist')
 
     pm.setParent(ik_tab_layout)  # Set parent to IK tab column layout
@@ -163,10 +164,12 @@ def _build_ik_tab(parent_layout):
     # Invert Axis 4 button
     pm.symbolButton(image='flipA4Icon.png',
                     command=pm.Callback(mimic_utils.invert_axis, 4),
+                    enable=False,
                     annotation='Inverts Axis 6 rotation +/- 360 degrees')
     # Invert Axis 6 button
     pm.symbolButton(image='flipA6Icon.png',
                     command=pm.Callback(mimic_utils.invert_axis, 6),
+                    enable=False,
                     annotation='Inverts Axis 6 rotation +/- 360 degrees')
     pm.setParent(ik_tab_layout)  # Set parent to IK tab column layout
 
@@ -223,9 +226,17 @@ def _build_fk_tab(parent_layout):
             .format(axis)
         button_img = 'a{}FkIcon.png'.format(axis)
         button_ann = 'Selects Axis {} FK Controller'.format(axis)
-        pm.symbolButton(image=button_img,
-                        command=sel_cmd_str,
-                        annotation=button_ann)
+
+        if i==4 or i==5:
+            pm.symbolButton(image=button_img,
+                            command=sel_cmd_str,
+                            enable=False,
+                            annotation=button_ann)
+        else:
+            pm.symbolButton(image=button_img,
+                            command=sel_cmd_str,
+                            annotation=button_ann)
+
     pm.setParent('..')
 
     # UI spacing
@@ -278,12 +289,14 @@ def _build_fk_tab(parent_layout):
     pm.text(label='  A5:')
     pm.textField("t_a5",
                  font=FONT,
+                 enable=False,
                  rfc=pm.Callback(mimic_utils.select_fk_axis_handle, 5),
                  changeCommand=pm.Callback(mimic_utils.set_axis, 5))
 
     pm.text(label='  A6:')
     pm.textField("t_a6",
                  font=FONT,
+                 enable=False,
                  rfc=pm.Callback(mimic_utils.select_fk_axis_handle, 6),
                  changeCommand=pm.Callback(mimic_utils.set_axis, 6))
 
@@ -764,7 +777,7 @@ def _build_position_limits_tab(parent_layout):
     pm.columnLayout(adj=True, columnAttach=('both', 5))
     pm.separator(height=5, style='none')
 
-    for i in range(6):
+    for i in range(4):
         # Axis 1 Limit row
         pm.rowLayout(numberOfColumns=3,
                      columnAttach=(1, 'left', 3),
@@ -781,7 +794,7 @@ def _build_position_limits_tab(parent_layout):
                                    'pm.setFocus("t_A{}Max"); ' \
                                    .format(i + 1))
         # Axis 1 Max limit
-        set_focus_count = ((i + 1) % 6) + 1
+        set_focus_count = ((i + 1) % 4) + 1
         pm.textField("t_A{}Max".format(i + 1),
                      font=FONT,
                      pht='Max',
@@ -808,7 +821,7 @@ def _build_velocity_limits_tab(parent_layout):
     # Input text field width for all axis limits
     cell_width = 163
 
-    for i in range(6):
+    for i in range(4):
         # Axis 1 Limit row
         pm.rowLayout(numberOfColumns=2,
                      columnAttach=(1, 'left', 3),
@@ -816,7 +829,7 @@ def _build_velocity_limits_tab(parent_layout):
                      height=20)
         pm.text(label='Axis {}: '.format(i + 1), enable=False)
 
-        set_focus_count = ((i + 1) % 6) + 1
+        set_focus_count = ((i + 1) % 4) + 1
         # Axis 1 Min limit
         pm.textField("t_A{}Velocity".format(i + 1),
                      font=FONT,
@@ -844,7 +857,7 @@ def _build_accel_limits_tab(parent_layout):
     # Input text field width for all axis limits
     cell_width = 163
 
-    for i in range(6):
+    for i in range(4):
         # Axis 1 Limit row
         pm.rowLayout(numberOfColumns=2,
                      columnAttach=(1, 'left', 3),
@@ -852,7 +865,7 @@ def _build_accel_limits_tab(parent_layout):
                      height=20)
         pm.text(label='Axis {}: '.format(i + 1), enable=False)
 
-        set_focus_count = ((i + 1) % 6) + 1
+        set_focus_count = ((i + 1) % 4) + 1
         # Axis 1 Min limit
         pm.textField("t_A{}Accel".format(i + 1),
                      font=FONT,
@@ -879,7 +892,7 @@ def _build_jerk_limits_tab(parent_layout):
     # Input text field width for all axis limits
     cell_width = 163
 
-    for i in range(6):
+    for i in range(4):
         # Axis 1 Limit row
         pm.rowLayout(numberOfColumns=2,
                      columnAttach=(1, 'left', 3),
@@ -887,7 +900,7 @@ def _build_jerk_limits_tab(parent_layout):
                      height=20)
         pm.text(label='Axis {}: '.format(i + 1), enable=False)
 
-        set_focus_count = ((i + 1) % 6) + 1
+        set_focus_count = ((i + 1) % 4) + 1
         # Axis 1 Min limit
         pm.textField("t_A{}Jerk".format(i + 1),
                      font=FONT,

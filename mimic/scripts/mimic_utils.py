@@ -48,22 +48,25 @@ __A1_PATH = '{0}|{1}robot_GRP|{1}robot_GEOM|{1}Base|{1}axis1'
 __A2_PATH = __A1_PATH + '|{1}axis2'
 __A3_PATH = __A2_PATH + '|{1}axis3'
 __A4_PATH = __A3_PATH + '|{1}axis4'
-__A5_PATH = __A4_PATH + '|{1}axis5'
-__A6_PATH = __A5_PATH + '|{1}axis6'
+#__A5_PATH = __A4_PATH + '|{1}axis5'
+#__A6_PATH = __A5_PATH + '|{1}axis6'
 
 __FK_CTRLS_PATH = '{0}|{1}robot_GRP|{1}FK_CTRLS'
 __A1_FK_CTRL_PATH = __FK_CTRLS_PATH + '|{1}a1FK_CTRL'
 __A2_FK_CTRL_PATH = __FK_CTRLS_PATH + '|{1}a2FK_CTRL'
 __A3_FK_CTRL_PATH = __FK_CTRLS_PATH + '|{1}a3FK_CTRL'
 __A4_FK_CTRL_PATH = __FK_CTRLS_PATH + '|{1}a4FK_CTRL'
-__A5_FK_CTRL_PATH = __FK_CTRLS_PATH + '|{1}a5FK_CTRL'
-__A6_FK_CTRL_PATH = __FK_CTRLS_PATH + '|{1}a6FK_CTRL'
+#__A5_FK_CTRL_PATH = __FK_CTRLS_PATH + '|{1}a5FK_CTRL'
+#__A6_FK_CTRL_PATH = __FK_CTRLS_PATH + '|{1}a6FK_CTRL'
 
 
-__TCP_HDL_PATH = __A6_PATH + '|{1}tcp_GRP|{1}tcp_HDL'
+#__TCP_HDL_PATH = __A6_PATH + '|{1}tcp_GRP|{1}tcp_HDL'
+__TCP_HDL_PATH = __A4_PATH + '|{1}tcp_GRP|{1}tcp_HDL'
 __TOOL_MDL_PATH = __TCP_HDL_PATH + '|{1}tool_MDL'
 __TOOL_CTRL_FK_PATH = __TCP_HDL_PATH + '|{1}tool_CTRL_FK'
 __TARGET_HDL_PATH = '{0}|{1}robot_GRP|{1}target_HDL'
+
+__NUM_AXES = 4
 
 
 def get_robot_roots(all_robots=False, sel=[]):
@@ -199,7 +202,7 @@ def get_robot_configuration(robot_name, frame):
     target_ctrl_path = get_target_ctrl_path(robot_name)
     attr = 'ikSolution'
     configurations = []
-    for i in range(3):
+    for i in range(2):
         index = i + 1
         configuration_path = '{}.{}{}'.format(target_ctrl_path, attr, index)
         configuration = get_attribute_value(configuration_path, frame)
@@ -311,7 +314,7 @@ def clear_limits_ui(*args):
                                query=True,
                                selectTab=True)
 
-    for i in range(6):
+    for i in range(__NUM_AXES):
         if current_tab == 'position_limits_tab':
             pm.textField('t_A{}Min'.format(i + 1), edit=True, text='')
             pm.textField('t_A{}Max'.format(i + 1), edit=True, text='')
@@ -329,7 +332,7 @@ def clear_fk_pose_ui(*args):
     :param args: Required for Maya to pass command from the UI
     :return:
     """
-    for i in range(6):
+    for i in range(__NUM_AXES):
         pm.textField('t_a{}'.format(i + 1), edit=True, text='')
 
 
@@ -391,7 +394,7 @@ def get_closest_ik_keyframe(robot, current_frame):
 
     return closest_ik_key, count_direction
 
-
+'''
 def accumulate_rotation(a_in, a_0):
     """
     Compares current Axis value with its previous value to determine if there
@@ -543,7 +546,7 @@ def reconcile_rotation(force_eval=False):
                 print '{}: Axis {} rotation reconciled'.format(robot, axis)
             else:
                 continue
-
+'''
 
 def mimic_script_jobs():
     """
@@ -553,9 +556,9 @@ def mimic_script_jobs():
     """
     pm.cycleCheck(evaluation=0)
 
-    pm.scriptJob(event=['timeChanged', reconcile_rotation], killWithScene=True)
+    # pm.scriptJob(event=['timeChanged', reconcile_rotation], killWithScene=True)
     print "Robot scriptJobs Initialized"
-    print 'Reconcile Rotation script job running'
+    # print 'Reconcile Rotation script job running'
     print 'cycleCheck OFF'
 
 
@@ -650,7 +653,7 @@ def find_ik_solutions(robot):
     # This is defined on each robot rig by the axis* attribute
     flip_a1 = pm.getAttr(target_ctrl_path + '.flipAxis1direction')
     flip_a2 = pm.getAttr(target_ctrl_path + '.flipAxis2direction')
-    flip_a5 = pm.getAttr(target_ctrl_path + '.flipAxis5direction')
+    # flip_a5 = pm.getAttr(target_ctrl_path + '.flipAxis5direction')
 
     # Initialized lists
     tcp_rot = [[0] * 3 for _ in range(3)]
@@ -802,11 +805,10 @@ def find_ik_solutions(robot):
     # Find all IK solutions for the given configuration
     all_ik_sols = inverse_kinematics.solver(robot_definition, pivot_point, _re)
 
-    # We only need to compare axes 1, 2, and 5 when switching between
+    # We only need to compare axes 1, 2 when switching between
     # IK and FK
     theta1_sol = all_ik_sols[0]
     theta2_sol = all_ik_sols[1]
-    theta5_sol = all_ik_sols[4]
 
     # Account for robot manufacturer's Axis 2 offset from solver
     theta2_sol[:] = [x - a2_offset for x in theta2_sol]
@@ -817,34 +819,24 @@ def find_ik_solutions(robot):
         flip = -1
     if flip_a2:
         theta2_sol[:] = [-1 * x for x in theta2_sol]
-    if flip_a5:
-        theta5_sol[:] = [-1 * x for x in theta5_sol]
 
     # Assemble all combinations of solutions for axes 1, 2, and 5 for
     # IK/FK switching
-    ik_sols = [[flip * theta1_sol[0], theta2_sol[0], theta5_sol[0]],
-               [flip * theta1_sol[0], theta2_sol[0], theta5_sol[4]],
-               [flip * theta1_sol[0], theta2_sol[1], theta5_sol[1]],
-               [flip * theta1_sol[0], theta2_sol[1], theta5_sol[5]],
-               [flip * theta1_sol[1], theta2_sol[2], theta5_sol[2]],
-               [flip * theta1_sol[1], theta2_sol[2], theta5_sol[6]],
-               [flip * theta1_sol[1], theta2_sol[3], theta5_sol[3]],
-               [flip * theta1_sol[1], theta2_sol[3], theta5_sol[7]],
-               [flip * (theta1_sol[0] + 360), theta2_sol[0], theta5_sol[0]],
-               [flip * (theta1_sol[0] + 360), theta2_sol[0], theta5_sol[4]],
-               [flip * (theta1_sol[0] + 360), theta2_sol[1], theta5_sol[1]],
-               [flip * (theta1_sol[0] + 360), theta2_sol[1], theta5_sol[5]],
-               [flip * (theta1_sol[1] + 360), theta2_sol[2], theta5_sol[2]],
-               [flip * (theta1_sol[1] + 360), theta2_sol[2], theta5_sol[6]],
-               [flip * (theta1_sol[1] + 360), theta2_sol[3], theta5_sol[3]],
-               [flip * (theta1_sol[1] + 360), theta2_sol[3], theta5_sol[7]]]
+    ik_sols = [[flip * theta1_sol[0], theta2_sol[0]],
+               [flip * theta1_sol[0], theta2_sol[1]],
+               [flip * theta1_sol[1], theta2_sol[2]],
+               [flip * theta1_sol[1], theta2_sol[3]],
+               [flip * (theta1_sol[0] + 360), theta2_sol[0]],
+               [flip * (theta1_sol[0] + 360), theta2_sol[1]],
+               [flip * (theta1_sol[1] + 360), theta2_sol[2]],
+               [flip * (theta1_sol[1] + 360), theta2_sol[3]]]
 
     return ik_sols
 
 
 def find_fk_config(robot):
     """
-    Get the six axes from the selected robot.
+    Get the four axes from the selected robot.
     :param robot: name string of the selected robot
     :return:
     """
@@ -852,37 +844,29 @@ def find_fk_config(robot):
     a2_path = format_path(__A2_PATH, robot)
     a3_path = format_path(__A3_PATH, robot)
     a4_path = format_path(__A4_PATH, robot)
-    a5_path = format_path(__A5_PATH, robot)
-    a6_path = format_path(__A6_PATH, robot)
+    #a5_path = format_path(__A5_PATH, robot)
+    #a6_path = format_path(__A6_PATH, robot)
 
     a1 = pm.getAttr(a1_path + '.rotateY')
     a2 = pm.getAttr(a2_path + '.rotateX')
     a3 = pm.getAttr(a3_path + '.rotateX')
     a4 = pm.getAttr(a4_path + '.rotateZ')
-    a5 = pm.getAttr(a5_path + '.rotateX')
-    a6 = pm.getAttr(a6_path + '.rotateZ')
+    #a5 = pm.getAttr(a5_path + '.rotateX')
+    #a6 = pm.getAttr(a6_path + '.rotateZ')
 
-    fk_config = [a1, a2, a3, a4, a5, a6]
+    fk_config = [a1, a2, a3, a4]  # , a5, a6]
 
     return fk_config
 
 
-__FK_CONFIGS = [[1, 1, 1],
-                [1, 1, 0],
-                [1, 0, 1],
-                [1, 0, 0],
-                [0, 1, 1],
-                [0, 1, 0],
-                [0, 0, 1],
-                [0, 0, 0],
-                [1, 1, 1],
-                [1, 1, 0],
-                [1, 0, 1],
-                [1, 0, 0],
-                [0, 1, 1],
-                [0, 1, 0],
-                [0, 0, 1],
-                [0, 0, 0]]
+__FK_CONFIGS = [[1, 1],
+                [1, 0],
+                [0, 1],
+                [0, 0],
+                [1, 1],
+                [1, 0],
+                [0, 1],
+                [0, 0]]
 
 
 def find_closest_config(fk_configuration, ik_solutions):
@@ -905,7 +889,7 @@ def find_closest_config(fk_configuration, ik_solutions):
         d[i] = sum(d[i])
 
     solution_index = d.index(min(d))
-    # Get three booleans corresponding with a valid IK configuration using index
+    # Get two booleans corresponding with a valid IK configuration using index
     config = __FK_CONFIGS[solution_index]
     return config
 
@@ -944,7 +928,7 @@ def flip_robot_elbow(*args):
         ik_sol = pm.getAttr(target_ctrl_attr)
         pm.setAttr(target_ctrl_attr, not ik_sol)
 
-
+'''
 def flip_robot_wrist(*args):
     """
     Toggles Inverse Kinematic Solution 3 Boolean
@@ -960,7 +944,7 @@ def flip_robot_wrist(*args):
         target_ctrl_attr = get_target_ctrl_path(robot) + '.ikSolution3'
         ik_sol = pm.getAttr(target_ctrl_attr)
         pm.setAttr(target_ctrl_attr, not ik_sol)
-
+'''
 
 def invert_axis(axis_number, robots=[]):
     """
@@ -1017,15 +1001,15 @@ def zero_target(*args):
                 a2_fk_ctrl_path = format_path(__A2_FK_CTRL_PATH, robot)
                 a3_fk_ctrl_path = format_path(__A3_FK_CTRL_PATH, robot)
                 a4_fk_ctrl_path = format_path(__A4_FK_CTRL_PATH, robot)
-                a5_fk_ctrl_path = format_path(__A5_FK_CTRL_PATH, robot)
-                a6_fk_ctrl_path = format_path(__A6_FK_CTRL_PATH, robot)
+                # a5_fk_ctrl_path = format_path(__A5_FK_CTRL_PATH, robot)
+                # a6_fk_ctrl_path = format_path(__A6_FK_CTRL_PATH, robot)
 
                 pm.setAttr(a1_fk_ctrl_path + '.rotateY', 0)
                 pm.setAttr(a2_fk_ctrl_path + '.rotateX', 0)
                 pm.setAttr(a3_fk_ctrl_path + '.rotateX', 0)
                 pm.setAttr(a4_fk_ctrl_path + '.rotateZ', 0)
-                pm.setAttr(a5_fk_ctrl_path + '.rotateX', 0)
-                pm.setAttr(a6_fk_ctrl_path + '.rotateZ', 0)
+                # pm.setAttr(a5_fk_ctrl_path + '.rotateX', 0)
+                # pm.setAttr(a6_fk_ctrl_path + '.rotateZ', 0)
     except:
         pm.warning('Cannot zero target')
 
@@ -1119,14 +1103,14 @@ def axis_val_hud(*args):
     if not robots:
         print 'No Robots in Scene'
         if pm.headsUpDisplay('a1_hud', exists=True):
-            for i in range(6):
+            for i in range(__NUM_AXES):
                 pm.headsUpDisplay('a{}_hud'.format(i + 1), remove=True)
         return
 
     # Check if the HUD exists already
     if pm.headsUpDisplay('a1_hud', exists=True):
         # If so, remove it
-        for i in range(6):
+        for i in range(__NUM_AXES):
             pm.headsUpDisplay('a{}_hud'.format(i + 1), remove=True)
         # Turn Limit Meter off
         for robot in robots:
@@ -1136,7 +1120,7 @@ def axis_val_hud(*args):
             pm.setAttr(limit_meter_grp_path + '.v', 0)
         return
     else:  # If not, create it
-        for i in range(6):
+        for i in range(__NUM_AXES):
             pm.headsUpDisplay('a{}_hud'.format(i + 1),
                               section=5,
                               block=7 - i,
@@ -1161,7 +1145,7 @@ def close_hud():
     :return:
     """
     if pm.headsUpDisplay('a1_hud', exists=True):
-        for i in range(6):
+        for i in range(__NUM_AXES):
             pm.headsUpDisplay('a{}_hud'.format(i + 1), remove=True)
 
 
@@ -1417,9 +1401,7 @@ def write_position_limits_to_ui():
     """
     axis_position_limits = get_axis_limits()
 
-    # TODO: HARD CODED - Number of robot axes; should include external axes
-    num_axes = 4
-    for i in range(num_axes):
+    for i in range(__NUM_AXES):
         axis_number = i + 1 
         axis_name = 'Axis {}'.format(axis_number)
 
@@ -1446,9 +1428,7 @@ def write_deriv_limits_to_ui(limit_type):
 
     axis_deriv_limits = _get_limits(robot, limit_type)
 
-   # TODO: HARD CODED - Number of robot axes; should include external axes
-    num_axes = 4
-    for i in range(num_axes):
+    for i in range(__NUM_AXES):
         axis_number = i + 1 
         axis_name = 'Axis {}'.format(axis_number)
 
@@ -1479,10 +1459,7 @@ def get_axis_limits():
 
     axis_position_limits = {}
 
-    # TODO: HARD CODED - Number of robot axes; should include external axes
-    num_axes = 4
-
-    for i in range(num_axes):
+    for i in range(__NUM_AXES):
         axis_number = i + 1  # Axis numbers are 1-indexed
         axis_name = 'Axis {}'.format(axis_number)
         val_min = int(pm.getAttr(target_ctrl_path + '.axis{}Min'.format(axis_number)))
@@ -1524,10 +1501,8 @@ def set_axis_limits(*args):
 def set_position_limits():
     """
     """        
-    # number of robot axes; could include external axes potentially
-    num_axes = 4
     try:
-        for i in range(num_axes):
+        for i in range(__NUM_AXES):
             axis_number = i + 1  # Axis numbers are 1-indexed
             set_axis_limit(axis_number, 'Min')
             set_axis_limit(axis_number, 'Max')
@@ -1567,9 +1542,8 @@ def set_axis_limit(axis_number, min_max):
 
 def set_deriv_limits(limit_type):
     # number of robot axes; could include external axes potentially
-    num_axes = 4
     try:
-        for i in range(num_axes):
+        for i in range(__NUM_AXES):
             axis_number = i + 1  # Axis numbers are 1-indexed
             set_deriv_limit(axis_number, limit_type)
     except:
@@ -1662,11 +1636,8 @@ def _get_limits(robot, limit_type):
                              n=target_ctrl_path, ex=True):
         add_limits_to_robot(robot, limit_type)
 
-    # HARD CODED - Number of robot axes; should include external axes
-    num_axes = 4
-
     # Create a list of robot's limits
-    for i in range(num_axes):
+    for i in range(__NUM_AXES):
         axis_number = i + 1  # Axis numbers are 1-indexed
         axis_name = 'Axis {}'.format(axis_number)
         limits[axis_name] = {'Min Limit': None, 'Max Limit': None}
@@ -1789,7 +1760,7 @@ def set_axis(axis_number):
 
     # These are specific to how the robots are rigged in relation to Maya's
     # coordinate system
-    rotation_axes = ['Y', 'X', 'X', 'Z', 'X', 'Z']
+    rotation_axes = ['Y', 'X', 'X', 'Z']  # , 'X', 'Z']
 
     try:  # if the text field is empty, or not a float value, skip it
         rotation_axis = rotation_axes[axis_number - 1]
@@ -1810,11 +1781,9 @@ def set_fk_pose(*args):
     :param args:
     :return:
     """
-    # Number of robot axes; could include external axes potentially.
-    num_axes = 4
 
     try:
-        for i in range(num_axes):
+        for i in range(__NUM_AXES):
             set_axis(i + 1)
     except:
         pm.warning('Error setting FK pose')
@@ -1911,18 +1880,21 @@ def switch_to_ik(robot):
         # Snap IK Ctrl to FK location
         _snap_ik_target_to_fk(robot)
 
+
         # Find closest IK configuration to current FK pose
         ik_sols = find_ik_solutions(robot)
         fk_config = find_fk_config(robot)
 
-        # Only use a1, a2, and a5 to determing closest config.
-        fk_config_trunc = [fk_config[i] for i in [0, 1, 4]]
+        # Only use a1, and a2 to determing closest config.
+        fk_config_trunc = [fk_config[i] for i in [0, 1]]
         ik_config = find_closest_config(fk_config_trunc, ik_sols)
 
         # Match IK config to FK pose
         pm.setAttr(target_ctrl_path + '.ikSolution1', ik_config[0])
         pm.setAttr(target_ctrl_path + '.ikSolution2', ik_config[1])
-        pm.setAttr(target_ctrl_path + '.ikSolution3', ik_config[2])
+
+        # Set z-rotation of tool_CTRL, which controls A4
+        pm.setAttr(tool_ctrl_path + '.rotateZ', -fk_config[3])
 
         # turn ik solve back on
         pm.setAttr(target_ctrl_path + '.ik', 1)
@@ -1962,10 +1934,10 @@ def switch_to_fk(robot):
                    fk_config[2])
         pm.setAttr(format_path(__A4_FK_CTRL_PATH, robot) + '.rotateZ',
                    fk_config[3])
-        pm.setAttr(format_path(__A5_FK_CTRL_PATH, robot) + '.rotateX',
-                   fk_config[4])
-        pm.setAttr(format_path(__A6_FK_CTRL_PATH, robot) + '.rotateZ',
-                   fk_config[5])
+        # pm.setAttr(format_path(__A5_FK_CTRL_PATH, robot) + '.rotateX',
+        #           fk_config[4])
+        # pm.setAttr(format_path(__A6_FK_CTRL_PATH, robot) + '.rotateZ',
+        #           fk_config[5])
 
         pm.setAttr(target_ctrl_path + '.ik', 0)
 
@@ -2026,8 +1998,9 @@ def toggle_ik_fk(*args):
                         selection.append(target_ctrl_path)
             else:
                 for robot in active_robots:
-                    selection.append(format_path(__A6_FK_CTRL_PATH, robot))
-                    
+                    selection.append(format_path(__A4_FK_CTRL_PATH, robot))
+                    pm.setToolTo('RotateSuperContext')
+
             pm.select(selection)
         else:
             pass
@@ -2059,8 +2032,7 @@ def key_ik(*args):
         ik_attributes = ['ik',
                          'v',
                          'ikSolution1',
-                         'ikSolution2',
-                         'ikSolution3']
+                         'ikSolution2']
 
         # Key all IK elements
         for attr in ik_attributes:
@@ -2084,12 +2056,12 @@ def key_ik(*args):
         pm.setKeyframe(format_path(__A4_FK_CTRL_PATH, robot),
                        attribute='rotateZ',
                        value=fk_pose[3])
-        pm.setKeyframe(format_path(__A5_FK_CTRL_PATH, robot),
-                       attribute='rotateX',
-                       value=fk_pose[4])
-        pm.setKeyframe(format_path(__A6_FK_CTRL_PATH, robot),
-                       attribute='rotateZ',
-                       value=fk_pose[5])
+        # pm.setKeyframe(format_path(__A5_FK_CTRL_PATH, robot),
+        #               attribute='rotateX',
+        #               value=fk_pose[4])
+        # pm.setKeyframe(format_path(__A6_FK_CTRL_PATH, robot),
+        #               attribute='rotateZ',
+        #               value=fk_pose[5])
 
         # Key visibility of FK controllers
         pm.setKeyframe(fk_ctrls_path, attribute='visibility')
@@ -2098,7 +2070,7 @@ def key_ik(*args):
         if pm.checkBox('cb_keyToolCtrl', query=True, value=True):
             if pm.objExists(tool_ctrl_path):
                 pm.setKeyframe(tool_ctrl_path, attribute='translate')
-                pm.setKeyframe(tool_ctrl_path, attribute='rotate')
+                pm.setKeyframe(tool_ctrl_path, attribute='rotateZ')
             else:
                 pm.setKeyframe(target_ctrl_path, attribute='translate')
                 pm.setKeyframe(target_ctrl_path, attribute='rotate')
@@ -2155,13 +2127,13 @@ def key_fk(*args):
                            attribute='rotateX')
             pm.setKeyframe(format_path(__A4_FK_CTRL_PATH, robot),
                            attribute='rotateZ')
-            pm.setKeyframe(format_path(__A5_FK_CTRL_PATH, robot),
-                           attribute='rotateX')
-            pm.setKeyframe(format_path(__A6_FK_CTRL_PATH, robot),
-                           attribute='rotateZ')
+            # pm.setKeyframe(format_path(__A5_FK_CTRL_PATH, robot),
+            #                attribute='rotateX')
+            # pm.setKeyframe(format_path(__A6_FK_CTRL_PATH, robot),
+            #                attribute='rotateZ')
 
             # Key visibility of FK controllers
-            for i in range(6):
+            for i in range(__NUM_AXES):
                 pm.setKeyframe(format_path(__FK_CTRLS_PATH, robot),
                                attribute='visibility')
         except:
@@ -2179,7 +2151,7 @@ def key_fk(*args):
             if pm.checkBox('cb_keyToolCtrl', query=True, value=True):
                 if pm.objExists(tool_ctrl_path):
                     pm.setKeyframe(tool_ctrl_path, attribute='translate')
-                    pm.setKeyframe(tool_ctrl_path, attribute='rotate')
+                    pm.setKeyframe(tool_ctrl_path, attribute='rotateZ')
                 else:
                     pm.setKeyframe(target_ctrl_path, attribute='translate')
                     pm.setKeyframe(target_ctrl_path, attribute='rotate')
@@ -2204,9 +2176,9 @@ def select_keyframe_hierarchy(*args):
                    __A1_FK_CTRL_PATH,
                    __A2_FK_CTRL_PATH,
                    __A3_FK_CTRL_PATH,
-                   __A4_FK_CTRL_PATH,
-                   __A5_FK_CTRL_PATH,
-                   __A6_FK_CTRL_PATH]
+                   __A4_FK_CTRL_PATH]
+                   # __A5_FK_CTRL_PATH,
+                   # __A6_FK_CTRL_PATH]
 
     keyable_robot_objects = []
     robots = get_robot_roots()
@@ -2236,15 +2208,15 @@ def delete_ik_fk_keys(*args):
     keyed_attrs = {__TARGET_CTRL_PATH: ['ik',
                                         'visibility',
                                         'ikSolution1',
-                                        'ikSolution2',
-                                        'ikSolution3'],
+                                        'ikSolution2'],
+                                        # 'ikSolution3'],
                    __FK_CTRLS_PATH: ['visibility'],
                    __A1_FK_CTRL_PATH: ['rotateY'],
                    __A2_FK_CTRL_PATH: ['rotateX'],
                    __A3_FK_CTRL_PATH: ['rotateX'],
-                   __A4_FK_CTRL_PATH: ['rotateZ'],
-                   __A5_FK_CTRL_PATH: ['rotateX'],
-                   __A6_FK_CTRL_PATH: ['rotateZ']}
+                   __A4_FK_CTRL_PATH: ['rotateZ']}
+                   # __A5_FK_CTRL_PATH: ['rotateX'],
+                   # __A6_FK_CTRL_PATH: ['rotateZ']}
 
     robots = get_robot_roots()
 
@@ -2615,7 +2587,7 @@ def save_pose_to_shelf(*args):
         tool_ctrl_path = get_tool_ctrl_path(robot)
         target_ctrl_str = __TARGET_CTRL_PATH
 
-        config_attrs = ['ik', 'v', 'ikSolution1', 'ikSolution2', 'ikSolution3']
+        config_attrs = ['ik', 'v', 'ikSolution1', 'ikSolution2']  #, 'ikSolution3']
         for each in config_attrs:
             find_val = pm.getAttr(target_ctrl_path + "." + each)
             save_to_shelf = (start_line_code
@@ -2671,10 +2643,10 @@ def save_pose_to_shelf(*args):
         joint_vals = [__A1_FK_CTRL_PATH,
                       __A2_FK_CTRL_PATH,
                       __A3_FK_CTRL_PATH,
-                      __A4_FK_CTRL_PATH,
-                      __A5_FK_CTRL_PATH,
-                      __A6_FK_CTRL_PATH]
-        joint_val_attr = ['rotateY', 'rotateX', 'rotateX', 'rotateZ', 'rotateX', 'rotateZ']
+                      __A4_FK_CTRL_PATH]
+                      #  __A5_FK_CTRL_PATH,
+                      #  __A6_FK_CTRL_PATH]
+        joint_val_attr = ['rotateY', 'rotateX', 'rotateX', 'rotateZ']  # , 'rotateX', 'rotateZ']
 
         for i, each in enumerate(joint_vals):
             attrs = format_path(each + "." + joint_val_attr[i], robot)
@@ -2755,7 +2727,6 @@ def add_limits_to_robot(robot, limit_type):
     """
     target_ctrl_path = get_target_ctrl_path(robot)
 
-    print limit_type
     # Get nominal limits from mimic config file
     nominal_limit = mimic_config.NOMINAL_LIMIT[limit_type]
 
@@ -2767,8 +2738,7 @@ def add_limits_to_robot(robot, limit_type):
                at='compound')
 
     # Add an attribute for each axis
-    num_axes = 4
-    for i in range(num_axes):
+    for i in range(6):
         axis_number = i + 1
         pm.addAttr(target_ctrl_path,
                    longName='axis{}{}Limit'.format(axis_number, limit_type),

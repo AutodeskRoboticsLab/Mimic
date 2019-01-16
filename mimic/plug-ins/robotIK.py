@@ -385,22 +385,17 @@ class robotIKS(OpenMaya.MPxNode):
 
 
             # Theta 4
+            '''
             tcpRotY = [tcpWorldMat[4], tcpWorldMat[5], tcpWorldMat[6]]
             toolRotY = [toolWorldMat[4], toolWorldMat[5], toolWorldMat[6]]
-
-            print 'tcpRotY: ', tcpRotY
-            print 'toolRotY: ', toolRotY
 
             u_v = tcpRotY[0]*toolRotY[0] + tcpRotY[1]*toolRotY[1] + tcpRotY[2]*toolRotY[2]
             u_mag = math.sqrt(tcpRotY[0]**2 + tcpRotY[1]**2 + tcpRotY[2]**2)
             v_mag = math.sqrt(toolRotY[0]**2 + toolRotY[1]**2 + toolRotY[2]**2)
 
-            print 'U dot V: ', u_v
-            print 'U mag: ', u_mag
-            print 'V mag: ', v_mag
 
             theta4_comp =  math.degrees(math.acos(u_v/(u_mag+v_mag)))
-            print theta4_comp
+            '''
             theta4_1 = -toolRotZ  #+ theta4_comp
 
             # select one of the 8 solutions        
