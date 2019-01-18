@@ -258,6 +258,7 @@ def _get_settings_for_animation(robot):
         warning = 'End Frame must be larger than Start Frame'
         raise mimic_utils.MimicError(warning)
 
+    '''
     # Raise warning if no keyframes are set
     closest_ik_key = mimic_utils.get_closest_ik_keyframe(robot, start_frame)[0]
     if not type(closest_ik_key) == float:
@@ -265,7 +266,7 @@ def _get_settings_for_animation(robot):
                   'proper evaluation when saving a program; ' \
                   'no program written'
         raise mimic_utils.MimicError(warning)
-
+    '''
     # All good, create output dictionary
     animation_settings = {'Start Frame': start_frame,
                           'End Frame': end_frame,

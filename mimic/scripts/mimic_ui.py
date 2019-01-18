@@ -100,7 +100,7 @@ def create_mimic_window(window_name):
     mimic_version = general_utils.get_mimic_version()
     mimic_win = pm.window("mimic_win",
                           width=245,
-                          title='MIMIC {}'.format(mimic_version + ' <dev 1.16.19>'))
+                          title='MIMIC {}'.format(mimic_version + ' <dev 1.18.19>'))
     pm.rowLayout(numberOfColumns=3, adjustableColumn=2)
 
     return mimic_win
@@ -537,13 +537,13 @@ def _build_general_settings_tab(parent_layout):
     pm.intField("i_programStartFrame",
                 value=pm.playbackOptions(animationStartTime=True, query=True),
                 minValue=-10,
-                maxValue=10000,
+                maxValue=100000,
                 step=1)
 
     pm.intField("i_programEndFrame",
                 value=pm.playbackOptions(animationEndTime=True, query=True),
                 minValue=-10,
-                maxValue=10000,
+                maxValue=100000,
                 step=1)
     pm.setParent('..')
 

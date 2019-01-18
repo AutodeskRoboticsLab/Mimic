@@ -29,8 +29,9 @@ def get_mimic_version():
     Returns mimic version as a formatted string.
     :return:
     """
-    return '{}.{}'.format(mimic_config.MIMIC_VERSION_MAJOR,
-                          mimic_config.MIMIC_VERSION_MINOR)
+    return '{}.{}.{}'.format(mimic_config.MIMIC_VERSION_MAJOR,
+                             mimic_config.MIMIC_VERSION_MINOR,
+                             mimic_config.MIMIC_VERSION_PATCH)
 
 
 def get_mimic_dir():
