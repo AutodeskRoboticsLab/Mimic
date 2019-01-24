@@ -648,6 +648,12 @@ def find_ik_solutions(robot):
     # manufacturer and the zero pose of the IK solver (see documentation).
     a2_offset = pm.getAttr(target_ctrl_path + '.axis2Offset')
 
+    # Most rigs don't have an A5 offset attribute. Had to add for Yaskawas
+    if pm.objExists(target_ctrl_path + '.axis5Offset'):
+        a5_offset = pm.getAttr(target_ctrl_path + '.axis5Offset')
+    else:
+        a5_offset = 0
+
     # Each robot manufacturer defines positive and negative axis rotation
     # differently in relation our IK solver implementation.
     # This is defined on each robot rig by the axis* attribute
@@ -813,6 +819,7 @@ def find_ik_solutions(robot):
 
     # Account for robot manufacturer's Axis 2 offset from solver
     theta2_sol[:] = [x - a2_offset for x in theta2_sol]
+    theta5_sol[:] = [x - a5_offset for x in theta5_sol]
 
     # Account for robot manufacturer's inverted rotation directions
     flip = 1

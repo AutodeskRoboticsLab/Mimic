@@ -70,6 +70,7 @@ class robotIKS(OpenMaya.MPxNode):
     
     axis2OffsetAttr = OpenMaya.MObject()
     axis3OffsetAttr = OpenMaya.MObject()
+    axis5OffsetAttr = OpenMaya.MObject()
     
     flipA1Attr = OpenMaya.MObject()
     flipA2Attr = OpenMaya.MObject()
@@ -134,6 +135,7 @@ class robotIKS(OpenMaya.MPxNode):
 
         axis2OffsetDataHandle = pDataBlock.inputValue( robotIKS.axis2OffsetAttr )
         axis3OffsetDataHandle = pDataBlock.inputValue( robotIKS.axis3OffsetAttr )
+        axis5OffsetDataHandle = pDataBlock.inputValue( robotIKS.axis5OffsetAttr )
         
         flipA1DataHandle = pDataBlock.inputValue( robotIKS.flipA1Attr )
         flipA2DataHandle = pDataBlock.inputValue( robotIKS.flipA2Attr )
@@ -186,6 +188,7 @@ class robotIKS(OpenMaya.MPxNode):
         # Axis Offset Values (robot's zero position in relation to IK solver zero position)
         axis2Offset = axis2OffsetDataHandle.asFloat()
         axis3Offset = axis3OffsetDataHandle.asFloat()
+        axis5Offset = axis5OffsetDataHandle.asFloat()
         
         # Flip Axis Direction bools
         flipA1 = flipA1DataHandle.asBool()
@@ -540,6 +543,7 @@ class robotIKS(OpenMaya.MPxNode):
                 # Offset J2/J3 axes
                 jointVals[1] = jointVals[1] - axis2Offset
                 jointVals[2] = jointVals[2] - axis3Offset
+                jointVals[4] = jointVals[4] - axis5Offset
                 
                 
                 # Flip rotation directions if necessary 
@@ -702,7 +706,14 @@ def nodeInitializer():
     numericAttributeFn.storable = True 
     numericAttributeFn.hidden   = False
     compoundAttributeFn.addChild( robotIKS.axis3OffsetAttr )  
-    
+
+    # Axis 5 Offset #
+    robotIKS.axis5OffsetAttr = numericAttributeFn.create( 'axis5Offset', 'a5Offset', OpenMaya.MFnNumericData.kFloat, 0 )                                                            
+    numericAttributeFn.writable = True 
+    numericAttributeFn.storable = True 
+    numericAttributeFn.hidden   = False
+    compoundAttributeFn.addChild( robotIKS.axis5OffsetAttr )  
+
     robotIKS.addAttribute( robotIKS.axisOffsets )  # Add Parent Attr 
   
 
@@ -1112,6 +1123,16 @@ def nodeInitializer():
     robotIKS.attributeAffects( robotIKS.axis3OffsetAttr, robotIKS.theta5Attr )
     robotIKS.attributeAffects( robotIKS.axis3OffsetAttr, robotIKS.theta6Attr )
     robotIKS.attributeAffects( robotIKS.axis3OffsetAttr, robotIKS.theta      )
+
+    # axis 5 #
+    robotIKS.attributeAffects( robotIKS.axis5OffsetAttr, robotIKS.theta1Attr )
+    robotIKS.attributeAffects( robotIKS.axis5OffsetAttr, robotIKS.theta2Attr )
+    robotIKS.attributeAffects( robotIKS.axis5OffsetAttr, robotIKS.theta3Attr )
+    robotIKS.attributeAffects( robotIKS.axis5OffsetAttr, robotIKS.theta4Attr )
+    robotIKS.attributeAffects( robotIKS.axis5OffsetAttr, robotIKS.theta5Attr )
+    robotIKS.attributeAffects( robotIKS.axis5OffsetAttr, robotIKS.theta6Attr )
+    robotIKS.attributeAffects( robotIKS.axis5OffsetAttr, robotIKS.theta      )
+
 
     #------------------------#
     #  Flip Axis Directions  # 
