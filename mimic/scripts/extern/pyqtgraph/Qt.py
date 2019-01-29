@@ -25,8 +25,7 @@ QT_LIB = os.getenv('PYQTGRAPH_QT_LIB')
 ## This is done by first checking to see whether one of the libraries
 ## is already imported. If not, then attempt to import PyQt4, then PySide.
 if QT_LIB is None:
-    libOrder = [PYQT4, PYSIDE, PYQT5, PYSIDE2]
-
+    libOrder = [PYSIDE2, PYQT5, PYSIDE, PYQT4]
     for lib in libOrder:
         if lib in sys.modules:
             QT_LIB = lib
