@@ -8,7 +8,7 @@ This module contains basic configuration parameters for Mimic.
 MIMIC_MODULE_NAME = 'Mimic'
 MIMIC_VERSION_MAJOR = 1  # Must coincide with version in mimic.mod
 MIMIC_VERSION_MINOR = 3  # Must coincide with version in mimic.mod
-MIMIC_VERSION_PATCH = 2  # Must coincide with version in mimic.mod
+MIMIC_VERSION_PATCH = 3  # Must coincide with version in mimic.mod
 
 # Robots
 DEFAULT_ROBOT = 'KUKA KR 700 R2510 P'  # E.G 'KUKA KR 60-3'
