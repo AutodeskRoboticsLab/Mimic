@@ -1155,7 +1155,7 @@ def axis_val_hud(*args):
                               labelFontSize='large',
                               dataWidth=30,
                               command=pm.Callback(get_axis_val, i + 1),
-                              event='timeChanged')
+                              attachToRefresh=True)
         # Turn Limit Meter on
         for robot in robots:
             limit_meter_ctrl_path = format_path('{0}|{1}robot_GRP|{1}limitMeter_CTRL', robot)
