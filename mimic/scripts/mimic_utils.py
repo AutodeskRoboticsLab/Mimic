@@ -673,11 +673,11 @@ def find_ik_solutions(robot):
     # Define translation vector from wrist pivot point to tool flange.
     _t = [[0], [0], [c4]]
 
-    # =====================#
+    # ====================#
     #  Frame Definitions  #
-    # =====================#
+    # ====================#
 
-    # Tool Center Point (TCP) locater
+    # Tool Center Point (TCP) locator
     tcp_path = format_path(__TCP_HDL_PATH, robot)
     tcp = pm.ls(tcp_path)[0]
     # Local Base Frame controller (circle control at base of the robot).

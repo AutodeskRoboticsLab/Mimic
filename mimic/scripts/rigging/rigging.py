@@ -64,7 +64,12 @@ def rigging_ui():
                       
     cell_width = 76
 
-    geom_fields = ['x1', 'x2', 'x3', 'y1', 'z1', 'z2', 'z3']
+    solver_type = rigging_utils.get_solver_type()
+
+    if solver_type == 1:
+        geom_fields = rigging_utils.__HK_GEOM_FIELDS
+    else:
+        geom_fields = rigging_utils.__SW_GEOM_FIELDS           
 
     for field in geom_fields:
         pm.rowLayout('row_{}'.format(field),
@@ -141,7 +146,6 @@ def rigging_ui():
               edit=True)
 
     rigging_win.show()
-
 
 
 def run():

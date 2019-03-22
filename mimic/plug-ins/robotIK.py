@@ -9,17 +9,22 @@ import maya.api.OpenMaya as OpenMaya
 import math
 import maya.cmds as cmds
 
+# Import inverse_kinematics module for mimic/scripts/robotmath
+from robotmath import inverse_kinematics
+
+reload(inverse_kinematics)  # For debugging
+
 def maya_useNewAPI():
-	"""
-	The presence of this function tells Maya that the plugin produces, and
-	expects to be passed, objects created using the Maya Python API 2.0.
-	"""
-	pass
+    """
+    The presence of this function tells Maya that the plugin produces, and
+    expects to be passed, objects created using the Maya Python API 2.0.
+    """
+    pass
 
 #================================================#
 #         Define custom utils for solver         #    
 #================================================#
-
+'''
 def arrayMult(X,Y):
     result = [[0] * len(Y[0]) for i in range(len(X))]
     for i in range(len(X)):
@@ -34,7 +39,8 @@ def arrayMult(X,Y):
 def tpose(lis):
     result = [list(x) for x in zip(*lis)]
     return result
-    
+'''
+
 # Plug-in information:
 kPluginNodeName = 'robotIKS'                # The name of the node.
 kPluginNodeClassify = 'utility/general'     # Where this node will be found in the Maya UI.
@@ -84,13 +90,15 @@ class robotIKS(OpenMaya.MPxNode):
     soln3Attr = OpenMaya.MObject()
     
     ikAttr = OpenMaya.MObject()
-    
+
     j1FKAttr = OpenMaya.MAngle()
     j2FKAttr = OpenMaya.MAngle()
     j3FKAttr = OpenMaya.MAngle()
     j4FKAttr = OpenMaya.MAngle()
     j5FKAttr = OpenMaya.MAngle()
     j6FKAttr = OpenMaya.MAngle()
+
+    solverTypeAttr = OpenMaya.MObject()
 
     # Outputs 
     theta1Attr = OpenMaya.MAngle()
@@ -157,33 +165,32 @@ class robotIKS(OpenMaya.MPxNode):
         j5FKDataHandle = pDataBlock.inputValue( robotIKS.j5FKAttr )
         j6FKDataHandle = pDataBlock.inputValue( robotIKS.j6FKAttr )
 
-        
+        solverTypeDataHandle = pDataBlock.inputValue( robotIKS.solverTypeAttr )
+
         # Extract the actual value associated to our input attribute
-        tcpX      = tcpXDataHandle.asFloat()
-        tcpY      = tcpYDataHandle.asFloat()
-        tcpZ      = tcpZDataHandle.asFloat()
-        tcpMat    = tcpMatDataHandle.asMatrix()           
-        lcsX      = lcsXDataHandle.asFloat()
-        lcsY      = lcsYDataHandle.asFloat()
-        lcsZ      = lcsZDataHandle.asFloat()
-        lcsMat    = lcsMatDataHandle.asMatrix()
-        tcpX      = tcpXDataHandle.asFloat()
-        tcpY      = tcpYDataHandle.asFloat()
-        tcpZ      = tcpZDataHandle.asFloat()
-        tcpMat    = tcpMatDataHandle.asMatrix()
-        targetX   = targetXDataHandle.asFloat()
-        targetY   = targetYDataHandle.asFloat()
-        targetZ   = targetZDataHandle.asFloat()
+        tcp      = [tcpXDataHandle.asFloat(),
+                    tcpYDataHandle.asFloat(),
+                    tcpZDataHandle.asFloat()]
+        tcpMat   = tcpMatDataHandle.asMatrix()
+
+        lcs      = [lcsXDataHandle.asFloat(),
+                    lcsYDataHandle.asFloat(),
+                    lcsZDataHandle.asFloat()]
+        lcsMat   = lcsMatDataHandle.asMatrix()
+
+        target    = [targetXDataHandle.asFloat(),
+                     targetYDataHandle.asFloat(),
+                     targetZDataHandle.asFloat()]
         targetMat = targetMatDataHandle.asMatrix() 
         
         # Robot Definition
-        a1 = a1DataHandle.asFloat()
-        a2 = a2DataHandle.asFloat()
-        b  = bDataHandle.asFloat()
-        c1 = c1DataHandle.asFloat()
-        c2 = c2DataHandle.asFloat()
-        c3 = c3DataHandle.asFloat()
-        c4 = c4DataHandle.asFloat()
+        robot_definition = [a1DataHandle.asFloat(),
+                            a2DataHandle.asFloat(),
+                            bDataHandle.asFloat(),
+                            c1DataHandle.asFloat(),
+                            c2DataHandle.asFloat(),
+                            c3DataHandle.asFloat(),
+                            c4DataHandle.asFloat()]
 
         # Axis Offset Values (robot's zero position in relation to IK solver zero position)
         axis2Offset = axis2OffsetDataHandle.asFloat()
@@ -199,9 +206,9 @@ class robotIKS(OpenMaya.MPxNode):
         flipA6 = flipA6DataHandle.asBool()
         
         # Joint config bools
-        soln1 = soln1DataHandle.asBool()
-        soln2 = soln2DataHandle.asBool()
-        soln3 = soln3DataHandle.asBool()
+        sols = [soln1DataHandle.asBool(),
+                soln2DataHandle.asBool(),
+                soln3DataHandle.asBool()]
         
         ik = ikDataHandle.asBool()
 
@@ -212,6 +219,9 @@ class robotIKS(OpenMaya.MPxNode):
         j4FK = j4FKDataHandle.asAngle().asDegrees()
         j5FK = j5FKDataHandle.asAngle().asDegrees()
         j6FK = j6FKDataHandle.asAngle().asDegrees()
+
+        # Solver Type
+        solverType = solverTypeDataHandle.asInt()
         
         ## Output Data Handles ##
         theta1OutDataHandle = pDataBlock.outputValue( robotIKS.theta1Attr )
@@ -221,314 +231,30 @@ class robotIKS(OpenMaya.MPxNode):
         theta5OutDataHandle = pDataBlock.outputValue( robotIKS.theta5Attr )
         theta6OutDataHandle = pDataBlock.outputValue( robotIKS.theta6Attr )
         
+
+
         if ik:
-            #========================================================#
-            #                     IK Solve Code                      #
-            #========================================================#
-            
-            # Initialize Variables
-            tcpRot    = [[0] * 3 for i in range(3)]
-            targetRot = [[0] * 3 for i in range(3)]
-            tcpTrans  = [[0] * 1 for i in range(3)]
-            lcsTrans  = [[0] * 1 for i in range(3)]
-            targetPt  = [[0] * 1 for i in range(3)]
-            flangePt  = [[0] * 3 for i in range(1)]
-            pivotPt   = [[0] * 3 for i in range(1)]
-            
-            theta1_Sol = [[0] * 2 for i in range(1)][0]
-            theta2_Sol = [[0] * 4 for i in range(1)][0] 
-            theta3_Sol = [[0] * 4 for i in range(1)][0]
-            theta4_Sol = [[0] * 8 for i in range(1)][0]
-            theta5_Sol = [[0] * 8 for i in range(1)][0]
-            theta6_Sol = [[0] * 8 for i in range(1)][0]
-    
-            jointVals  = [[0] * 6 for i in range(1)][0]
-            
-            T = [[0], [0], [c4]]
-            
-            #=====================#
-            #  Frame Definitions  #
-            #=====================#
-            # Maya to robot tcp coordinate change. robot (X,Y,Z) = Maya (-Y, X, Z) 
-            Rtm = [[0,-1,0],[1,0,0],[0,0,1]]          # Rotation matrix from Maya frame to robot tool frame
-            Ram = [[0,0,1],[1,0,0],[0,1,0]]           # Rotation matrix from Maya frame to robot world frame    
-            
-            tcpTrans[0][0] = tcpX                     # Get local Translation of tcp w.r.t. tool flange
-            tcpTrans[1][0] = tcpY                     #   
-            tcpTrans[2][0] = tcpZ                     # 
-            tcpTrans       = arrayMult(Rtm, tcpTrans) # Convert tcp translation from Maya frame to robot tool frame
-            
-            lcsTrans[0][0] = lcsX                     # Get translation of local base frame w.r.t robot world frame (Square controller)
-            lcsTrans[1][0] = lcsY                     #
-            lcsTrans[2][0] = lcsZ                     #
-            lcsTrans       = arrayMult(Ram, lcsTrans) # Convert lcs translation to robot world frame        
-    
-            targetPt[0][0] = targetX                  # Get translation of target in maya frame w.r.t robot world frame (Square controller)
-            targetPt[1][0] = targetY                  #
-            targetPt[2][0] = targetZ                  #
-            targetPt       = arrayMult(Ram, targetPt) # Convert target translation translation to robot world frame        
-    
-            # Convert Maya format rotation matrices to truncated format
-            tcpRotXAxis = [[tcpMat[0]],[tcpMat[1]],[tcpMat[2]]]
-            tcpRotYAxis = [[tcpMat[4]],[tcpMat[5]],[tcpMat[6]]]
-            tcpRotZAxis = [[tcpMat[8]],[tcpMat[9]],[tcpMat[10]]]
-            tcpMatTrunc = tpose([tpose(tcpRotXAxis)[0], tpose(tcpRotYAxis)[0], tpose(tcpRotZAxis)[0]])
-            
-            tcpRot      = tpose(arrayMult(Rtm, tcpMatTrunc)) # Convert tcp rotation matrix to robot tool frame
-            
-            lcsRotXAxis = [[lcsMat[0]],[lcsMat[1]],[lcsMat[2]]]
-            lcsRotYAxis = [[lcsMat[4]],[lcsMat[5]],[lcsMat[6]]]
-            lcsRotZAxis = [[lcsMat[8]],[lcsMat[9]],[lcsMat[10]]]
-            lcsMatTrunc = tpose([tpose(lcsRotXAxis)[0], tpose(lcsRotYAxis)[0], tpose(lcsRotZAxis)[0]])
-            
-            lcsRot      = tpose(arrayMult(Ram, lcsMatTrunc)) # Convert local base frame rotation matrix to robot world frame
-            
-            targetRotXAxis = [[targetMat[0]],[targetMat[1]],[targetMat[2]]]
-            targetRotYAxis = [[targetMat[4]],[targetMat[5]],[targetMat[6]]]
-            targetRotZAxis = [[targetMat[8]],[targetMat[9]],[targetMat[10]]]
-            targetMatTrunc = tpose([tpose(targetRotXAxis)[0], tpose(targetRotYAxis)[0], tpose(targetRotZAxis)[0]])
-            
-            targetRot      = tpose(arrayMult(Ram, targetMatTrunc)) # Convert target rotation matrix to robot world frame        
-            
-            
-            # Find Flange and Pivot locations in local robot frame
-            Re = arrayMult(tpose(targetRot), tcpRot)                                             # Rotation of the tcp w.r.t the target in robot world frame (square controller)
-            Rlm = arrayMult(Ram, lcsRot)                                                         # Transformation of local coordinate system in Maya frame (still not sure why)
-            
-            targetPt = [i - j for i,j in zip(tpose(targetPt)[0], tpose(lcsTrans)[0])]            # Find distance from local base frame (circle controller)
-                                                                                                 # to target point in robot world frame
-                                                                                      
-            flangePt = [i - j for i,j in zip(targetPt, tpose(arrayMult(Re,tcpTrans))[0])]        # Find the flange point in robot world frame 
-            pivotPt  = [i - j for i,j in zip(flangePt, tpose(arrayMult(Re, T))[0])]              # Find the pivot point in robot world frame
-            
-            flangePt  = tpose(arrayMult(Rlm, [[flangePt[0]], [flangePt[1]], [flangePt[2]]]))[0]  # Convert flange point to local frame (circle controller)
-            pivotPt  = tpose(arrayMult(Rlm, [[pivotPt[0]], [pivotPt[1]], [pivotPt[2]]]))[0]      # Convert pivot point to local frame (circle controller)
-            
-            Re = arrayMult(Rlm, Re)                                                              # Rotation of the tcp w.r.t the target in robot local frame (cirlce controller) 
-            
-            #=========#
-            #  SOLVE  #
-            #=========#
-            nx1  = math.sqrt((math.pow(pivotPt[1], 2) + math.pow(pivotPt[0], 2) - math.pow(b, 2))) - a1
-            s1_2 = math.pow(nx1, 2) + math.pow((pivotPt[2] - c1), 2)
-            s2_2 = math.pow((nx1 + 2 * a1), 2) + math.pow((pivotPt[2] - c1), 2)
-            k_2  = math.pow(a2, 2) + math.pow(c3, 2)
-            s1   = math.sqrt(s1_2)
-            s2   = math.sqrt(s2_2)
-            k    = math.sqrt(k_2)
-            
-            valid_solition = 1
+            if solverType == 1:  # Hawkins-Keating Solver (e.g. UR)
+                jointVals = inverse_kinematics.solve_hawkins_keating(tcp,
+                               tcpMat,
+                               lcs, 
+                               lcsMat, 
+                               target,
+                               targetMat,
+                               robot_definition,
+                               sols)
 
-
-            # Theta 1
-            theta1_1     = math.atan2(pivotPt[1], pivotPt[0]) - math.atan2(b, (nx1 + a1))
-            theta1_2     = math.atan2(pivotPt[1], pivotPt[0]) + math.atan2(b, (nx1 + a1)) - math.pi
-            
-            
-            # Theta 2
-            if abs((s1_2 + math.pow(c2, 2) - k_2) / (2 * s1 * c2)) <= 1:
-                theta2_1 = -math.acos((s1_2 + math.pow(c2, 2) - k_2) / (2 * s1 * c2)) + math.atan2(nx1, (pivotPt[2] - c1))
-                theta2_2 = math.acos((s1_2 + math.pow(c2, 2) - k_2) / (2 * s1 * c2)) + math.atan2(nx1, (pivotPt[2] - c1))
             else:
-                valid_solition = 0
-                theta2_1 = math.atan2(nx1, (pivotPt[2] - c1))
-                theta2_2 = math.atan2(nx1, (pivotPt[2] - c1))
+                jointVals = inverse_kinematics.solve_spherical_wrist(tcp,
+                               tcpMat,
+                               lcs, 
+                               lcsMat, 
+                               target,
+                               targetMat,
+                               robot_definition,
+                               sols)
 
-            if abs((s2_2 + math.pow(c2, 2) - k_2) / (2 * s2 * c2)) <= 1:
-                theta2_3 = math.acos((s2_2 + math.pow(c2, 2) - k_2) / (2 * s2 * c2)) - math.atan2((nx1 + 2 * a1), (pivotPt[2] - c1))
-                theta2_4 = -(math.acos((s2_2 + math.pow(c2, 2) - k_2) / (2 * s2 * c2)) + math.atan2((nx1 + 2 * a1), (pivotPt[2] - c1)))
-            else:
-                valid_solition = 0
-                theta2_3 = - math.atan2((nx1 + 2 * a1), (pivotPt[2] - c1)) 
-                theta2_4 = - math.atan2((nx1 + 2 * a1), (pivotPt[2] - c1)) 
-            
 
-            # Theta 3
-            if abs((math.pow(c2, 2) + k_2 - s1_2) / (2 * c2 * k)) <= 1:
-                theta3_1 = math.pi - (math.acos((math.pow(c2, 2) + k_2 - s1_2) / (2 * c2 * k)) - math.atan2(a2, c3))
-                theta3_2 = math.pi - (-math.acos((math.pow(c2, 2) + k_2 - s1_2) / (2 * c2 * k)) - math.atan2(a2, c3))
-            else:
-                valid_solition = 0
-                theta3_1 = math.pi - (math.pi - math.atan2(a2, c3))
-                theta3_2 = math.pi - (-math.pi - math.atan2(a2, c3))
-
-            if abs((math.pow(c2, 2) + k_2 - s2_2) / (2 * c2 * k)) <= 1:
-                theta3_3 = -(math.pi - (math.acos((math.pow(c2, 2) + k_2 - s2_2) / (2 * c2 * k)) + math.atan2(a2, c3)))
-                theta3_4 = -(math.pi - (-math.acos((math.pow(c2, 2) + k_2 - s2_2) / (2 * c2 * k)) + math.atan2(a2, c3)))
-            else:
-                valid_solition = 0
-                theta3_3 = -(math.pi - (math.pi - math.atan2(a2, c3)))
-                theta3_4 = -(math.pi - (-math.pi - math.atan2(a2, c3)))
-
-            
-            sin11 = math.sin(theta1_1)
-            sin12 = math.sin(theta1_1)
-            sin13 = math.sin(theta1_2)
-            sin14 = math.sin(theta1_2)
-            
-            cos11 = math.cos(theta1_1)
-            cos12 = math.cos(theta1_1)
-            cos13 = math.cos(theta1_2)
-            cos14 = math.cos(theta1_2)
-            
-            sin231 = math.sin(theta2_1 + theta3_1)
-            sin232 = math.sin(theta2_2 + theta3_2)
-            sin233 = math.sin(theta2_3 + theta3_3)
-            sin234 = math.sin(theta2_4 + theta3_4)
-            
-            cos231 = math.cos(theta2_1 + theta3_1)
-            cos232 = math.cos(theta2_2 + theta3_2)
-            cos233 = math.cos(theta2_3 + theta3_3)
-            cos234 = math.cos(theta2_4 + theta3_4)
-            
-            m11 = Re[0][2] * sin231 * cos11 + Re[1][2] * sin231 * sin11 + Re[2][2] * cos231
-            m12 = Re[0][2] * sin232 * cos12 + Re[1][2] * sin232 * sin12 + Re[2][2] * cos232
-            m13 = Re[0][2] * sin233 * cos13 + Re[1][2] * sin233 * sin13 + Re[2][2] * cos233
-            m14 = Re[0][2] * sin234 * cos14 + Re[1][2] * sin234 * sin14 + Re[2][2] * cos234
-            
-            # Theta 4
-            theta4_1 = math.atan2((Re[1][2] * cos11 - Re[0][2] * sin11), Re[0][2] * cos231 * cos11 + Re[1][2] * cos231 * sin11 - Re[2][2] * sin231)
-            theta4_5 = theta4_1 + math.pi
-
-            theta4_2 = math.atan2((Re[1][2] * cos12 - Re[0][2] * sin12), Re[0][2] * cos232 * cos12 + Re[1][2] * cos232 * sin12 - Re[2][2] * sin232)
-            theta4_6 = theta4_2 + math.pi
-
-            theta4_3 = math.atan2((Re[1][2] * cos13 - Re[0][2] * sin13), Re[0][2] * cos233 * cos13 + Re[1][2] * cos233 * sin13 - Re[2][2] * sin233)
-            theta4_7 = theta4_3 + math.pi
-
-            theta4_4 = math.atan2((Re[1][2] * cos14 - Re[0][2] * sin14), Re[0][2] * cos234 * cos14 + Re[1][2] * cos234 * sin14 - Re[2][2] * sin234)
-            theta4_8 = theta4_4 + math.pi
-
-            
-            # Theta 5
-            theta5_1 = math.atan2((math.sqrt(1 - math.pow(m11, 2))), m11)
-            theta5_5 = -theta5_1
-
-            theta5_2 = math.atan2((math.sqrt(1 - math.pow(m12, 2))), m12)
-            theta5_6 = -theta5_2
-
-            theta5_3 = math.atan2((math.sqrt(1 - math.pow(m13, 2))), m13)
-            theta5_7 = -theta5_3
-
-            theta5_4 = math.atan2((math.sqrt(1 - math.pow(m14, 2))), m14)
-            theta5_8 = -theta5_4
-            
-            
-            # Theta 6
-            theta6_1 = math.atan2((Re[0][1] * sin231 * cos11 + Re[1][1] * sin231 * sin11 + Re[2][1] * cos231), (-Re[0][0] * sin231 * cos11 - Re[1][0] * sin231 * sin11 - Re[2][0] * cos231))
-            theta6_5 = theta6_1 - math.pi
-
-            theta6_2 = math.atan2((Re[0][1] * sin232 * cos12 + Re[1][1] * sin232 * sin12 + Re[2][1] * cos232), (-Re[0][0] * sin232 * cos12 - Re[1][0] * sin232 * sin12 - Re[2][0] * cos232))
-            theta6_6 = theta6_2 - math.pi
-
-            theta6_3 = math.atan2((Re[0][1] * sin233 * cos13 + Re[1][1] * sin233 * sin13 + Re[2][1] * cos233), (-Re[0][0] * sin233 * cos13 - Re[1][0] * sin233 * sin13 - Re[2][0] * cos233))
-            theta6_7 = theta6_3 - math.pi
-
-            theta6_4 = math.atan2((Re[0][1] * sin234 * cos14 + Re[1][1] * sin234 * sin14 + Re[2][1] * cos234), (-Re[0][0] * sin234 * cos14 - Re[1][0] * sin234 * sin14 - Re[2][0] * cos234))
-            theta6_8 = theta6_4 - math.pi
-
-                    
-            theta1_Sol[0] = math.degrees(theta1_1)
-            theta1_Sol[1] = math.degrees(theta1_2)
-            
-            theta2_Sol[0] = math.degrees(theta2_1)
-            theta2_Sol[1] = math.degrees(theta2_2)
-            theta2_Sol[2] = math.degrees(theta2_3)
-            theta2_Sol[3] = math.degrees(theta2_4)
-            
-            theta3_Sol[0] = math.degrees(theta3_1)
-            theta3_Sol[1] = math.degrees(theta3_2)
-            theta3_Sol[2] = math.degrees(theta3_3)
-            theta3_Sol[3] = math.degrees(theta3_4)
-            
-            theta4_Sol[0] = math.degrees(theta4_1)
-            theta4_Sol[1] = math.degrees(theta4_2)
-            theta4_Sol[2] = math.degrees(theta4_3)
-            theta4_Sol[3] = math.degrees(theta4_4)
-            theta4_Sol[4] = math.degrees(theta4_5)
-            theta4_Sol[5] = math.degrees(theta4_6)
-            theta4_Sol[6] = math.degrees(theta4_7)
-            theta4_Sol[7] = math.degrees(theta4_8)
-            
-            theta5_Sol[0] = math.degrees(theta5_1)
-            theta5_Sol[1] = math.degrees(theta5_2)
-            theta5_Sol[2] = math.degrees(theta5_3)
-            theta5_Sol[3] = math.degrees(theta5_4)
-            theta5_Sol[4] = math.degrees(theta5_5)
-            theta5_Sol[5] = math.degrees(theta5_6)
-            theta5_Sol[6] = math.degrees(theta5_7)
-            theta5_Sol[7] = math.degrees(theta5_8)
-            
-            theta6_Sol[0] = math.degrees(theta6_1)
-            theta6_Sol[1] = math.degrees(theta6_2)
-            theta6_Sol[2] = math.degrees(theta6_3)
-            theta6_Sol[3] = math.degrees(theta6_4)
-            theta6_Sol[4] = math.degrees(theta6_5)
-            theta6_Sol[5] = math.degrees(theta6_6)
-            theta6_Sol[6] = math.degrees(theta6_7)
-            theta6_Sol[7] = math.degrees(theta6_8)        
-            
-            
-            # select one of the 8 solutions        
-    
-            if soln1:
-                jointVals[0] = theta1_Sol[0];
-            
-                if soln2: 
-                    jointVals[1] = theta2_Sol[0];
-                    jointVals[2] = theta3_Sol[0];
-            
-                    if soln3: 
-                        jointVals[3] = theta4_Sol[0];
-                        jointVals[4] = theta5_Sol[0];
-                        jointVals[5] = theta6_Sol[0];
-                    else:
-                        jointVals[3] = theta4_Sol[4];
-                        jointVals[4] = theta5_Sol[4];
-                        jointVals[5] = theta6_Sol[4];
-                                
-                else:
-                    jointVals[1] = theta2_Sol[1];
-                    jointVals[2] = theta3_Sol[1];
-            
-                    if soln3:
-                        jointVals[3] = theta4_Sol[1];
-                        jointVals[4] = theta5_Sol[1];
-                        jointVals[5] = theta6_Sol[1];
-                    else:
-                        jointVals[3] = theta4_Sol[5];
-                        jointVals[4] = theta5_Sol[5];
-                        jointVals[5] = theta6_Sol[5];
-                       
-            else:
-                jointVals[0] = theta1_Sol[1];
-            
-                if soln2:
-                    jointVals[1] = theta2_Sol[2];
-                    jointVals[2] = theta3_Sol[2];
-            
-                    if soln3:
-                        jointVals[3] = theta4_Sol[2];
-                        jointVals[4] = theta5_Sol[2];
-                        jointVals[5] = theta6_Sol[2];
-                    else:
-                        jointVals[3] = theta4_Sol[6];
-                        jointVals[4] = theta5_Sol[6];
-                        jointVals[5] = theta6_Sol[6];
-                              
-                else:
-                    jointVals[1] = theta2_Sol[3];
-                    jointVals[2] = theta3_Sol[3];
-            
-                    if soln3:
-                        jointVals[3] = theta4_Sol[3];
-                        jointVals[4] = theta5_Sol[3];
-                        jointVals[5] = theta6_Sol[3];
-                    else:
-                        jointVals[3] = theta4_Sol[7];
-                        jointVals[4] = theta5_Sol[7];
-                        jointVals[5] = theta6_Sol[7];            
-            
             if math.degrees(999) in jointVals:
                 cmds.warning( "Not a valid configuration" )
                 theta1OutDataHandle.setClean()
@@ -540,7 +266,7 @@ class robotIKS(OpenMaya.MPxNode):
             else:
                 ##########################################################            
                 
-                # Offset J2/J3 axes
+                # Offset J2/J3/J5 axes
                 jointVals[1] = jointVals[1] - axis2Offset
                 jointVals[2] = jointVals[2] - axis3Offset
                 jointVals[4] = jointVals[4] - axis5Offset
@@ -602,6 +328,8 @@ class robotIKS(OpenMaya.MPxNode):
             theta4OutDataHandle.setClean()
             theta5OutDataHandle.setClean()
             theta6OutDataHandle.setClean()
+
+
 
 #========================================================#
 #                 Plug-in initialization.                #
@@ -969,7 +697,14 @@ def nodeInitializer():
 
     robotIKS.addAttribute( robotIKS.target )  # Add parent Attr
 
-    
+    #-----------------------------------------#      
+    #                Solver Type              #
+    #-----------------------------------------#  
+    robotIKS.solverTypeAttr= numericAttributeFn.create( 'solverType', 'solverType', OpenMaya.MFnNumericData.kInt, 0 )
+    numericAttributeFn.storable = True 
+    numericAttributeFn.writable = True
+    numericAttributeFn.hidden   = False
+    robotIKS.addAttribute( robotIKS.solverTypeAttr )     
     
     #==================================#
     #     OUTPUT NODE ATTRIBUTE(S)     #
@@ -1413,7 +1148,22 @@ def nodeInitializer():
     robotIKS.attributeAffects( robotIKS.targetMatAttr, robotIKS.theta4Attr )    
     robotIKS.attributeAffects( robotIKS.targetMatAttr, robotIKS.theta5Attr )    
     robotIKS.attributeAffects( robotIKS.targetMatAttr, robotIKS.theta6Attr )    
-    robotIKS.attributeAffects( robotIKS.targetMatAttr, robotIKS.theta      )    
+    robotIKS.attributeAffects( robotIKS.targetMatAttr, robotIKS.theta      ) 
+
+
+    #---------------#
+    #  Solver Type  #
+    #---------------#
+    
+    # a1 #
+    robotIKS.attributeAffects( robotIKS.solverTypeAttr, robotIKS.theta1Attr )
+    robotIKS.attributeAffects( robotIKS.solverTypeAttr, robotIKS.theta2Attr )
+    robotIKS.attributeAffects( robotIKS.solverTypeAttr, robotIKS.theta3Attr )
+    robotIKS.attributeAffects( robotIKS.solverTypeAttr, robotIKS.theta4Attr )
+    robotIKS.attributeAffects( robotIKS.solverTypeAttr, robotIKS.theta5Attr )
+    robotIKS.attributeAffects( robotIKS.solverTypeAttr, robotIKS.theta6Attr )        
+    robotIKS.attributeAffects( robotIKS.solverTypeAttr, robotIKS.theta      ) 
+
            
 def initializePlugin( mobject ):
     '''
