@@ -352,6 +352,6 @@ def rig(*args):
     set_tcp_grp(flange_loc)
     set_target_ctrl(flange_loc)
 
-    # pm.setAttr('target_CTRL.ik', 1)
+    pm.setAttr('target_CTRL.ik', 1)
 
 

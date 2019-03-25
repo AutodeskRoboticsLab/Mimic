@@ -281,17 +281,17 @@ def solve_spherical_wrist(tcp, tcp_mat, lcs, lcs_mat, target, target_mat, robot_
     :param :
     :return:
     """
-    tcpX = tcp[0]
-    tcpY = tcp[1]
-    tcpZ = tcp[2]
+    tcp_x = tcp[0]
+    tcp_y = tcp[1]
+    tcp_z = tcp[2]
 
-    lcsX = lcs[0]
-    lcsY = lcs[1]
-    lcsZ = lcs[2]
+    lcs_x = lcs[0]
+    lcs_y = lcs[1]
+    lcs_z = lcs[2]
 
-    targetX = target[0]
-    targetY = target[1]
-    targetZ = target[2]
+    target_x = target[0]
+    target_y = target[1]
+    target_z = target[2]
 
     a1 = robot_definition[0]
     a2 = robot_definition[1]
@@ -301,125 +301,159 @@ def solve_spherical_wrist(tcp, tcp_mat, lcs, lcs_mat, target, target_mat, robot_
     c3 = robot_definition[5]
     c4 = robot_definition[6]
 
-    soln1 = sols[0]
-    soln2 = sols[1]
-    soln3 = sols[2]
+    sol_1 = sols[0]
+    sol_2 = sols[1]
+    sol_3 = sols[2]
 
     # Initialize Variables
-    tcpRot    = [[0] * 3 for i in range(3)]
-    targetRot = [[0] * 3 for i in range(3)]
-    tcpTrans  = [[0] * 1 for i in range(3)]
-    lcsTrans  = [[0] * 1 for i in range(3)]
-    targetPt  = [[0] * 1 for i in range(3)]
-    flangePt  = [[0] * 3 for i in range(1)]
-    pivotPt   = [[0] * 3 for i in range(1)]
+    tcp_rot = [[0] * 3 for i in range(3)]
+    target_rot = [[0] * 3 for i in range(3)]
+    tcp_trans = [[0] * 1 for i in range(3)]
+    lcs_trans = [[0] * 1 for i in range(3)]
+    target_pt = [[0] * 1 for i in range(3)]
+    flange_pt = [[0] * 3 for i in range(1)]
+    pivot_pt = [[0] * 3 for i in range(1)]
     
-    theta1_Sol = [[0] * 2 for i in range(1)][0]
-    theta2_Sol = [[0] * 4 for i in range(1)][0] 
-    theta3_Sol = [[0] * 4 for i in range(1)][0]
-    theta4_Sol = [[0] * 8 for i in range(1)][0]
-    theta5_Sol = [[0] * 8 for i in range(1)][0]
-    theta6_Sol = [[0] * 8 for i in range(1)][0]
+    theta1_sol = [[0] * 2 for i in range(1)][0]
+    theta2_sol = [[0] * 4 for i in range(1)][0] 
+    theta3_sol = [[0] * 4 for i in range(1)][0]
+    theta4_sol = [[0] * 8 for i in range(1)][0]
+    theta5_sol = [[0] * 8 for i in range(1)][0]
+    theta6_sol = [[0] * 8 for i in range(1)][0]
 
-    jointVals  = [[0] * 6 for i in range(1)][0]
+    thetas = [[0] * 6 for i in range(1)][0]
     
     T = [[0], [0], [c4]]
     
     #=====================#
     #  Frame Definitions  #
     #=====================#
-    # Maya to robot tcp coordinate change. robot (X,Y,Z) = Maya (-Y, X, Z) 
-    Rtm = [[0,-1,0],[1,0,0],[0,0,1]]          # Rotation matrix from Maya frame to robot tool frame
-    Ram = [[0,0,1],[1,0,0],[0,1,0]]           # Rotation matrix from Maya frame to robot world frame    
-    
-    tcpTrans[0][0] = tcpX                     # Get local Translation of tcp w.r.t. tool flange
-    tcpTrans[1][0] = tcpY                     #   
-    tcpTrans[2][0] = tcpZ                     # 
-    tcpTrans       = _array_mult(Rtm, tcpTrans) # Convert tcp translation from Maya frame to robot tool frame
-    
-    lcsTrans[0][0] = lcsX                     # Get translation of local base frame w.r.t robot world frame (Square controller)
-    lcsTrans[1][0] = lcsY                     #
-    lcsTrans[2][0] = lcsZ                     #
-    lcsTrans       = _array_mult(Ram, lcsTrans) # Convert lcs translation to robot world frame        
+    # Maya uses a different coordinate system than our IK solver, so we have
+    # to convert from Maya's frame to the solver's frame.
+    # If your base frame is different, you can substitute the transformation here.
+     
+    # Solver's tool frame (X,Y,Z) | Maya's tool frame (-Y, X, Z)
+    # Rotation matrix from Maya tool frame to solver's tool frame.
+    r_tool_frame = [[0,-1,0],[1,0,0],[0,0,1]]
 
-    targetPt[0][0] = targetX                  # Get translation of target in maya frame w.r.t robot world frame (Square controller)
-    targetPt[1][0] = targetY                  #
-    targetPt[2][0] = targetZ                  #
-    targetPt       = _array_mult(Ram, targetPt) # Convert target translation translation to robot world frame        
+    # Solver world frame (X,Y,Z) = Maya world frame (-Z, -X, Y)
+    # Rotation matrix from Maya's world frame to solver world frame.
+    r_world_frame = [[0,0,1],[1,0,0],[0,1,0]]
+    
+    # Get local Translation of tcp w.r.t. tool flange
+    tcp_trans[0][0] = tcp_x
+    tcp_trans[1][0] = tcp_y  
+    tcp_trans[2][0] = tcp_z
 
-    # Convert Maya format rotation matrices to truncated format
-    tcpRotXAxis = [[tcp_mat[0]],[tcp_mat[1]],[tcp_mat[2]]]
-    tcpRotYAxis = [[tcp_mat[4]],[tcp_mat[5]],[tcp_mat[6]]]
-    tcpRotZAxis = [[tcp_mat[8]],[tcp_mat[9]],[tcp_mat[10]]]
-    tcp_matTrunc = tpose([tpose(tcpRotXAxis)[0], tpose(tcpRotYAxis)[0], tpose(tcpRotZAxis)[0]])
+    # Convert TCP translation from Maya's tool frame to solver tool frame.
+    tcp_trans = _array_mult(r_tool_frame, tcp_trans)
     
-    tcpRot      = tpose(_array_mult(Rtm, tcp_matTrunc)) # Convert tcp rotation matrix to robot tool frame
+    # Get translation of local base frame (Circle controller) w.r.t robot's
+    # world frame (Square controller).
+    lcs_trans[0][0] = lcs_x
+    lcs_trans[1][0] = lcs_y
+    lcs_trans[2][0] = lcs_z
+
+    # Convert lcs translation from Maya's world frame to solver world frame.
+    lcs_trans = _array_mult(r_world_frame, lcs_trans)
+
+    # Get translation of target in Maya's world frame w.r.t robot world frame
+    # (Square controller).
+    target_pt[0][0] = target_x
+    target_pt[1][0] = target_y
+    target_pt[2][0] = target_z
+
+    # Convert target translation from Maya's world frame to solver world frame.
+    target_pt = _array_mult(r_world_frame, target_pt)
+
+    # Convert Maya formatted rotation matrices to truncated format
+    # Tool center point (TCP) matrix
+    tcp_x_axis = [[tcp_mat[0]],[tcp_mat[1]],[tcp_mat[2]]]
+    tcp_y_axis = [[tcp_mat[4]],[tcp_mat[5]],[tcp_mat[6]]]
+    tcp_z_axis = [[tcp_mat[8]],[tcp_mat[9]],[tcp_mat[10]]]
+    tcp_mat_truc = _tpose([_tpose(tcp_x_axis)[0],
+                        _tpose(tcp_y_axis)[0],
+                        _tpose(tcp_z_axis)[0]])
     
-    lcsRotXAxis = [[lcs_mat[0]],[lcs_mat[1]],[lcs_mat[2]]]
-    lcsRotYAxis = [[lcs_mat[4]],[lcs_mat[5]],[lcs_mat[6]]]
-    lcsRotZAxis = [[lcs_mat[8]],[lcs_mat[9]],[lcs_mat[10]]]
-    lcs_matTrunc = tpose([tpose(lcsRotXAxis)[0], tpose(lcsRotYAxis)[0], tpose(lcsRotZAxis)[0]])
+    # Convert truncated tcp rotation matrix to solver tool frame
+    tcp_rot = _tpose(_array_mult(r_tool_frame, tcp_mat_truc))
+
+    # Local coordinate system matrix (circle controller)    
+    lcs_x_axis = [[lcs_mat[0]],[lcs_mat[1]],[lcs_mat[2]]]
+    lcs_y_axis = [[lcs_mat[4]],[lcs_mat[5]],[lcs_mat[6]]]
+    lcs_z_axis = [[lcs_mat[8]],[lcs_mat[9]],[lcs_mat[10]]]
+    lcs_mat_truc = _tpose([_tpose(lcs_x_axis)[0],
+                        _tpose(lcs_y_axis)[0],
+                        _tpose(lcs_z_axis)[0]])
     
-    lcsRot      = tpose(_array_mult(Ram, lcs_matTrunc)) # Convert local base frame rotation matrix to robot world frame
+    # Convert local base frame rotation matrix to solver world frame    
+    lcs_rot = _tpose(_array_mult(r_world_frame, lcs_mat_truc))
     
-    targetRotXAxis = [[target_mat[0]],[target_mat[1]],[target_mat[2]]]
-    targetRotYAxis = [[target_mat[4]],[target_mat[5]],[target_mat[6]]]
-    targetRotZAxis = [[target_mat[8]],[target_mat[9]],[target_mat[10]]]
-    target_matTrunc = tpose([tpose(targetRotXAxis)[0], tpose(targetRotYAxis)[0], tpose(targetRotZAxis)[0]])
+    target_x_axis = [[target_mat[0]],[target_mat[1]],[target_mat[2]]]
+    target_y_axis = [[target_mat[4]],[target_mat[5]],[target_mat[6]]]
+    target_z_axis = [[target_mat[8]],[target_mat[9]],[target_mat[10]]]
+    target_mat_trunc = _tpose([_tpose(target_x_axis)[0],
+                        _tpose(target_y_axis)[0],
+                        _tpose(target_z_axis)[0]])
+
+    # Convert target rotation matrix to solver world frame    
+    target_rot = _tpose(_array_mult(r_world_frame, target_mat_trunc))
     
-    targetRot      = tpose(_array_mult(Ram, target_matTrunc)) # Convert target rotation matrix to robot world frame        
     
+    # Find Flange Point location in solver world frame
+    #
+    # Rotation of the tcp w.r.t to the target in solver world frame
+    _re = _array_mult(_tpose(target_rot), tcp_rot)                                             # Rotation of the tcp w.r.t the target in robot world frame (square controller)
     
-    # Find Flange and Pivot locations in local robot frame
-    Re = _array_mult(tpose(targetRot), tcpRot)                                             # Rotation of the tcp w.r.t the target in robot world frame (square controller)
-    Rlm = _array_mult(Ram, lcsRot)                                                         # Transformation of local coordinate system in Maya frame (still not sure why)
+    # Rotation of the robot's local coordinate system (circle
+    # controller) w.r.t the solver world frame
+    _rlm = _array_mult(r_world_frame, lcs_rot)                                                         # Transformation of local coordinate system in Maya frame (still not sure why)
     
-    targetPt = [i - j for i,j in zip(tpose(targetPt)[0], tpose(lcsTrans)[0])]            # Find distance from local base frame (circle controller)
+    target_pt = [i - j for i,j in zip(_tpose(target_pt)[0], _tpose(lcs_trans)[0])]            # Find distance from local base frame (circle controller)
                                                                                          # to target point in robot world frame
                                                                               
-    flangePt = [i - j for i,j in zip(targetPt, tpose(_array_mult(Re,tcpTrans))[0])]        # Find the flange point in robot world frame 
-    pivotPt  = [i - j for i,j in zip(flangePt, tpose(_array_mult(Re, T))[0])]              # Find the pivot point in robot world frame
+    flange_pt = [i - j for i,j in zip(target_pt, _tpose(_array_mult(_re,tcp_trans))[0])]        # Find the flange point in robot world frame 
+    pivot_pt = [i - j for i,j in zip(flange_pt, _tpose(_array_mult(_re, T))[0])]              # Find the pivot point in robot world frame
     
-    flangePt  = tpose(_array_mult(Rlm, [[flangePt[0]], [flangePt[1]], [flangePt[2]]]))[0]  # Convert flange point to local frame (circle controller)
-    pivotPt  = tpose(_array_mult(Rlm, [[pivotPt[0]], [pivotPt[1]], [pivotPt[2]]]))[0]      # Convert pivot point to local frame (circle controller)
+    flange_pt = _tpose(_array_mult(_rlm, [[flange_pt[0]], [flange_pt[1]], [flange_pt[2]]]))[0]  # Convert flange point to local frame (circle controller)
+    pivot_pt = _tpose(_array_mult(_rlm, [[pivot_pt[0]], [pivot_pt[1]], [pivot_pt[2]]]))[0]      # Convert pivot point to local frame (circle controller)
     
-    Re = _array_mult(Rlm, Re)                                                              # Rotation of the tcp w.r.t the target in robot local frame (cirlce controller) 
+    _re = _array_mult(_rlm, _re)                                                              # Rotation of the tcp w.r.t the target in robot local frame (cirlce controller) 
     
     #=========#
     #  SOLVE  #
     #=========#
-    nx1  = math.sqrt((math.pow(pivotPt[1], 2) + math.pow(pivotPt[0], 2) - math.pow(b, 2))) - a1
-    s1_2 = math.pow(nx1, 2) + math.pow((pivotPt[2] - c1), 2)
-    s2_2 = math.pow((nx1 + 2 * a1), 2) + math.pow((pivotPt[2] - c1), 2)
-    k_2  = math.pow(a2, 2) + math.pow(c3, 2)
-    s1   = math.sqrt(s1_2)
-    s2   = math.sqrt(s2_2)
-    k    = math.sqrt(k_2)
+    nx1 = math.sqrt((math.pow(pivot_pt[1], 2) + math.pow(pivot_pt[0], 2) - math.pow(b, 2))) - a1
+    s1_2 = math.pow(nx1, 2) + math.pow((pivot_pt[2] - c1), 2)
+    s2_2 = math.pow((nx1 + 2 * a1), 2) + math.pow((pivot_pt[2] - c1), 2)
+    k_2 = math.pow(a2, 2) + math.pow(c3, 2)
+    s1 = math.sqrt(s1_2)
+    s2 = math.sqrt(s2_2)
+    k = math.sqrt(k_2)
     
     valid_solition = 1
 
-
     # Theta 1
-    theta1_1     = math.atan2(pivotPt[1], pivotPt[0]) - math.atan2(b, (nx1 + a1))
-    theta1_2     = math.atan2(pivotPt[1], pivotPt[0]) + math.atan2(b, (nx1 + a1)) - math.pi
+    theta1_1 = math.atan2(pivot_pt[1], pivot_pt[0]) - math.atan2(b, (nx1 + a1))
+    theta1_2 = math.atan2(pivot_pt[1], pivot_pt[0]) + math.atan2(b, (nx1 + a1)) - math.pi
     
     
     # Theta 2
     if abs((s1_2 + math.pow(c2, 2) - k_2) / (2 * s1 * c2)) <= 1:
-        theta2_1 = -math.acos((s1_2 + math.pow(c2, 2) - k_2) / (2 * s1 * c2)) + math.atan2(nx1, (pivotPt[2] - c1))
-        theta2_2 = math.acos((s1_2 + math.pow(c2, 2) - k_2) / (2 * s1 * c2)) + math.atan2(nx1, (pivotPt[2] - c1))
+        theta2_1 = -math.acos((s1_2 + math.pow(c2, 2) - k_2) / (2 * s1 * c2)) + math.atan2(nx1, (pivot_pt[2] - c1))
+        theta2_2 = math.acos((s1_2 + math.pow(c2, 2) - k_2) / (2 * s1 * c2)) + math.atan2(nx1, (pivot_pt[2] - c1))
     else:
         valid_solition = 0
-        theta2_1 = math.atan2(nx1, (pivotPt[2] - c1))
-        theta2_2 = math.atan2(nx1, (pivotPt[2] - c1))
+        theta2_1 = math.atan2(nx1, (pivot_pt[2] - c1))
+        theta2_2 = math.atan2(nx1, (pivot_pt[2] - c1))
 
     if abs((s2_2 + math.pow(c2, 2) - k_2) / (2 * s2 * c2)) <= 1:
-        theta2_3 = math.acos((s2_2 + math.pow(c2, 2) - k_2) / (2 * s2 * c2)) - math.atan2((nx1 + 2 * a1), (pivotPt[2] - c1))
-        theta2_4 = -(math.acos((s2_2 + math.pow(c2, 2) - k_2) / (2 * s2 * c2)) + math.atan2((nx1 + 2 * a1), (pivotPt[2] - c1)))
+        theta2_3 = math.acos((s2_2 + math.pow(c2, 2) - k_2) / (2 * s2 * c2)) - math.atan2((nx1 + 2 * a1), (pivot_pt[2] - c1))
+        theta2_4 = -(math.acos((s2_2 + math.pow(c2, 2) - k_2) / (2 * s2 * c2)) + math.atan2((nx1 + 2 * a1), (pivot_pt[2] - c1)))
     else:
         valid_solition = 0
-        theta2_3 = - math.atan2((nx1 + 2 * a1), (pivotPt[2] - c1)) 
-        theta2_4 = - math.atan2((nx1 + 2 * a1), (pivotPt[2] - c1)) 
+        theta2_3 = - math.atan2((nx1 + 2 * a1), (pivot_pt[2] - c1)) 
+        theta2_4 = - math.atan2((nx1 + 2 * a1), (pivot_pt[2] - c1)) 
     
 
     # Theta 3
@@ -460,22 +494,22 @@ def solve_spherical_wrist(tcp, tcp_mat, lcs, lcs_mat, target, target_mat, robot_
     cos233 = math.cos(theta2_3 + theta3_3)
     cos234 = math.cos(theta2_4 + theta3_4)
     
-    m11 = Re[0][2] * sin231 * cos11 + Re[1][2] * sin231 * sin11 + Re[2][2] * cos231
-    m12 = Re[0][2] * sin232 * cos12 + Re[1][2] * sin232 * sin12 + Re[2][2] * cos232
-    m13 = Re[0][2] * sin233 * cos13 + Re[1][2] * sin233 * sin13 + Re[2][2] * cos233
-    m14 = Re[0][2] * sin234 * cos14 + Re[1][2] * sin234 * sin14 + Re[2][2] * cos234
+    m11 = _re[0][2] * sin231 * cos11 + _re[1][2] * sin231 * sin11 + _re[2][2] * cos231
+    m12 = _re[0][2] * sin232 * cos12 + _re[1][2] * sin232 * sin12 + _re[2][2] * cos232
+    m13 = _re[0][2] * sin233 * cos13 + _re[1][2] * sin233 * sin13 + _re[2][2] * cos233
+    m14 = _re[0][2] * sin234 * cos14 + _re[1][2] * sin234 * sin14 + _re[2][2] * cos234
     
     # Theta 4
-    theta4_1 = math.atan2((Re[1][2] * cos11 - Re[0][2] * sin11), Re[0][2] * cos231 * cos11 + Re[1][2] * cos231 * sin11 - Re[2][2] * sin231)
+    theta4_1 = math.atan2((_re[1][2] * cos11 - _re[0][2] * sin11), _re[0][2] * cos231 * cos11 + _re[1][2] * cos231 * sin11 - _re[2][2] * sin231)
     theta4_5 = theta4_1 + math.pi
 
-    theta4_2 = math.atan2((Re[1][2] * cos12 - Re[0][2] * sin12), Re[0][2] * cos232 * cos12 + Re[1][2] * cos232 * sin12 - Re[2][2] * sin232)
+    theta4_2 = math.atan2((_re[1][2] * cos12 - _re[0][2] * sin12), _re[0][2] * cos232 * cos12 + _re[1][2] * cos232 * sin12 - _re[2][2] * sin232)
     theta4_6 = theta4_2 + math.pi
 
-    theta4_3 = math.atan2((Re[1][2] * cos13 - Re[0][2] * sin13), Re[0][2] * cos233 * cos13 + Re[1][2] * cos233 * sin13 - Re[2][2] * sin233)
+    theta4_3 = math.atan2((_re[1][2] * cos13 - _re[0][2] * sin13), _re[0][2] * cos233 * cos13 + _re[1][2] * cos233 * sin13 - _re[2][2] * sin233)
     theta4_7 = theta4_3 + math.pi
 
-    theta4_4 = math.atan2((Re[1][2] * cos14 - Re[0][2] * sin14), Re[0][2] * cos234 * cos14 + Re[1][2] * cos234 * sin14 - Re[2][2] * sin234)
+    theta4_4 = math.atan2((_re[1][2] * cos14 - _re[0][2] * sin14), _re[0][2] * cos234 * cos14 + _re[1][2] * cos234 * sin14 - _re[2][2] * sin234)
     theta4_8 = theta4_4 + math.pi
 
     
@@ -494,121 +528,121 @@ def solve_spherical_wrist(tcp, tcp_mat, lcs, lcs_mat, target, target_mat, robot_
     
     
     # Theta 6
-    theta6_1 = math.atan2((Re[0][1] * sin231 * cos11 + Re[1][1] * sin231 * sin11 + Re[2][1] * cos231), (-Re[0][0] * sin231 * cos11 - Re[1][0] * sin231 * sin11 - Re[2][0] * cos231))
+    theta6_1 = math.atan2((_re[0][1] * sin231 * cos11 + _re[1][1] * sin231 * sin11 + _re[2][1] * cos231), (-_re[0][0] * sin231 * cos11 - _re[1][0] * sin231 * sin11 - _re[2][0] * cos231))
     theta6_5 = theta6_1 - math.pi
 
-    theta6_2 = math.atan2((Re[0][1] * sin232 * cos12 + Re[1][1] * sin232 * sin12 + Re[2][1] * cos232), (-Re[0][0] * sin232 * cos12 - Re[1][0] * sin232 * sin12 - Re[2][0] * cos232))
+    theta6_2 = math.atan2((_re[0][1] * sin232 * cos12 + _re[1][1] * sin232 * sin12 + _re[2][1] * cos232), (-_re[0][0] * sin232 * cos12 - _re[1][0] * sin232 * sin12 - _re[2][0] * cos232))
     theta6_6 = theta6_2 - math.pi
 
-    theta6_3 = math.atan2((Re[0][1] * sin233 * cos13 + Re[1][1] * sin233 * sin13 + Re[2][1] * cos233), (-Re[0][0] * sin233 * cos13 - Re[1][0] * sin233 * sin13 - Re[2][0] * cos233))
+    theta6_3 = math.atan2((_re[0][1] * sin233 * cos13 + _re[1][1] * sin233 * sin13 + _re[2][1] * cos233), (-_re[0][0] * sin233 * cos13 - _re[1][0] * sin233 * sin13 - _re[2][0] * cos233))
     theta6_7 = theta6_3 - math.pi
 
-    theta6_4 = math.atan2((Re[0][1] * sin234 * cos14 + Re[1][1] * sin234 * sin14 + Re[2][1] * cos234), (-Re[0][0] * sin234 * cos14 - Re[1][0] * sin234 * sin14 - Re[2][0] * cos234))
+    theta6_4 = math.atan2((_re[0][1] * sin234 * cos14 + _re[1][1] * sin234 * sin14 + _re[2][1] * cos234), (-_re[0][0] * sin234 * cos14 - _re[1][0] * sin234 * sin14 - _re[2][0] * cos234))
     theta6_8 = theta6_4 - math.pi
 
             
-    theta1_Sol[0] = math.degrees(theta1_1)
-    theta1_Sol[1] = math.degrees(theta1_2)
+    theta1_sol[0] = math.degrees(theta1_1)
+    theta1_sol[1] = math.degrees(theta1_2)
     
-    theta2_Sol[0] = math.degrees(theta2_1)
-    theta2_Sol[1] = math.degrees(theta2_2)
-    theta2_Sol[2] = math.degrees(theta2_3)
-    theta2_Sol[3] = math.degrees(theta2_4)
+    theta2_sol[0] = math.degrees(theta2_1)
+    theta2_sol[1] = math.degrees(theta2_2)
+    theta2_sol[2] = math.degrees(theta2_3)
+    theta2_sol[3] = math.degrees(theta2_4)
     
-    theta3_Sol[0] = math.degrees(theta3_1)
-    theta3_Sol[1] = math.degrees(theta3_2)
-    theta3_Sol[2] = math.degrees(theta3_3)
-    theta3_Sol[3] = math.degrees(theta3_4)
+    theta3_sol[0] = math.degrees(theta3_1)
+    theta3_sol[1] = math.degrees(theta3_2)
+    theta3_sol[2] = math.degrees(theta3_3)
+    theta3_sol[3] = math.degrees(theta3_4)
     
-    theta4_Sol[0] = math.degrees(theta4_1)
-    theta4_Sol[1] = math.degrees(theta4_2)
-    theta4_Sol[2] = math.degrees(theta4_3)
-    theta4_Sol[3] = math.degrees(theta4_4)
-    theta4_Sol[4] = math.degrees(theta4_5)
-    theta4_Sol[5] = math.degrees(theta4_6)
-    theta4_Sol[6] = math.degrees(theta4_7)
-    theta4_Sol[7] = math.degrees(theta4_8)
+    theta4_sol[0] = math.degrees(theta4_1)
+    theta4_sol[1] = math.degrees(theta4_2)
+    theta4_sol[2] = math.degrees(theta4_3)
+    theta4_sol[3] = math.degrees(theta4_4)
+    theta4_sol[4] = math.degrees(theta4_5)
+    theta4_sol[5] = math.degrees(theta4_6)
+    theta4_sol[6] = math.degrees(theta4_7)
+    theta4_sol[7] = math.degrees(theta4_8)
     
-    theta5_Sol[0] = math.degrees(theta5_1)
-    theta5_Sol[1] = math.degrees(theta5_2)
-    theta5_Sol[2] = math.degrees(theta5_3)
-    theta5_Sol[3] = math.degrees(theta5_4)
-    theta5_Sol[4] = math.degrees(theta5_5)
-    theta5_Sol[5] = math.degrees(theta5_6)
-    theta5_Sol[6] = math.degrees(theta5_7)
-    theta5_Sol[7] = math.degrees(theta5_8)
+    theta5_sol[0] = math.degrees(theta5_1)
+    theta5_sol[1] = math.degrees(theta5_2)
+    theta5_sol[2] = math.degrees(theta5_3)
+    theta5_sol[3] = math.degrees(theta5_4)
+    theta5_sol[4] = math.degrees(theta5_5)
+    theta5_sol[5] = math.degrees(theta5_6)
+    theta5_sol[6] = math.degrees(theta5_7)
+    theta5_sol[7] = math.degrees(theta5_8)
     
-    theta6_Sol[0] = math.degrees(theta6_1)
-    theta6_Sol[1] = math.degrees(theta6_2)
-    theta6_Sol[2] = math.degrees(theta6_3)
-    theta6_Sol[3] = math.degrees(theta6_4)
-    theta6_Sol[4] = math.degrees(theta6_5)
-    theta6_Sol[5] = math.degrees(theta6_6)
-    theta6_Sol[6] = math.degrees(theta6_7)
-    theta6_Sol[7] = math.degrees(theta6_8)        
+    theta6_sol[0] = math.degrees(theta6_1)
+    theta6_sol[1] = math.degrees(theta6_2)
+    theta6_sol[2] = math.degrees(theta6_3)
+    theta6_sol[3] = math.degrees(theta6_4)
+    theta6_sol[4] = math.degrees(theta6_5)
+    theta6_sol[5] = math.degrees(theta6_6)
+    theta6_sol[6] = math.degrees(theta6_7)
+    theta6_sol[7] = math.degrees(theta6_8)        
     
     
     # select one of the 8 solutions        
 
-    if soln1:
-        jointVals[0] = theta1_Sol[0]
+    if sol_1:
+        thetas[0] = theta1_sol[0]
     
-        if soln2: 
-            jointVals[1] = theta2_Sol[0]
-            jointVals[2] = theta3_Sol[0]
+        if sol_2: 
+            thetas[1] = theta2_sol[0]
+            thetas[2] = theta3_sol[0]
     
-            if soln3: 
-                jointVals[3] = theta4_Sol[0]
-                jointVals[4] = theta5_Sol[0]
-                jointVals[5] = theta6_Sol[0]
+            if sol_3: 
+                thetas[3] = theta4_sol[0]
+                thetas[4] = theta5_sol[0]
+                thetas[5] = theta6_sol[0]
             else:
-                jointVals[3] = theta4_Sol[4]
-                jointVals[4] = theta5_Sol[4]
-                jointVals[5] = theta6_Sol[4]
+                thetas[3] = theta4_sol[4]
+                thetas[4] = theta5_sol[4]
+                thetas[5] = theta6_sol[4]
                         
         else:
-            jointVals[1] = theta2_Sol[1]
-            jointVals[2] = theta3_Sol[1]
+            thetas[1] = theta2_sol[1]
+            thetas[2] = theta3_sol[1]
     
-            if soln3:
-                jointVals[3] = theta4_Sol[1]
-                jointVals[4] = theta5_Sol[1]
-                jointVals[5] = theta6_Sol[1]
+            if sol_3:
+                thetas[3] = theta4_sol[1]
+                thetas[4] = theta5_sol[1]
+                thetas[5] = theta6_sol[1]
             else:
-                jointVals[3] = theta4_Sol[5]
-                jointVals[4] = theta5_Sol[5]
-                jointVals[5] = theta6_Sol[5]
+                thetas[3] = theta4_sol[5]
+                thetas[4] = theta5_sol[5]
+                thetas[5] = theta6_sol[5]
                
     else:
-        jointVals[0] = theta1_Sol[1]
+        thetas[0] = theta1_sol[1]
     
-        if soln2:
-            jointVals[1] = theta2_Sol[2]
-            jointVals[2] = theta3_Sol[2]
+        if sol_2:
+            thetas[1] = theta2_sol[2]
+            thetas[2] = theta3_sol[2]
     
-            if soln3:
-                jointVals[3] = theta4_Sol[2]
-                jointVals[4] = theta5_Sol[2]
-                jointVals[5] = theta6_Sol[2]
+            if sol_3:
+                thetas[3] = theta4_sol[2]
+                thetas[4] = theta5_sol[2]
+                thetas[5] = theta6_sol[2]
             else:
-                jointVals[3] = theta4_Sol[6]
-                jointVals[4] = theta5_Sol[6]
-                jointVals[5] = theta6_Sol[6]
+                thetas[3] = theta4_sol[6]
+                thetas[4] = theta5_sol[6]
+                thetas[5] = theta6_sol[6]
                       
         else:
-            jointVals[1] = theta2_Sol[3]
-            jointVals[2] = theta3_Sol[3]
+            thetas[1] = theta2_sol[3]
+            thetas[2] = theta3_sol[3]
     
-            if soln3:
-                jointVals[3] = theta4_Sol[3]
-                jointVals[4] = theta5_Sol[3]
-                jointVals[5] = theta6_Sol[3]
+            if sol_3:
+                thetas[3] = theta4_sol[3]
+                thetas[4] = theta5_sol[3]
+                thetas[5] = theta6_sol[3]
             else:
-                jointVals[3] = theta4_Sol[7]
-                jointVals[4] = theta5_Sol[7]
-                jointVals[5] = theta6_Sol[7] 
+                thetas[3] = theta4_sol[7]
+                thetas[4] = theta5_sol[7]
+                thetas[5] = theta6_sol[7] 
     
-    return jointVals
+    return thetas
 
 
 def solve_hawkins_keating(tcp, tcp_mat, lcs, lcs_mat, target, target_mat, robot_definition, sols=[1, 1, 1]):
@@ -633,17 +667,17 @@ def solve_hawkins_keating(tcp, tcp_mat, lcs, lcs_mat, target, target_mat, robot_
         sol_2 = not sol_2
         sol_3 = not sol_3
 
-    tcpX = tcp[0]
-    tcpY = tcp[1]
-    tcpZ = tcp[2]
+    tcp_x = tcp[0]
+    tcp_y = tcp[1]
+    tcp_z = tcp[2]
 
-    lcsX = lcs[0]
-    lcsY = lcs[1]
-    lcsZ = lcs[2]
+    lcs_x = lcs[0]
+    lcs_y = lcs[1]
+    lcs_z = lcs[2]
 
-    targetX = target[0]
-    targetY = target[1]
-    targetZ = target[2]
+    target_x = target[0]
+    target_y = target[1]
+    target_z = target[2]
 
     # Get D-H Parameters from robot_definition
     d_1 = robot_definition[0]
@@ -666,20 +700,6 @@ def solve_hawkins_keating(tcp, tcp_mat, lcs, lcs_mat, target, target_mat, robot_
     # ====================#
     #  Frame Definitions  #
     # ====================#
-    
-    # The following are Maya specific.
-    # These can be substituted with your own frame definititions 
-    target_ctrl_path = 'target_CTRL'
-
-    # Tool Center Point (TCP) locator
-    tcp_path = 'tcp_HDL'
-    tcp = pm.ls(tcp_path)[0]
-    # Local Base Frame controller (circle control at base of the robot in Maya).
-    lcs = pm.ls('local_CTRL')[0]
-    # Target Frame controller (square control at the robot's tool flange in Maya).
-    target_path = 'target_HDL'
-    target = pm.ls(target_path)[0]
-     
     # Maya uses a different coordinate system than our IK solver, so we have
     # to convert from Maya's frame to the solver's frame.
     # If your base frame is different, you can substitute the transformation here.
@@ -694,84 +714,70 @@ def solve_hawkins_keating(tcp, tcp_mat, lcs, lcs_mat, target, target_mat, robot_
     r_world_frame = [[0, 0, -1], [-1, 0, 0], [0, 1, 0]]
      
     # Get local translation of the TCP w.r.t. tool flange.
-    tcp_trans[0][0] = tcpX
-    tcp_trans[1][0] = tcpY
-    tcp_trans[2][0] = tcpZ
-     
+    tcp_trans[0][0] = tcp_x
+    tcp_trans[1][0] = tcp_y
+    tcp_trans[2][0] = tcp_z
      
     # Convert TCP translation from Maya's tool frame to solver tool frame.
     tcp_trans = _array_mult(r_tool_frame, tcp_trans)
      
     # Get translation of local base frame (Circle controller) w.r.t robot's
     # world frame (Square controller).
-    lcs_trans[0][0] = lcs.getTranslation()[0]
-    lcs_trans[1][0] = lcs.getTranslation()[1]
-    lcs_trans[2][0] = lcs.getTranslation()[2]
+    lcs_trans[0][0] = lcs_x
+    lcs_trans[1][0] = lcs_y
+    lcs_trans[2][0] = lcs_z
          
     # Convert lcs translation from Maya's world frame to solver world frame.
     lcs_trans = _array_mult(r_world_frame, lcs_trans)
      
     # Get translation of target in Maya's world frame w.r.t robot world frame
     # (Square controller).
-    target_point[0][0] = target.getTranslation()[0]
-    target_point[1][0] = target.getTranslation()[1]
-    target_point[2][0] = target.getTranslation()[2]
+    target_point[0][0] = target_x
+    target_point[1][0] = target_y
+    target_point[2][0] = target_z
          
     # Convert target translation from Maya's world frame to solver world frame.
     target_point = _array_mult(r_world_frame, target_point)
      
-    # Get lcs, tcp, and target rotation matrices in Maya's world frame
-    lcs_matrix = pm.xform(lcs, query=True, os=True, m=True)
-    tcp_matrix = pm.xform(tcp, query=True, os=True, m=True)
-    target_matrix = pm.xform(target, query=True, os=True, m=True)
      
     # Convert Maya formatted rotation matrices to truncated format
     # Tool center point (TCP) matrix
-    tcp_x_axis = [[tcp_matrix[0]], [tcp_matrix[1]], [tcp_matrix[2]]]
-    tcp_y_axis = [[tcp_matrix[4]], [tcp_matrix[5]], [tcp_matrix[6]]]
-    tcp_z_axis = [[tcp_matrix[8]], [tcp_matrix[9]], [tcp_matrix[10]]]
-    tcp_matrix_truncated = general_utils.transpose_list(
-        [general_utils.transpose_list(tcp_x_axis)[0],
-         general_utils.transpose_list(tcp_y_axis)[0],
-         general_utils.transpose_list(tcp_z_axis)[0]])
+    tcp_x_axis = [[tcp_mat[0]], [tcp_mat[1]], [tcp_mat[2]]]
+    tcp_y_axis = [[tcp_mat[4]], [tcp_mat[5]], [tcp_mat[6]]]
+    tcp_z_axis = [[tcp_mat[8]], [tcp_mat[9]], [tcp_mat[10]]]
+    tcp_mat_trunc = _tpose([_tpose(tcp_x_axis)[0],
+                        _tpose(tcp_y_axis)[0],
+                        _tpose(tcp_z_axis)[0]])
               
     # Convert truncated tcp rotation matrix to solver tool frame
-    tcp_rot = general_utils.transpose_list(
-        _array_mult(r_tool_frame, tcp_matrix_truncated))
+    tcp_rot = _tpose(_array_mult(r_tool_frame, tcp_mat_trunc))
      
     # Local coordinate system matrix (circle controller)
-    lcs_x_axis = [[lcs_matrix[0]], [lcs_matrix[1]], [lcs_matrix[2]]]
-    lcs_y_axis = [[lcs_matrix[4]], [lcs_matrix[5]], [lcs_matrix[6]]]
-    lcs_z_axis = [[lcs_matrix[8]], [lcs_matrix[9]], [lcs_matrix[10]]]
-    lcs_matrix_truncated = general_utils.transpose_list(
-        [general_utils.transpose_list(lcs_x_axis)[0],
-         general_utils.transpose_list(lcs_y_axis)[0],
-         general_utils.transpose_list(lcs_z_axis)[0]])
+    lcs_x_axis = [[lcs_mat[0]], [lcs_mat[1]], [lcs_mat[2]]]
+    lcs_y_axis = [[lcs_mat[4]], [lcs_mat[5]], [lcs_mat[6]]]
+    lcs_z_axis = [[lcs_mat[8]], [lcs_mat[9]], [lcs_mat[10]]]
+    lcs_mat_trunc = _tpose([_tpose(lcs_x_axis)[0],
+                        _tpose(lcs_y_axis)[0],
+                        _tpose(lcs_z_axis)[0]])
               
     # Convert local base frame rotation matrix to solver world frame
-    lcs_rot = general_utils.transpose_list(
-        _array_mult(r_world_frame,
-                                                  lcs_matrix_truncated))
+    lcs_rot = _tpose(_array_mult(r_world_frame, lcs_mat_trunc))
      
     # Target rotation matrix
-    target_x_axis = [[target_matrix[0]], [target_matrix[1]], [target_matrix[2]]]
-    target_y_axis = [[target_matrix[4]], [target_matrix[5]], [target_matrix[6]]]
-    target_z_axis = [[target_matrix[8]], [target_matrix[9]], [target_matrix[10]]]
-    target_matrix_truncated = general_utils.transpose_list(
-        [general_utils.transpose_list(target_x_axis)[0],
-         general_utils.transpose_list(target_y_axis)[0],
-         general_utils.transpose_list(target_z_axis)[0]])
+    target_x_axis = [[target_mat[0]], [target_mat[1]], [target_mat[2]]]
+    target_y_axis = [[target_mat[4]], [target_mat[5]], [target_mat[6]]]
+    target_z_axis = [[target_mat[8]], [target_mat[9]], [target_mat[10]]]
+    target_mat_trunc = _tpose([_tpose(target_x_axis)[0],
+                        _tpose(target_y_axis)[0],
+                        _tpose(target_z_axis)[0]])
           
     # Convert target rotation matrix to solver world frame
-    target_rot = general_utils.transpose_list(
-        _array_mult(r_world_frame,
-                                              target_matrix_truncated))
+    target_rot = _tpose(_array_mult(r_world_frame, target_mat_trunc))
      
     # Find Flange Point location in solver world frame
     #
     # Rotation of the tcp w.r.t to the target in solver world frame
-    _re = _array_mult(
-        general_utils.transpose_list(target_rot), tcp_rot)
+    _re = _array_mult(_tpose(target_rot), tcp_rot)
      
     # Rotation of the robot's local coordinate system (circle
     # controller) w.r.t the solver world frame
@@ -779,22 +785,17 @@ def solve_hawkins_keating(tcp, tcp_mat, lcs, lcs_mat, target, target_mat, robot_
      
     # Find distance from the robot's local coordinate system (circle
     # controller) to target point in solver world frame
-    target_point = [i - j for i, j in zip(
-        general_utils.transpose_list(target_point)[0],
-        general_utils.transpose_list(lcs_trans)[0])]
+    target_point = [i - j for i, j in zip(_tpose(target_point)[0],
+                                          _tpose(lcs_trans)[0])]
      
     # Find the flange point in the solver's world frame
-    flange_point = [i - j for i, j in zip(target_point,
-                                          general_utils.transpose_list(
-                                              _array_mult(_re, tcp_trans))[0])]
+    flange_point = [i - j for i, j in zip(target_point, _tpose(_array_mult(_re, tcp_trans))[0])]
      
      
     # Find the flange point in solver's world frame
-    flange_point = general_utils.transpose_list(
-        _array_mult(_rlm,
-                                              [[flange_point[0]],
-                                               [flange_point[1]],
-                                               [flange_point[2]]]))[0]
+    flange_point = _tpose(_array_mult(_rlm, [[flange_point[0]],
+                                             [flange_point[1]],
+                                             [flange_point[2]]]))[0]
      
     # Define the Rotation of the tcp w.r.t the target in robot's local frame
     # (cirlce controller)
@@ -806,7 +807,7 @@ def solve_hawkins_keating(tcp, tcp_mat, lcs, lcs_mat, target, target_mat, robot_
     #########
     # The solve is only dependent on the DH-Params, _re, and flange_point
      
-    # Construct T0_6, the transformation matric of the Frame 6 WRT the Base frame 0
+    # Construct T0_6, the transformation matrix of the Frame 6 WRT the Base frame 0
     T0_6 = _re
     T0_6[0].append(flange_point[0])
     T0_6[1].append(flange_point[1])
@@ -837,7 +838,7 @@ def solve_hawkins_keating(tcp, tcp_mat, lcs, lcs_mat, target, target_mat, robot_
     # in relation to the base frame 0: P0_5
     # P0_5 can be found by translating backwards from frame 6 to frame 5 along z_6
     P0_5 = _array_mult(T0_6, _t)
-    P0_5 = general_utils.transpose_list(P0_5)[0]
+    P0_5 = _tpose(P0_5)[0]
      
     nx1 = math.sqrt(math.pow(P0_5[0], 2) + math.pow(P0_5[1], 2))
      
@@ -845,12 +846,13 @@ def solve_hawkins_keating(tcp, tcp_mat, lcs, lcs_mat, target, target_mat, robot_
         theta_1 = math.atan2(P0_5[1], P0_5[0]) + math.acos(d_4/nx1) + math.pi/2.0
     else:
         theta_1 = math.atan2(P0_5[1], P0_5[0]) - math.acos(d_4/nx1) + math.pi/2.0
-     
-    # Bound Theta between +/- 180 degrees
+    
+    ''' 
+    # Bound Theta 1 between +/- 180 degrees
     if abs(theta_1) > math.pi:
         sign = abs(theta_1)/theta_1
         theta_1 += -(sign * 2*math.pi)
-         
+    '''     
      
     #--------------#
     # Find Theta 5 #
@@ -894,8 +896,14 @@ def solve_hawkins_keating(tcp, tcp_mat, lcs, lcs_mat, target, target_mat, robot_
         theta_3 = math.acos(c3)
     else:
         theta_3 = 2*math.pi - math.acos(c3)  
-     
-     
+
+    '''
+    # Bound Theta 3 between +/- 180 degrees
+    if abs(theta_3) > math.pi:
+        sign = abs(theta_3)/theta_3
+        theta_3 += -(sign * 2*math.pi)     
+    '''
+
     #--------------#
     # Find Theta 2 #
     #--------------#
@@ -906,8 +914,14 @@ def solve_hawkins_keating(tcp, tcp_mat, lcs, lcs_mat, target, target_mat, robot_
     nc_2 = a_3*s3
      
     theta_2 = math.atan2((nc_1*P14_Y - nc_2*P14_X) / denom, (nc_1*P14_X + nc_2*P14_Y) / denom) - math.pi
-     
-     
+    
+    ''' 
+    # Bound Theta 2 between +/- 180 degrees
+    if abs(theta_2) > math.pi:
+        sign = abs(theta_2)/theta_2
+        theta_2 += -(sign * 2*math.pi)
+    '''
+
     #--------------#
     # Find Theta 4 #
     #--------------#
@@ -921,22 +935,47 @@ def solve_hawkins_keating(tcp, tcp_mat, lcs, lcs_mat, target, target_mat, robot_
         theta_4 = math.atan2(c23*T04_XY - s23*T04_XX, T04_XX*c23 + T04_XY*s23)
     else:
         theta_4 = math.atan2(c23*T04_XY - s23*T04_XX, T04_XX*c23 + T04_XY*s23)
-    
+
+    '''
+    # Bound Theta 4 between +/- 180 degrees
+    if abs(theta_4) > math.pi:
+        sign = abs(theta_4)/theta_4
+        theta_4 += -(sign * 2*math.pi)
+    '''
+
     # Theta 6 is off by 180 degrees (haven't gotten to the bottom of this yet)
     # So we adjust Theta 6 by 180, then make sure it is bound between +/- 180
     theta_6 = theta_6 - math.pi
     
+    '''
+    # Bound Theta 6 between +/- 180 degrees
     if abs(theta_6) > math.pi:
         sign = abs(theta_6)/theta_6
         theta_6 += -(sign * 2*math.pi)
-        
-    # Convert all angles to degrees and assign to a dictionary
+    '''
+    '''
+    # Convert all angles to degrees and add to a list
     theta_1 = math.degrees(theta_1)
     theta_2 = math.degrees(theta_2)
     theta_3 = math.degrees(theta_3)
     theta_4 = math.degrees(theta_4)
     theta_5 = math.degrees(theta_5)
     theta_6 = math.degrees(theta_6)
+    '''
+    
+    thetas = [theta_1, theta_2, theta_3, theta_4, theta_5, theta_6]
+
+    # Bound each axis value between +/- pi
+    # This makes the solution more predicatable for things like IK-FK switching
+    for i, theta in enumerate(thetas):
+        if abs(theta) > math.pi:
+            sign = abs(theta)/theta
+            thetas[i] = theta -(sign * 2*math.pi)
+
+    # Convert each angle to degrees
+    thetas = [math.degrees(theta) for theta in thetas]
+
+    return thetas
 
 
 # Utility Functions
@@ -951,7 +990,7 @@ def _array_mult(X,Y):
         
     return result
 
-def tpose(lis):
+def _tpose(lis):
     result = [list(x) for x in zip(*lis)]
     return result
 
