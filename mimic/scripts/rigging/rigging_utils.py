@@ -224,14 +224,13 @@ def get_robot_model():
 def get_solver_type():
     """
     """
-    
-    target_ctrl = pm.ls(__TARGET_CTRL_NAME, type='transform')[0]
 
     # We use try-except here because most robot rigs don't have the
     # 'solverType' attribute, as it was added for UR dev
     # Defaults to 0 if attr doesn't exist, representing the standard
     # spherical wrist solver
     try:
+        target_ctrl = pm.ls(__TARGET_CTRL_NAME, type='transform')[0]
         solver_type = target_ctrl.getAttr('solverType')
     except:
         solver_type = 0
