@@ -1714,6 +1714,7 @@ def find_closest_config(fk_conf_normalized, raw_ik_solutions):
     """
     c = [zip(fk_conf_normalized, row) for row in raw_ik_solutions]
     d = [[] for i in range(len(raw_ik_solutions))]
+    
     # Find the difference between the initial configuration and each possible
     # configuration. The row with the smallest difference represents the
     # closest solution to to the initial configuration
@@ -1829,6 +1830,34 @@ def _ik_and_fk_aligned(ik_ctrl, tcp_handle):
     return ik_fk_are_aligned
 
 
+def _normalize_fk_pose(fk_config, axis_offsets, rot_directions):
+    """
+    Removes all MFG-specific offsets and bounds the FK pose between
+    [-180, 180]. This allows for IK - FK switching with infinite rotation
+    of FK controllers
+    """
+    fk_config_norm = []
+
+    # Remove offsets from FK config
+    fk_config_no_offsets = inverse_kinematics.remove_offsets(fk_config, axis_offsets, rot_directions)
+
+    # Make sure that the value falls in the range of -180 to 180
+    for angle in fk_config_no_offsets:
+        try:
+            sign = int(angle/abs(angle))
+        except ZeroDivisionError:
+            sign = 1
+        
+        a = int(math.floor(abs(angle)/180.0))  # Number of 180 degree divisions
+        b = a % 2  # Even multiples of 180 = 0; Odd = 1
+    
+        angle_norm = angle - (sign * (a + b) * 180)
+
+        fk_config_norm.append(angle_norm)
+
+    return fk_config_norm
+
+
 def switch_to_ik(robot):
     """
     Switches all robots in scene to IK mode
@@ -1872,7 +1901,7 @@ def switch_to_ik(robot):
     solver_params = get_solver_params(robot)
     axis_offsets = solver_params.axis_offsets
     rot_directions = solver_params.rot_directions
-    fk_config_norm = inverse_kinematics.remove_offsets(fk_config, axis_offsets, rot_directions)
+    fk_config_norm = _normalize_fk_pose(fk_config, axis_offsets, rot_directions)
 
     ## TO-DO: account for FK config rotations above and below 180 degrees
     # Select the closes IK configuration to the given FK config
