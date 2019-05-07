@@ -100,7 +100,7 @@ def create_mimic_window(window_name):
     mimic_version = general_utils.get_mimic_version()
     mimic_win = pm.window("mimic_win",
                           width=245,
-                          title='MIMIC {}'.format(mimic_version + ' <UR_dev 4.8.19>'))
+                          title='MIMIC {}'.format(mimic_version))  # + ' <dev 4.8.19>'))
     pm.rowLayout(numberOfColumns=3, adjustableColumn=2)
 
     return mimic_win

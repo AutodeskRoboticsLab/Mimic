@@ -860,6 +860,7 @@ def axis_val_hud(*args):
                               labelFontSize='large',
                               dataWidth=30,
                               command=pm.Callback(get_axis_val, i + 1),
+                              # event='timeChanged')
                               attachToRefresh=True)
         # Turn Limit Meter on
         for robot in robots:
