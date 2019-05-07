@@ -17,6 +17,7 @@ except ImportError:  # Maya is not running
 
 import math
 import re
+from collections import namedtuple
 
 import general_utils
 import mimic_config
@@ -38,6 +39,8 @@ OUTPUT_WINDOW_NAME = 'programOutputScrollField'
 # If there is no namespace, '{0}|{1}robot_GRP|{1}target_CTRL' becomes 
 # 'KUKA_KR_60_3_0|robot_GRP|targel_CTRL'
 
+# TO-DO: Refactor harded-coded string naming conventions and use message
+# Attributes on the rig to define these relationships
 __TARGET_CTRL_PATH = '{0}|{1}robot_GRP|{1}target_CTRL'
 __TOOL_CTRL_PATH = '{0}|{1}robot_GRP|{1}tool_CTRL'
 __LOCAL_CTRL_PATH = '{0}|{1}robot_GRP|{1}local_CTRL'
@@ -618,308 +621,7 @@ def add_hud_script_node(*args):
     print 'HUD Script Node Added'
 
 
-def find_ik_solutions(robot):
-    """
-    Fids all possible IK configuration solutions for the input robot, given the
-    current position of the tool center point, local base frame, and
-    target frame.
-
-    This function is used to determine which IK configuration is necessary to
-    match a given FK pose. To do this, we only need to inspect and compare
-    axes 1, 2, and 5.
-    :param robot: name string of the selected robot
-    :return ik_sols: list of possible axis configurations
-    """
-    target_ctrl_path = get_target_ctrl_path(robot)
-
-    # Get the robot geometry from robot definition attributes on the rig.
-    a1 = pm.getAttr(target_ctrl_path + '.a1')
-    a2 = pm.getAttr(target_ctrl_path + '.a2')
-    b = pm.getAttr(target_ctrl_path + '.b')
-    c1 = pm.getAttr(target_ctrl_path + '.c1')
-    c2 = pm.getAttr(target_ctrl_path + '.c2')
-    c3 = pm.getAttr(target_ctrl_path + '.c3')
-    c4 = pm.getAttr(target_ctrl_path + '.c4')
-
-    robot_definition = [a1, a2, b, c1, c2, c3, c4]
-
-    # Each robot manufacturer has a pose in which all axis values are zero.
-    # Determine the offset of Axis 2 between the zero pose of the
-    # manufacturer and the zero pose of the IK solver (see documentation).
-    a2_offset = pm.getAttr(target_ctrl_path + '.axis2Offset')
-
-    # Most rigs don't have an A5 offset attribute. Had to add for Yaskawas
-    if pm.objExists(target_ctrl_path + '.axis5Offset'):
-        a5_offset = pm.getAttr(target_ctrl_path + '.axis5Offset')
-    else:
-        a5_offset = 0
-
-    # Each robot manufacturer defines positive and negative axis rotation
-    # differently in relation our IK solver implementation.
-    # This is defined on each robot rig by the axis* attribute
-    flip_a1 = pm.getAttr(target_ctrl_path + '.flipAxis1direction')
-    flip_a2 = pm.getAttr(target_ctrl_path + '.flipAxis2direction')
-    flip_a5 = pm.getAttr(target_ctrl_path + '.flipAxis5direction')
-
-    # Initialized lists
-    tcp_rot = [[0] * 3 for _ in range(3)]
-    target_rot = [[0] * 3 for _ in range(3)]
-    lcs_trans = [[0] * 1 for _ in range(3)]
-    tcp_trans = [[0] * 1 for _ in range(3)]
-    target_point = [[0] * 1 for _ in range(3)]
-    flange_point = [[0] * 3 for _ in range(1)]
-    pivot_point = [[0] * 3 for _ in range(1)]
-
-    # Define translation vector from wrist pivot point to tool flange.
-    _t = [[0], [0], [c4]]
-
-    # =====================#
-    #  Frame Definitions  #
-    # =====================#
-
-    # Tool Center Point (TCP) locater
-    tcp_path = format_path(__TCP_HDL_PATH, robot)
-    tcp = pm.ls(tcp_path)[0]
-    # Local Base Frame controller (circle control at base of the robot).
-    lcs = pm.ls(format_path(__LOCAL_CTRL_PATH, robot))[0]
-    # Target Frame controller (square control at the robot's tool flange).
-    target_path = format_path(__TARGET_HDL_PATH, robot)
-    target = pm.ls(target_path)[0]
-
-    # Maya uses a different coordinate system than our IK solver, so we have
-    # to convert from Maya's frame to the solver's frame.
-
-    # Solver's tool frame (X,Y,Z) = Maya's tool frame (Z, X, Y)
-    # Rotation matrix from Maya tool frame to solver's tool frame.
-    r_tool_frame = [[0, -1, 0], [1, 0, 0], [0, 0, 1]]
-    # Solver world frame (X,Y,Z) = Maya world frame (-Y, X, Z)
-    # Rotation matrix from Maya's world frame to solver world frame.
-    r_world_frame = [[0, 0, 1], [1, 0, 0], [0, 1, 0]]
-
-    # Get local translation of the TCP w.r.t. tool flange.
-    tcp_trans[0][0] = tcp.getTranslation()[0]
-    tcp_trans[1][0] = tcp.getTranslation()[1]
-    tcp_trans[2][0] = tcp.getTranslation()[2]
-    # Convert TCP translation from Maya's tool frame to solver tool frame.
-    tcp_trans = general_utils.matrix_multiply_1xm_nxm(r_tool_frame, tcp_trans)
-
-    # Get translation of local base frame (Circle controller) w.r.t robot's
-    # world frame (Square controller).
-    lcs_trans[0][0] = lcs.getTranslation()[0]
-    lcs_trans[1][0] = lcs.getTranslation()[1]
-    lcs_trans[2][0] = lcs.getTranslation()[2]
-    # Convert lcs translation from Maya's world frame to solver world frame.
-    lcs_trans = general_utils.matrix_multiply_1xm_nxm(r_world_frame, lcs_trans)
-
-    # Get translation of target in Maya's world frame w.r.t robot world frame
-    # (Square controller).
-    target_point[0][0] = target.getTranslation()[0]
-    target_point[1][0] = target.getTranslation()[1]
-    target_point[2][0] = target.getTranslation()[2]
-    # Convert target translation from Maya's world frame to solver world frame.
-    target_point = general_utils.matrix_multiply_1xm_nxm(r_world_frame, target_point)
-
-    # Get lcs, tcp, and target matrices in Maya's world frame
-    lcs_matrix = pm.xform(lcs, query=True, os=True, m=True)
-    tcp_matrix = pm.xform(tcp, query=True, os=True, m=True)
-    target_matrix = pm.xform(target, query=True, os=True, m=True)
-
-    # Convert Maya formatted rotation matrices to truncated format
-    # Tool center point (TCP) matrix
-    tcp_x_axis = [[tcp_matrix[0]], [tcp_matrix[1]], [tcp_matrix[2]]]
-    tcp_y_axis = [[tcp_matrix[4]], [tcp_matrix[5]], [tcp_matrix[6]]]
-    tcp_z_axis = [[tcp_matrix[8]], [tcp_matrix[9]], [tcp_matrix[10]]]
-    tcp_matrix_truncated = general_utils.transpose_list(
-        [general_utils.transpose_list(tcp_x_axis)[0],
-         general_utils.transpose_list(tcp_y_axis)[0],
-         general_utils.transpose_list(tcp_z_axis)[0]])
-    # Convert truncated tcp rotation matrix to solver tool frame
-    tcp_rot = general_utils.transpose_list(
-        general_utils.matrix_multiply_1xm_nxm(r_tool_frame, tcp_matrix_truncated))
-
-    # Local coordinate system matrix (circle controller)
-    lcs_x_axis = [[lcs_matrix[0]], [lcs_matrix[1]], [lcs_matrix[2]]]
-    lcs_y_axis = [[lcs_matrix[4]], [lcs_matrix[5]], [lcs_matrix[6]]]
-    lcs_z_axis = [[lcs_matrix[8]], [lcs_matrix[9]], [lcs_matrix[10]]]
-    lcs_matrix_truncated = general_utils.transpose_list(
-        [general_utils.transpose_list(lcs_x_axis)[0],
-         general_utils.transpose_list(lcs_y_axis)[0],
-         general_utils.transpose_list(lcs_z_axis)[0]])
-    # Convert local base frame rotation matrix to solver world frame
-    lcs_rot = general_utils.transpose_list(
-        general_utils.matrix_multiply_1xm_nxm(r_world_frame,
-                                              lcs_matrix_truncated))
-
-    # Target rotation matrix
-    target_x_axis = [[target_matrix[0]], [target_matrix[1]], [target_matrix[2]]]
-    target_y_axis = [[target_matrix[4]], [target_matrix[5]], [target_matrix[6]]]
-    target_z_axis = [[target_matrix[8]], [target_matrix[9]], [target_matrix[10]]]
-    target_matrix_truncated = general_utils.transpose_list(
-        [general_utils.transpose_list(target_x_axis)[0],
-         general_utils.transpose_list(target_y_axis)[0],
-         general_utils.transpose_list(target_z_axis)[0]])
-    # Convert target rotation matrix to solver world frame
-    target_rot = general_utils.transpose_list(
-        general_utils.matrix_multiply_1xm_nxm(r_world_frame,
-                                              target_matrix_truncated))
-
-    # Find Flange and Pivot locations in local solver world frame
-    # Rotation of the tcp w.r.t to the target in solver world frame
-    _re = general_utils.matrix_multiply_1xm_nxm(
-        general_utils.transpose_list(target_rot), tcp_rot)
-
-    # Rotation of the robot's local coordinate system (circle
-    # controller) w.r.t the solver world frame
-    _rlm = general_utils.matrix_multiply_1xm_nxm(r_world_frame, lcs_rot)
-
-    # Find distance from the robot's local coordinate system (circle
-    # controller) to target point in solver world frame
-    target_point = [i - j for i, j in zip(
-        general_utils.transpose_list(target_point)[0],
-        general_utils.transpose_list(lcs_trans)[0])]
-
-    # Find the flange point in the solver's world frame
-    flange_point = [i - j for i, j in zip(target_point,
-                                          general_utils.transpose_list(
-                                              general_utils.matrix_multiply_1xm_nxm(_re, tcp_trans))[0])]
-
-    # Find the pivot point in the solver's world frame
-    pivot_point = [i - j for i, j in zip(flange_point,
-                                         general_utils.transpose_list(
-                                             general_utils.matrix_multiply_1xm_nxm(_re, _t))[0])]
-
-    # Find the flange point w.r.t the robot's local frame (circle controller)
-    # in solver's world frame
-    flange_point = general_utils.transpose_list(
-        general_utils.matrix_multiply_1xm_nxm(_rlm,
-                                              [[flange_point[0]],
-                                               [flange_point[1]],
-                                               [flange_point[2]]]))[0]
-
-    # Find the pivot point w.r.t the robot's local frame (circle controller)
-    # in solver's world frame
-    pivot_point = general_utils.transpose_list(
-        general_utils.matrix_multiply_1xm_nxm(_rlm,
-                                              [[pivot_point[0]],
-                                               [pivot_point[1]],
-                                               [pivot_point[2]]]))[0]
-
-    # Define the Rotation of the tcp w.r.t the target in robot's local frame
-    # (cirlce controller)
-    _re = general_utils.matrix_multiply_1xm_nxm(_rlm, _re)
-
-    # Find all IK solutions for the given configuration
-    all_ik_sols = inverse_kinematics.solver(robot_definition, pivot_point, _re)
-
-    # We only need to compare axes 1, 2, and 5 when switching between
-    # IK and FK
-    theta1_sol = all_ik_sols[0]
-    theta2_sol = all_ik_sols[1]
-    theta5_sol = all_ik_sols[4]
-
-    # Account for robot manufacturer's Axis 2 offset from solver
-    theta2_sol[:] = [x - a2_offset for x in theta2_sol]
-    theta5_sol[:] = [x - a5_offset for x in theta5_sol]
-
-    # Account for robot manufacturer's inverted rotation directions
-    flip = 1
-    if flip_a1:
-        flip = -1
-    if flip_a2:
-        theta2_sol[:] = [-1 * x for x in theta2_sol]
-    if flip_a5:
-        theta5_sol[:] = [-1 * x for x in theta5_sol]
-
-    # Assemble all combinations of solutions for axes 1, 2, and 5 for
-    # IK/FK switching
-    ik_sols = [[flip * theta1_sol[0], theta2_sol[0], theta5_sol[0]],
-               [flip * theta1_sol[0], theta2_sol[0], theta5_sol[4]],
-               [flip * theta1_sol[0], theta2_sol[1], theta5_sol[1]],
-               [flip * theta1_sol[0], theta2_sol[1], theta5_sol[5]],
-               [flip * theta1_sol[1], theta2_sol[2], theta5_sol[2]],
-               [flip * theta1_sol[1], theta2_sol[2], theta5_sol[6]],
-               [flip * theta1_sol[1], theta2_sol[3], theta5_sol[3]],
-               [flip * theta1_sol[1], theta2_sol[3], theta5_sol[7]],
-               [flip * (theta1_sol[0] + 360), theta2_sol[0], theta5_sol[0]],
-               [flip * (theta1_sol[0] + 360), theta2_sol[0], theta5_sol[4]],
-               [flip * (theta1_sol[0] + 360), theta2_sol[1], theta5_sol[1]],
-               [flip * (theta1_sol[0] + 360), theta2_sol[1], theta5_sol[5]],
-               [flip * (theta1_sol[1] + 360), theta2_sol[2], theta5_sol[2]],
-               [flip * (theta1_sol[1] + 360), theta2_sol[2], theta5_sol[6]],
-               [flip * (theta1_sol[1] + 360), theta2_sol[3], theta5_sol[3]],
-               [flip * (theta1_sol[1] + 360), theta2_sol[3], theta5_sol[7]]]
-
-    return ik_sols
-
-
-def find_fk_config(robot):
-    """
-    Get the six axes from the selected robot.
-    :param robot: name string of the selected robot
-    :return:
-    """
-    a1_path = format_path(__A1_PATH, robot)
-    a2_path = format_path(__A2_PATH, robot)
-    a3_path = format_path(__A3_PATH, robot)
-    a4_path = format_path(__A4_PATH, robot)
-    a5_path = format_path(__A5_PATH, robot)
-    a6_path = format_path(__A6_PATH, robot)
-
-    a1 = pm.getAttr(a1_path + '.rotateY')
-    a2 = pm.getAttr(a2_path + '.rotateX')
-    a3 = pm.getAttr(a3_path + '.rotateX')
-    a4 = pm.getAttr(a4_path + '.rotateZ')
-    a5 = pm.getAttr(a5_path + '.rotateX')
-    a6 = pm.getAttr(a6_path + '.rotateZ')
-
-    fk_config = [a1, a2, a3, a4, a5, a6]
-
-    return fk_config
-
-
-__FK_CONFIGS = [[1, 1, 1],
-                [1, 1, 0],
-                [1, 0, 1],
-                [1, 0, 0],
-                [0, 1, 1],
-                [0, 1, 0],
-                [0, 0, 1],
-                [0, 0, 0],
-                [1, 1, 1],
-                [1, 1, 0],
-                [1, 0, 1],
-                [1, 0, 0],
-                [0, 1, 1],
-                [0, 1, 0],
-                [0, 0, 1],
-                [0, 0, 0]]
-
-
-def find_closest_config(fk_configuration, ik_solutions):
-    """
-    Finds the index of the closest Inverse Kinematic solution to the input
-    Forward Kinematic axis configuration
-    :param fk_configuration: list; 1 x m array that represents the
-     initial axis configuration
-    :param ik_solutions: list; n x m array representing all possible
-     axis configurations
-    :return:
-    """
-    c = [zip(fk_configuration, row) for row in ik_solutions]
-    d = [[] for i in range(len(ik_solutions))]
-    # Find the difference between the initial configuration and each possible
-    # configuration. The row with the smallest difference represents the
-    # closest solution to to the initial configuration
-    for i, row in enumerate(c):
-        d[i] = [abs(a - b) for a, b in row]
-        d[i] = sum(d[i])
-
-    solution_index = d.index(min(d))
-    # Get three booleans corresponding with a valid IK configuration using index
-    config = __FK_CONFIGS[solution_index]
-    return config
-
-
+### ---------------------------------------- ###
 def flip_robot_base(*args):
     """
     Toggles Inverse Kinematic Solution 1 Boolean
@@ -994,8 +696,10 @@ def invert_axis(axis_number, robots=[]):
             pm.setAttr(target_ctrl_attr, 0)
     except:
         pm.warning('Error Inverting Axis')
+### ---------------------------------------- ###
 
 
+### ---------------------------------------- ###
 def zero_target(*args):
     """
     Set translation and rotation of a robot object in channel box to zero, 0.
@@ -1093,6 +797,7 @@ def zero_all(*args):
     zero_target()
     zero_base_world()
     zero_base_local()
+### ---------------------------------------- ###
 
 
 def get_axis_val(axis_number, round_val=True):
@@ -1155,6 +860,7 @@ def axis_val_hud(*args):
                               labelFontSize='large',
                               dataWidth=30,
                               command=pm.Callback(get_axis_val, i + 1),
+                              # event='timeChanged')
                               attachToRefresh=True)
         # Turn Limit Meter on
         for robot in robots:
@@ -1830,6 +1536,236 @@ def set_fk_pose(*args):
         pm.warning('Error setting FK pose')
 
 
+### ---------------------------------------- ###
+__FK_CONFIGS = [[1, 1, 1],
+                [1, 1, 0],
+                [1, 0, 1],
+                [1, 0, 0],
+                [0, 1, 1],
+                [0, 1, 0],
+                [0, 0, 1],
+                [0, 0, 0]]
+
+def get_solver_params(robot_name):
+    """
+    tcp
+    tcp_mat
+    lcs
+    lcs_mat
+    target
+    target_mat
+    robot_definition
+    axis_offsets
+    rot_directions
+    solver_type
+    """
+    tcp_path = format_path(__TCP_HDL_PATH, robot_name)
+    tcp_ctrl = pm.ls(tcp_path)[0]
+    tcp = tcp_ctrl.getTranslation()
+    tcp_mat = pm.xform(tcp_ctrl, query=True, os=True, m=True)
+
+
+    lcs_path = format_path(__LOCAL_CTRL_PATH, robot_name)
+    lcs_ctrl = pm.ls(lcs_path)[0]
+    lcs = lcs_ctrl.getTranslation()
+    lcs_mat = pm.xform(lcs_ctrl, query=True, os=True, m=True)
+
+
+    target_path = format_path(__TARGET_HDL_PATH, robot_name)
+    target_ctrl = pm.ls(target_path)[0]
+    target = target_ctrl.getTranslation()
+    target_mat = pm.xform(target_ctrl, query=True, os=True, m=True)
+
+
+    robot_definition = get_robot_definition(robot_name)
+    axis_offsets = get_axis_offsets(robot_name)
+    rot_directions = get_rot_directions(robot_name)
+    solver_type = get_solver_type(robot_name)
+
+
+    solver_params = namedtuple('solver_params', [
+                        'tcp',
+                        'tcp_mat',
+                        'lcs',
+                        'lcs_mat',
+                        'target',
+                        'target_mat',
+                        'robot_definition',
+                        'axis_offsets',
+                        'rot_directions',
+                        'solver_type'
+                        ])
+
+    return solver_params(tcp, tcp_mat, lcs, lcs_mat, target, target_mat, robot_definition, axis_offsets, rot_directions, solver_type)
+
+
+def get_solver_type(robot_name):
+    """
+    """
+    target_ctrl_path = get_target_ctrl_path(robot_name)
+
+    # We use try-except here because most robot rigs don't have the
+    # 'solverType' attribute, as it was added for UR dev
+    # Defaults to 0 if attr doesn't exist, representing the standard
+    # spherical wrist solver
+    try:
+        target_ctrl = pm.ls(target_ctrl_path, type='transform')[0]
+        solver_type = target_ctrl.getAttr('solverType')
+    except:
+        solver_type = 0
+    
+    return solver_type
+
+
+def get_robot_definition(robot_name):
+    """
+    """
+    target_ctrl_path = get_target_ctrl_path(robot_name)
+
+    # Get the robot geometry from robot definition attributes on the rig.
+    a1 = pm.getAttr(target_ctrl_path + '.a1')
+    a2 = pm.getAttr(target_ctrl_path + '.a2')
+    b = pm.getAttr(target_ctrl_path + '.b')
+    c1 = pm.getAttr(target_ctrl_path + '.c1')
+    c2 = pm.getAttr(target_ctrl_path + '.c2')
+    c3 = pm.getAttr(target_ctrl_path + '.c3')
+    c4 = pm.getAttr(target_ctrl_path + '.c4')
+
+    robot_definition = [a1, a2, b, c1, c2, c3, c4]
+
+    return robot_definition
+
+
+def get_axis_offsets(robot_name):
+    """
+    """
+    target_ctrl_path = get_target_ctrl_path(robot_name)
+
+    num_axes = 6
+    axis_offsets = [0 for i in range(num_axes)]
+
+    for i in range(num_axes):
+        axis_number = i + 1  # Axes are 1-indexed
+        # We use objExists here because most robot rigs don't have
+        # offsets defined for every axis
+        offset_attr_name = target_ctrl_path + '.axis{}Offset'.format(axis_number)
+        if pm.objExists(offset_attr_name):
+            offset = pm.getAttr(offset_attr_name)
+            axis_offsets[i] = offset
+
+    return axis_offsets
+
+
+def get_rot_directions(robot_name):
+    """
+    Default rotation direction == 0
+    Flip rotation direction    == 1
+    """
+    target_ctrl_path = get_target_ctrl_path(robot_name)
+
+    num_axes = 6
+    rot_directions = [0 for i in range(num_axes)]
+
+    for i in range(num_axes):
+        axis_number = i + 1  # Axes are 1-indexed
+        # We use objExists here because most robot rigs don't have
+        # offsets defined for every axis
+        offset_attr_name = target_ctrl_path + '.flipAxis{}direction'.format(axis_number)
+        if pm.objExists(offset_attr_name):
+            rot_direction = pm.getAttr(offset_attr_name)
+            rot_directions[i] = rot_direction
+
+    return rot_directions
+
+
+def find_fk_config(robot):
+    """
+    Get the six axes from the selected robot.
+    :param robot: name string of the selected robot
+    :return:
+    """
+    a1_path = format_path(__A1_PATH, robot)
+    a2_path = format_path(__A2_PATH, robot)
+    a3_path = format_path(__A3_PATH, robot)
+    a4_path = format_path(__A4_PATH, robot)
+    a5_path = format_path(__A5_PATH, robot)
+    a6_path = format_path(__A6_PATH, robot)
+
+    a1 = pm.getAttr(a1_path + '.rotateY')
+    a2 = pm.getAttr(a2_path + '.rotateX')
+    a3 = pm.getAttr(a3_path + '.rotateX')
+    a4 = pm.getAttr(a4_path + '.rotateZ')
+    a5 = pm.getAttr(a5_path + '.rotateX')
+    a6 = pm.getAttr(a6_path + '.rotateZ')
+
+    fk_config = [a1, a2, a3, a4, a5, a6]
+
+    return fk_config
+
+
+def find_closest_config(fk_conf_normalized, raw_ik_solutions):
+    """
+    Finds the index of the closest Inverse Kinematic solution to the input
+    Forward Kinematic axis configuration
+    :param fk_conf_normalized: list; 1 x m array that represents the
+     initial axis configuration without MFG-specific axis offsets
+    :param raw_ik_solutions: list; n x m array representing all possible
+     axis configurations without MFG-specific axis offsets
+    :return:
+    """
+    c = [zip(fk_conf_normalized, row) for row in raw_ik_solutions]
+    d = [[] for i in range(len(raw_ik_solutions))]
+    
+    # Find the difference between the initial configuration and each possible
+    # configuration. The row with the smallest difference represents the
+    # closest solution to to the initial configuration
+    for i, row in enumerate(c):
+        d[i] = [abs(a - b) for a, b in row]
+        d[i] = sum(d[i])
+
+    solution_index = d.index(min(d))
+    # Get three booleans corresponding with a valid IK configuration using index
+    config = __FK_CONFIGS[solution_index]
+    
+    return config
+
+
+def find_ik_solutions(robot_name):
+    """
+    Fids all possible IK configuration solutions for the input robot, given the
+    current position of the tool center point, local base frame, and
+    target frame.
+
+    This function is used to determine which IK configuration is necessary to
+    match a given FK pose. To do this, we only need to inspect and compare
+    axes 1, 2, and 5.
+    :param robot: name string of the selected robot
+    :return ik_sols: list of possible axis configurations from the raw solver,
+                     without any MFG-specific offsets
+    """
+
+    ik_solutions = []
+
+    solver_params = get_solver_params(robot_name)
+
+    for sol in __FK_CONFIGS:
+
+        thetas = inverse_kinematics.solve(
+                        solver_params.tcp,
+                        solver_params.tcp_mat,
+                        solver_params.lcs,
+                        solver_params.lcs_mat,
+                        solver_params.target,
+                        solver_params.target_mat,
+                        solver_params.robot_definition,
+                        solver_params.solver_type,
+                        sol)
+
+        ik_solutions.append(thetas)
+
+    return ik_solutions
+
+
 def _snap_ik_target_to_fk(robot):
     """
     Snaps the IK control handle to the end of the FK heirarchy
@@ -1895,6 +1831,34 @@ def _ik_and_fk_aligned(ik_ctrl, tcp_handle):
     return ik_fk_are_aligned
 
 
+def _normalize_fk_pose(fk_config, axis_offsets, rot_directions):
+    """
+    Removes all MFG-specific offsets and bounds the FK pose between
+    [-180, 180]. This allows for IK - FK switching with infinite rotation
+    of FK controllers
+    """
+    fk_config_norm = []
+
+    # Remove offsets from FK config
+    fk_config_no_offsets = inverse_kinematics.remove_offsets(fk_config, axis_offsets, rot_directions)
+
+    # Make sure that the value falls in the range of -180 to 180
+    for angle in fk_config_no_offsets:
+        try:
+            sign = int(angle/abs(angle))
+        except ZeroDivisionError:
+            sign = 1
+        
+        a = int(math.floor(abs(angle)/180.0))  # Number of 180 degree divisions
+        b = a % 2  # Even multiples of 180 = 0; Odd = 1
+    
+        angle_norm = angle - (sign * (a + b) * 180)
+
+        fk_config_norm.append(angle_norm)
+
+    return fk_config_norm
+
+
 def switch_to_ik(robot):
     """
     Switches all robots in scene to IK mode
@@ -1917,28 +1881,40 @@ def switch_to_ik(robot):
 
         if pm.objExists(tool_ctrl_path):
             pm.setAttr(tool_ctrl_path + '.v'.format(robot), 1)
-
+    except:
+        # These aren't crucial to the switch as they're just visual, and 
+        # a connection or locking of any of these attributes might throw
+        # an error, so let's just skip it
+        pass
+    
+    try:
         # Snap IK Ctrl to FK location
         _snap_ik_target_to_fk(robot)
-
-        # Find closest IK configuration to current FK pose
-        ik_sols = find_ik_solutions(robot)
-        fk_config = find_fk_config(robot)
-
-        # Only use a1, a2, and a5 to determing closest config.
-        fk_config_trunc = [fk_config[i] for i in [0, 1, 4]]
-        ik_config = find_closest_config(fk_config_trunc, ik_sols)
-
-        # Match IK config to FK pose
-        pm.setAttr(target_ctrl_path + '.ikSolution1', ik_config[0])
-        pm.setAttr(target_ctrl_path + '.ikSolution2', ik_config[1])
-        pm.setAttr(target_ctrl_path + '.ikSolution3', ik_config[2])
-
-        # turn ik solve back on
-        pm.setAttr(target_ctrl_path + '.ik', 1)
-
     except:
-        pm.warning('Error swithching to IK')
+        raise MimicError('Error swithching to IK; could not snap IK CTRL to FK')
+
+    ## Find closest IK configuration to current FK pose ##
+    # Get FK config and all IK solutions
+    ik_sols = find_ik_solutions(robot)
+    fk_config = find_fk_config(robot)
+
+    # Remove all MFG-specific offsets from the FK config
+    solver_params = get_solver_params(robot)
+    axis_offsets = solver_params.axis_offsets
+    rot_directions = solver_params.rot_directions
+    fk_config_norm = _normalize_fk_pose(fk_config, axis_offsets, rot_directions)
+
+    ## TO-DO: account for FK config rotations above and below 180 degrees
+    # Select the closes IK configuration to the given FK config
+    ik_config = find_closest_config(fk_config_norm, ik_sols)
+
+    # Match IK config to FK pose
+    pm.setAttr(target_ctrl_path + '.ikSolution1', ik_config[0])
+    pm.setAttr(target_ctrl_path + '.ikSolution2', ik_config[1])
+    pm.setAttr(target_ctrl_path + '.ikSolution3', ik_config[2])
+
+    # turn ik solve back on
+    pm.setAttr(target_ctrl_path + '.ik', 1)
 
 
 def switch_to_fk(robot):
@@ -2005,21 +1981,19 @@ def toggle_ik_fk(*args):
 
     for robot in robots:
         target_ctrl_path = get_target_ctrl_path(robot)
-        try:
-            if ik_tab:
-                if pm.getAttr(target_ctrl_path + '.ik'):
-                    continue
+        
+        if ik_tab:
+            if pm.getAttr(target_ctrl_path + '.ik'):
+                continue
 
-                switch_to_ik(robot)
+            switch_to_ik(robot)
 
-            else:
-                if not pm.getAttr(target_ctrl_path  + '.ik'):
-                    continue
+        else:
+            if not pm.getAttr(target_ctrl_path  + '.ik'):
+                continue
 
-                switch_to_fk(robot)
-        except:
-            pm.warning('Error during IK/FK switch')
-
+            switch_to_fk(robot)
+        
     # Maintain appropriate selections on each robot
     try:
         selection = []
@@ -2044,8 +2018,10 @@ def toggle_ik_fk(*args):
 
     except:
         pm.warning('Error selecting after IK/FK switch')
+### ---------------------------------------- ###
 
 
+### ---------------------------------------- ###
 def key_ik(*args):
     """
     Keyframe the robot's Inverse Kinematic pose.
@@ -2391,8 +2367,10 @@ def key_ik_fk(*args):
             key_fk()
     except:
         pm.warning('Error keying IK/FK')
+### ---------------------------------------- ###
 
 
+### ---------------------------------------- ###
 def _filter_hotkey_set_name(hotkey_set_name):
     """
     Force input hotkey-set name to exclude special characters.
@@ -2565,6 +2543,7 @@ def find_hotkey(hotkey_name):
         return None
     else:
         return key
+### ---------------------------------------- ###
 
 
 def set_shader_range(*args):
@@ -2811,5 +2790,6 @@ def add_limits_to_robot(robot, limit_type):
                    parent=parent_attr_path)
 
 
+### ---------------------------------------- ###
 class MimicError(Exception):
     pass
