@@ -366,7 +366,8 @@ def _get_command_dicts(robot, animation_settings, postproc_settings, user_option
     
     if using_sample_rate:
         # Check commands for axis flips and reconcile them if necessary
-        command_dicts = _check_command_rotations(robot, animation_settings, command_dicts)
+        command_dicts = _reconcile_command_rotations(robot, command_dicts)
+        _bound_accumulated_rotations(robot, command_dicts)
 
     return command_dicts
 
@@ -637,11 +638,62 @@ def _check_robot_postproc_compatibility(robot, processor):
             .format(robot_type, processor_type)
     return warning
 
-'''
-def _check_command_rotations(robot, animation_settings, command_dicts):
+
+def _reconcile_command_rotations(robot_name, command_dicts):
     """
     Check commands that used a sample rate.
-    :param robot:
+
+    This is primarily used to ensure that rotation is accumulated when an axis
+    rotates beyond +/- 180 degrees to avoid discontinuities 
+
+    :param robot_name:
+    :param animation_settings:
+    :param command_dicts:
+    :return:
+    """
+    # Get axes, if they exist
+    command_axes = []
+    for command_dict in command_dicts:
+        axes = command_dict[postproc.AXES] if postproc.AXES in command_dict else None
+        command_axes.append(list(axes))
+
+    reconcile_axes = mimic_utils.get_reconcile_axes(robot_name)
+
+    # Make sure the user has selected use of axes
+    if not all(x is None for x in command_axes):
+        # Get indices for command and axis
+        for command_index in range(len(command_dicts)):
+            for axis_index in range(6):
+                # Get the initial value
+                value = command_axes[command_index][axis_index]
+                reconcile_axis = reconcile_axes[axis_index]
+                # Operate on the value depending on conditional
+                if reconcile_axis:
+                    if command_index == 0: 
+                        continue
+                    else:  # Perform the check
+                        previous_value = command_axes[command_index - 1][axis_index]
+                        value = mimic_utils.accumulate_rotation(
+                                                value,
+                                                previous_value)
+                    # Replace original value with new value
+                    command_axes[command_index][axis_index] = value
+                else:  # Not a problem axis
+                    pass
+            # Replace the original commands with the new commands
+            reconciled_axes = postproc.Axes(*command_axes[command_index])
+            command_dicts[command_index][postproc.AXES] = reconciled_axes
+
+    return command_dicts
+
+
+def _bound_accumulated_rotations(robot_name, command_dicts):
+    """
+    Checks axes whose rotations have been accumulated to ensure they've not 
+    exceeded the stated limits. If they have, this function attempts to slide
+    the commands by +/- 360 degrees. If the limits are still exceeded, this 
+    function returns the commands that exceed the limits by the least amount
+    :param robot_name:
     :param animation_settings:
     :param command_dicts:
     :return:
@@ -653,9 +705,79 @@ def _check_command_rotations(robot, animation_settings, command_dicts):
         axes = command_dict[postproc.AXES] if postproc.AXES in command_dict else None
         command_axes.append(list(axes))
 
+    for each in command_axes:
+        print each
+
+    reconcile_axes = mimic_utils.get_reconcile_axes(robot_name)
+    rotation_limits = mimic_utils.get_all_limits(robot_name)['Position']
+
     # Make sure the user has selected use of axes
     if not all(x is None for x in command_axes):
-        start_frame = animation_settings['Start Frame']
+        for i, reconcile_axis in enumerate(reconcile_axes):
+            if reconcile_axis:
+                axis_number = i + 1  # Axis numbers are 1-indexed
+                axis_name = 'Axis {}'.format(axis_number)
+
+                # Get the axis limits
+                limit_min = rotation_limits[axis_name]['Min Limit']
+                limit_max = rotation_limits[axis_name]['Max Limit']
+
+                # Create a list of commands for the axis to be checked
+                axis_vals_init = [ axis[i] for axis in command_axes]
+
+                axis_min = min(axis_vals_init)
+                axis_max = max(axis_vals_init)
+
+                print "#######################################################"
+                print "Initial Axis {} vals: ".format(i+1), axis_vals_init
+                print "Axis Min Limit: ", limit_min
+                print "Axis Max Limit: ", limit_max                
+                print "Axis Min: ", axis_min
+                print "Axis Max: ", axis_max
+
+                ## Perform conditional checks
+                # If no limits are violated, continue to the next axis without
+                # modifying the commands
+                if axis_min >= limit_min and axis_max <= limit_max:
+                    continue
+
+                # If both the max and min axis values exceed their respective
+                # limits, then there's nothing we can do about it, so we don't
+                # modify the commands
+                if axis_min < limit_min and axis_max > limit_max:
+                    continue
+
+                ## Try bounding the values between the limits by shifting
+                ## the commands by +/- 360 degrees
+
+                coeff = -1 if axis_min < limit_min else 1
+
+                # Check if the adjusted values would still violate the limits
+                # and if so, only shift them if the violation is smaller
+                axis_min_shift = axis_min - (coeff * 360)
+                axis_max_shift = axis_max - (coeff * 360)
+
+                if axis_min_shift < limit_min:
+                    if abs(axis_min - limit_min) < abs(axis_min_shift - limit_min):
+                        continue
+                elif axis_max_shift < limit_max:
+                    if abs(axis_max - limit_max) < abs(axis_max_shift - limit_max):
+                        continue
+
+                # If we've mad it this far it means we should shift all of the 
+                # rotation values of the current axis by +/- 360
+                
+
+
+
+                # Else, if the min limit is exceeded, try shifting the values
+
+
+                print "Axis Min Shifted: ", axis_min_shift
+                print "Axis Max Shifted: ", axis_max_shift
+
+
+    '''
         # Get indices for command and axis
         for command_index in range(len(command_dicts)):
             for axis_index in range(6):
@@ -683,57 +805,10 @@ def _check_command_rotations(robot, animation_settings, command_dicts):
             # Replace the original commands with the new commands
             reconciled_axes = postproc.Axes(*command_axes[command_index])
             command_dicts[command_index][postproc.AXES] = reconciled_axes
+
     return command_dicts
-'''
+    '''
 
-def _check_command_rotations(robot, animation_settings, command_dicts):
-    """
-    Check commands that used a sample rate.
-
-    This is primarily used to ensure that rotation is accumulated when an axis
-    rotates beyond +/- 180 degrees to avoid discontinuities 
-
-    :param robot:
-    :param animation_settings:
-    :param command_dicts:
-    :return:
-    """
-    # Get axes, if they exist
-    command_axes = []
-    for command_dict in command_dicts:
-        axes = command_dict[postproc.AXES] if postproc.AXES in command_dict else None
-        command_axes.append(list(axes))
-
-    # reconcile_axes = mimic_utils.get_reconcile_axes()
-    reconcile_axes = [0, 0, 0, 1, 0, 1]
-
-    # Make sure the user has selected use of axes
-    if not all(x is None for x in command_axes):
-        start_frame = animation_settings['Start Frame']
-        # Get indices for command and axis
-        for command_index in range(len(command_dicts)):
-            for axis_index in range(6):
-                # Get the initial value
-                value = command_axes[command_index][axis_index]
-                reconcile_axis = reconcile_axes[axis_index]
-                # Operate on the value depending on conditional
-                if reconcile_axis:
-                    if command_index == 0: 
-                        continue
-                    else:  # Perform the check
-                        previous_value = command_axes[command_index - 1][axis_index]
-                        value = mimic_utils.accumulate_rotation(
-                                                value,
-                                                previous_value)
-                    # Replace original value with new value
-                    command_axes[command_index][axis_index] = value
-                else:  # Not a problem axis
-                    pass
-            # Replace the original commands with the new commands
-            reconciled_axes = postproc.Axes(*command_axes[command_index])
-            command_dicts[command_index][postproc.AXES] = reconciled_axes
-            
-    return command_dicts
 
 def _get_frames_using_sample_rate(animation_settings, postproc_settings):
     """

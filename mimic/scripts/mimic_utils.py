@@ -406,8 +406,9 @@ def get_reconcile_axes(robot_name):
     # TO-DO: HARD CODED
     num_axes = 6
 
-    rotation_limits = get_all_limits(robot_name)
+    rotation_limits = get_all_limits(robot_name)['Position']
     axis_offsets = get_axis_offsets(robot_name)
+    rot_directions = get_rot_directions(robot_name)
 
     reconcile_axes = []
 
@@ -416,13 +417,30 @@ def get_reconcile_axes(robot_name):
         axis_name = 'Axis {}'.format(axis_number)
 
         # Get the manufacturer limit
-        limit_min = rotation_limits['Min Limit']
-        limit_max = rotation_limits['Max Limit']
+        limit_min = rotation_limits[axis_name]['Min Limit']
+        limit_max = rotation_limits[axis_name]['Max Limit']
 
         # Remove manufacturer offsets from limit rotation values
-        LEFT OF HERE
+        limits = [limit_min, limit_max]
+
+        axis_offset = axis_offsets[i]
+        rot_direction = rot_directions[i]
+
+
+        if rot_direction:
+            limits = [ -limit for limit in limits]
+
+        abs_limits = [ abs(limit + axis_offset) for limit in limits ]
+
+        # If the max absolute value is over 180, that means it must be reconciled
+        if max(abs_limits) > 180:
+            reconcile_axes.append(True)
+        else:
+            reconcile_axes.append(False)
+
 
     return reconcile_axes
+
 
 def accumulate_rotation(a_in, a_0):
     """
@@ -531,30 +549,6 @@ def flip_robot_wrist(*args):
         target_ctrl_attr = get_target_ctrl_path(robot) + '.ikSolution3'
         ik_sol = pm.getAttr(target_ctrl_attr)
         pm.setAttr(target_ctrl_attr, not ik_sol)
-
-
-def invert_axis(axis_number, robots=[]):
-    """
-    Invert a robot's axis.
-    :param axis_number: Index of axis to invert (1 indexed)
-    :param robots: name strings of the selected robots
-    :return:
-    """
-    if not robots:
-        robots = get_robot_roots()
-    if not robots:
-        pm.warning('Nothing Selected; Select a valid robot')
-        return
-
-    try:
-        for robot in robots:
-            target_ctrl_attr = get_target_ctrl_path(robot) \
-                             + '.invertAxis{}'.format(axis_number)
-            pm.setAttr(target_ctrl_attr, 1)
-            pm.refresh()
-            pm.setAttr(target_ctrl_attr, 0)
-    except:
-        pm.warning('Error Inverting Axis')
 ### ---------------------------------------- ###
 
 
@@ -1340,8 +1334,11 @@ def select_fk_axis_handle(axis_number):
     """
     robots = get_robot_roots()
     if not robots:
-        pm.warning('Nothing Selected; Select a valid robot')
-        return
+        # Get all robots in scene
+        robots = get_robot_roots(all_robots=True)
+
+        if not robots:
+            return
 
     selection = []
     for robot in robots:
