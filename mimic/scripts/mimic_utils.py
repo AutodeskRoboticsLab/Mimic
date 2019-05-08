@@ -69,6 +69,7 @@ __TOOL_CTRL_FK_PATH = __TCP_HDL_PATH + '|{1}tool_CTRL_FK'
 __TARGET_HDL_PATH = '{0}|{1}robot_GRP|{1}target_HDL'
 
 
+### ---------------------------------------- ###
 def get_robot_roots(all_robots=False, sel=[]):
     """
     Gets the root node name of the robot(s) in the scene (e.g. 'KUKA_KR60_0')
@@ -395,11 +396,39 @@ def get_closest_ik_keyframe(robot, current_frame):
     return closest_ik_key, count_direction
 
 
+def get_reconcile_axes(robot_name):
+    """
+    Determines which axes need to be reconciled
+    i.e. if the rotation limits are beyond +/- 180 degrees
+
+    Returns list of booleans
+    """
+    # TO-DO: HARD CODED
+    num_axes = 6
+
+    rotation_limits = get_all_limits(robot_name)
+    axis_offsets = get_axis_offsets(robot_name)
+
+    reconcile_axes = []
+
+    for i in range(num_axes):
+        axis_number = i + 1  # Axis numbers are 1-indexed
+        axis_name = 'Axis {}'.format(axis_number)
+
+        # Get the manufacturer limit
+        limit_min = rotation_limits['Min Limit']
+        limit_max = rotation_limits['Max Limit']
+
+        # Remove manufacturer offsets from limit rotation values
+        LEFT OF HERE
+
+    return reconcile_axes
+
 def accumulate_rotation(a_in, a_0):
     """
     Compares current Axis value with its previous value to determine if there
     has been a 360 degree flip in the Axis' evaluation.
-    e.g.:If a_0 = 94 and a_in = -265 instead of -266, this function would
+    e.g.:If a_0 = 94 and a_in = -265; instead of -266, this function would
     output a_out = 95
     :param a_in: float; current evaluation of axis rotation
     :param a_0: float; previous evaluation of axis rotation
@@ -408,192 +437,22 @@ def accumulate_rotation(a_in, a_0):
     # If the input value and previous value differ by a large amount, we assume
     # the evaluation has been flipped, so we manually flip it back. Otherwise,
     # we output the input value unchanged
+
+    try:
+        sign = int(a_0/abs(a_0))
+    except ZeroDivisionError:
+        sign = 1
+
     if abs(a_in - a_0) > 300:
-        a_out = a_in - (abs(a_in) / a_in) * 360
+
+        # Find how many multiples of 360 we're off by
+        a = int(round(abs(a_in - a_0)/360.0))
+
+        a_out = a_in + sign * a * 360.0
     else:
         a_out = a_in
 
     return a_out
-
-
-def get_reconciled_rotation_value(robot, axis, rotation_axis, current_frame):
-    """
-    Determines the proper rotation value of an axis at the desired frame by
-    comparing the evaluation to the closest keyframed value.
-    :param robot: name string of the selected robot
-    :param axis: int; number of the axis being evaluated
-    :param rotation_axis: string; axis that specified axis rotates about
-    :param current_frame: int; frame that is currently being evaluated
-    :return keyed_val: float; correct value of the axis in question
-    :return flip: bool; boolean signaling whether or not the axis evaluation
-     needs to be flipped
-    """
-    # Initialize variables
-    keyed_val = None
-    flip = False
-    target_ctrl_path = get_target_ctrl_path(robot)
-    # Find the closest keyframe on the robot's IK attribute
-    closest_ik_key, count_direction = get_closest_ik_keyframe(robot,
-                                                              current_frame)
-
-    attr_path = '{0}|{1}robot_GRP|{1}FK_CTRLS|{1}a{2}FK_CTRL.rotate{3}' \
-                .format(robot, robot.namespace(), axis, rotation_axis)
-
-    # If there are no IK attribute keyframes on the current robot,
-    # return the DG produced value and exit the function.
-    if not type(closest_ik_key) == float:
-        keyed_val = pm.getAttr(target_ctrl_path + '.axis{}'.format(axis),
-                               time=current_frame)
-        return keyed_val, flip
-
-    # If the current frame has an ik attribute keyframe,
-    # assign that value as the keyed value.
-    if closest_ik_key == current_frame:
-        # Axis rotation value as given by the Dependency Graph
-        dg_val = pm.getAttr(target_ctrl_path + '.axis{}'.format(axis))
-
-        # Axis rotation as approximated by an IK keyframe
-        keyed_val = pm.getAttr(attr_path, time=current_frame)
-        keyed_val = accumulate_rotation(dg_val, keyed_val)
-
-        if abs(dg_val - keyed_val) > 300:
-            flip = True
-
-    # If the current frame doesn't have an IK attribute keyframe,
-    # find the closest one and traverse the timeline to determine the correct
-    # evaluation.
-    else:
-        # Initialize axis value as keyframed value.
-        keyed_val = pm.getAttr(attr_path, time=closest_ik_key)
-
-        # Traverse the timeline from the closest IK attribute keyframe to the
-        # current frame. Determine desired rotation angle at each frame
-        for frame in range(int(closest_ik_key),
-                           int(current_frame + count_direction),
-                           count_direction):
-            #pm.refresh()
-            # Find the axis value at the current frame as given by the
-            # Dependency Graph.
-            dg_val = pm.getAttr(target_ctrl_path + '.axis{}'.format(axis),
-                                time=frame)
-
-            # Compare Dependency Graph evaluation with keyframed value
-            keyed_val = accumulate_rotation(dg_val, keyed_val)
-
-        if abs(dg_val - keyed_val) > 300:
-            flip = True
-
-    return keyed_val, flip
-
-
-def reconcile_rotation(force_eval=False):
-    """
-    The robot's inverse kinematic solver can only solve rotation values theta,
-    such that 180 deg > theta > -180 deg, even though some axes are capable
-    of rotating beyond that. We account for this by manually accumulating the
-    rotation beyond +/- 180 deg, which can cause Maya's dependency graph to
-    evaluate improperly in some cases. To account for these scenarios, we can
-    keyframe rotation values.
-
-    This function determines the proper rotation value of an axis at the
-    desired frame by comparing the evaluation to the closest keyframed value
-    and flips the axis value manually if necessary.
-    :return:
-    """
-    robots = get_robot_roots(1)  # Get the names of all robots in the scene
-    if not robots:
-        print 'No Robots in Scene'
-        return
-
-    # If the Mimic UI is not open, use the default setting
-    if not pm.window("mimic_win", exists=True):
-        execute_reconcile_rotation = mimic_config.EXECUTE_RECONCILE_ROTATION_DEFAULT
-    else:
-        execute_reconcile_rotation = pm.checkBox('cb_executeReconcileRotation',
-                                                 query=True,
-                                                 value=True)
-
-    # If execute Reconcile Rotation is set to False, end the function
-    if not execute_reconcile_rotation:
-        if force_eval:
-            pass
-        else:
-            return
-
-    # Define which axes this function will operate on, along with their
-    # corresponding axis of rotation. These are typically axes that have
-    # rotation limits > 180 and/or < -180. Currently only axes 4 and 6 are
-    # supported by attributes on target_CTRL (e.g. invertAxis4).
-    axes = [4, 6]
-    rotation_axes = ['Z', 'Z']
-
-    current_frame = pm.currentTime()
-
-    for robot in robots:
-        in_ik_mode = pm.getAttr(get_target_ctrl_path(robot) + '.ik')
-
-        # If the scene is in FK mode, do nothing.
-        if not in_ik_mode:
-            continue
-
-        # For each axis, determine if the value needs to be manually flipped
-        # +/- 360 degrees. If so, flip the axis value
-        for i, axis in enumerate(axes):
-            keyed_val, flip = get_reconciled_rotation_value(robot,
-                                                            axis,
-                                                            rotation_axes[i],
-                                                            current_frame)
-            if flip:
-                # Manually flip value of the axis by 360 degrees.
-                invert_axis(axis, [robot])
-                print '{}: Axis {} rotation reconciled'.format(robot, axis)
-            else:
-                continue
-
-
-def mimic_script_jobs():
-    """
-    Adds a Maya script job to the scene that executes reconcile_rotation() when
-    the time is changed in the animation timeline.
-    :return:
-    """
-    pm.cycleCheck(evaluation=0)
-
-    pm.scriptJob(event=['timeChanged', reconcile_rotation], killWithScene=True)
-    print "Robot scriptJobs Initialized"
-    print 'Reconcile Rotation script job running'
-    print 'cycleCheck OFF'
-
-
-def add_mimic_script_node(*args):
-    """
-    Adds a script node to the scene that executes when the scene is open and
-    adds a reconcile_rotation script job to the scene
-    :param args: Required for Maya to pass command from the UI.
-    :return:
-    """
-    if pm.objExists('mimicScriptNode'):
-        print('Script Node Already Exists')
-        return
-
-    # Define the command to be executed when the scriptNode is triggered
-    script_str = 'import pymel.core as pm; ' \
-                 'import mimic_utils; ' \
-                 'mimic_utils.mimic_script_jobs()'
-
-    pm.scriptNode(sourceType="Python",
-                  scriptType=2,
-                  beforeScript=script_str,
-                  name='mimicScriptNode')
-
-    pm.cycleCheck(evaluation=0)
-
-    # The scriptNode only works after the scene has been saved, closed, and
-    # reopened. So we have to run the scriptJobs manually for the initial
-    # scene session.
-    mimic_script_jobs()
-
-    print 'Robot Script Node Added'
 
 
 def add_hud_script_node(*args):
@@ -1175,22 +1034,25 @@ def write_deriv_limits_to_ui(limit_type):
                      text=round(val,3))
 
 
-def get_axis_limits():
+def get_axis_limits(robot=None):
     """
     Gets the current axis position limits and updates UI with those values.
     :param args:
     :return axis_position_limits: dict containing axis position limits
     """
-    robots = get_robot_roots()
-    if not robots:
-        raise MimicError('Nothing Selected; Select a valid robot')
-        return
 
-    if len(robots) > 1:
-        MimicError('Too many selections: Select a single robot')
-        return
+    if not robot:
+        robots = get_robot_roots()
+        if not robots:
+            raise MimicError('Nothing Selected; Select a valid robot')
+            return
 
-    robot = robots[0]
+        if len(robots) > 1:
+            MimicError('Too many selections: Select a single robot')
+            return
+
+        robot = robots[0]
+    
     target_ctrl_path = get_target_ctrl_path(robot)
 
     axis_position_limits = {}

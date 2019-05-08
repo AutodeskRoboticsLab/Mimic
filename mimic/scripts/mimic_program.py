@@ -38,7 +38,7 @@ def analyze_program(*args):
     Check program parameters, raise exception on failure
     :return:
     """
-    # Do this first upon button click!
+    # Initialize Mimic UI State
     _clear_output_window()
     _initialize_export_progress_bar()
 
@@ -49,13 +49,8 @@ def analyze_program(*args):
     animation_settings = program_settings[1]
     start_frame = animation_settings['Start Frame']
     pm.currentTime(start_frame)
-
-    # Force evaluation of reconcile rotation to ensure proper export
-    mimic_utils.reconcile_rotation(force_eval=True)
     
     command_dicts = _get_command_dicts(*program_settings)
-    limit_data = mimic_utils.get_all_limits(robot_name)
-
 
     violation_exception, violation_warning = _check_command_dicts(command_dicts, *program_settings)
     _initialize_export_progress_bar(is_on=False)
@@ -65,12 +60,14 @@ def analyze_program(*args):
     # See Mimic installation instructions for more details on installing numPy
     try:
         import pyqtgraph as pg
-        analysis.run(robot_name, command_dicts, limit_data)
     except ImportError:
         pm.warning('MIMIC: Analysis module did not load successfully; ' \
                    'analysis graphing feature disabled. ' \
                    'Check that you have numPy installed properly; ' \
                    'see Mimic installation instructions for more details')
+
+    limit_data = mimic_utils.get_all_limits(robot_name)
+    analysis.run(robot_name, command_dicts, limit_data)
 
     # If we're sampling keyframes only, we assume it's for a post-processor
     # that's not time-dependent, and, therefore, we shouldn't raise exceptions
@@ -99,9 +96,6 @@ def save_program(*args):
     start_frame = animation_settings['Start Frame']
 
     pm.currentTime(start_frame)
-
-    # Force evaluation of reconcile rotation to ensure proper export
-    mimic_utils.reconcile_rotation(force_eval=True)
 
     command_dicts = _get_command_dicts(*program_settings)
 
@@ -258,16 +252,7 @@ def _get_settings_for_animation(robot):
         warning = 'End Frame must be larger than Start Frame'
         raise mimic_utils.MimicError(warning)
 
-    '''
-    # Raise warning if no keyframes are set
-    closest_ik_key = mimic_utils.get_closest_ik_keyframe(robot, start_frame)[0]
-    if not type(closest_ik_key) == float:
-        warning = 'You must set an IK or FK keyframe to ensure ' \
-                  'proper evaluation when saving a program; ' \
-                  'no program written'
-        raise mimic_utils.MimicError(warning)
-    '''
-    # All good, create output dictionary
+    # Create output dictionary
     animation_settings = {'Start Frame': start_frame,
                           'End Frame': end_frame,
                           'Framerate': framerate,
@@ -281,8 +266,7 @@ def _get_settings_for_postproc(robot):
     :return program_settings: dictionary
     """
     # Get all important settings
-    using_time_interval = pm.radioCollection(
-        'sample_rate_radio_collection', query=True, select=True) == 'rb_timeInterval'
+    using_time_interval = pm.radioCollection('sample_rate_radio_collection', query=True, select=True) == 'rb_timeInterval'
     using_keyframes_only = not using_time_interval  # TODO: Clever, but not expandable
     time_interval_value = pm.textField('t_timeBetweenSamples', query=True, text=True)
     time_interval_units = 'seconds' \
@@ -404,6 +388,9 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
     # Check if limits have been exceeded (i.e. velocity, acceleration)
     if user_options.Include_axes and not user_options.Ignore_motion:
         # TODO: Add UI options to select which violations, max/min/avg user wants to check
+
+        # Check position limits
+
 
         # Check velocity limits
         velocity_limits = mimic_utils.get_velocity_limits(robot)
@@ -650,7 +637,7 @@ def _check_robot_postproc_compatibility(robot, processor):
             .format(robot_type, processor_type)
     return warning
 
-
+'''
 def _check_command_rotations(robot, animation_settings, command_dicts):
     """
     Check commands that used a sample rate.
@@ -697,7 +684,56 @@ def _check_command_rotations(robot, animation_settings, command_dicts):
             reconciled_axes = postproc.Axes(*command_axes[command_index])
             command_dicts[command_index][postproc.AXES] = reconciled_axes
     return command_dicts
+'''
 
+def _check_command_rotations(robot, animation_settings, command_dicts):
+    """
+    Check commands that used a sample rate.
+
+    This is primarily used to ensure that rotation is accumulated when an axis
+    rotates beyond +/- 180 degrees to avoid discontinuities 
+
+    :param robot:
+    :param animation_settings:
+    :param command_dicts:
+    :return:
+    """
+    # Get axes, if they exist
+    command_axes = []
+    for command_dict in command_dicts:
+        axes = command_dict[postproc.AXES] if postproc.AXES in command_dict else None
+        command_axes.append(list(axes))
+
+    # reconcile_axes = mimic_utils.get_reconcile_axes()
+    reconcile_axes = [0, 0, 0, 1, 0, 1]
+
+    # Make sure the user has selected use of axes
+    if not all(x is None for x in command_axes):
+        start_frame = animation_settings['Start Frame']
+        # Get indices for command and axis
+        for command_index in range(len(command_dicts)):
+            for axis_index in range(6):
+                # Get the initial value
+                value = command_axes[command_index][axis_index]
+                reconcile_axis = reconcile_axes[axis_index]
+                # Operate on the value depending on conditional
+                if reconcile_axis:
+                    if command_index == 0: 
+                        continue
+                    else:  # Perform the check
+                        previous_value = command_axes[command_index - 1][axis_index]
+                        value = mimic_utils.accumulate_rotation(
+                                                value,
+                                                previous_value)
+                    # Replace original value with new value
+                    command_axes[command_index][axis_index] = value
+                else:  # Not a problem axis
+                    pass
+            # Replace the original commands with the new commands
+            reconciled_axes = postproc.Axes(*command_axes[command_index])
+            command_dicts[command_index][postproc.AXES] = reconciled_axes
+            
+    return command_dicts
 
 def _get_frames_using_sample_rate(animation_settings, postproc_settings):
     """
@@ -730,10 +766,7 @@ def _get_frames_using_sample_rate(animation_settings, postproc_settings):
         frames = [start_frame + round(i * step_frame, 3) for i in range(0, num_steps)]
 
     return frames
- 
 
-    return frames
- 
 
 def _get_frames_using_keyframes_only(robot, animation_settings):
     """
@@ -754,7 +787,7 @@ def _get_frames_using_keyframes_only(robot, animation_settings):
         time='{}:{}'.format(start_frame, end_frame))
     # Verify that there is also a keyframe set on the FK controls' rotate
     # attributes. If there's not, we remove it from the list
-    # Note: we only need to check on controller as they are all keyframed
+    # Note: we only need to check one controller as they are all keyframed
     # together
     fk_test_handle_path = mimic_utils.format_path('{0}|{1}robot_GRP|{1}FK_CTRLS|{1}a1FK_CTRL.rotateY', robot)
     frames = [frame for frame in ik_keyframes if pm.keyframe(
@@ -828,7 +861,6 @@ def _sample_frames_get_command_dicts(robot_name, frames, animation_settings, tim
         _update_export_progress_bar(start_frame, end_frame, frame)
     # Reset current frame (just in case)
     pm.currentTime(frames[0])
-    mimic_utils.reconcile_rotation(force_eval=True)
 
     return command_dicts
 
