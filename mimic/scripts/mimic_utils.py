@@ -69,6 +69,8 @@ __TOOL_CTRL_FK_PATH = __TCP_HDL_PATH + '|{1}tool_CTRL_FK'
 __TARGET_HDL_PATH = '{0}|{1}robot_GRP|{1}target_HDL'
 
 
+__ROTATION_AXES = ['Y', 'X', 'X', 'Z', 'X', 'Z']
+
 ### ---------------------------------------- ###
 def get_robot_roots(all_robots=False, sel=[]):
     """
@@ -355,19 +357,23 @@ def set_program_dir(*args):
     pm.textField('t_programDirectoryText', edit=True, text=directory[0])
 
 
-def get_closest_ik_keyframe(robot, current_frame):
+def get_closest_fk_keyframe(robot):
     """
     Finds the keyframe on the input Robot's IK attribute that is closest
-    to the frame that is being evaluated. We only consider there to ba an
+    to the frame that is being evaluated. We only consider there to be
     a true IK keyframe if there is a keyframe set for ~both~ the tool_CTRLS
     ik attribute, as well as the FK_CTRLS rotate attributes
     :param robot: name string of the selected robot
     :param current_frame: int; frame that is currently being evaluated
-    :return closest_ik_key: int;
-    :return count_direction: int;
+    :return closest_fk_key: int;
     """
+
+    current_frame = pm.currentTime()
+
     # Get a list of all keyframes on robots IK attribute.
-    ik_keys = pm.keyframe(get_target_ctrl_path(robot),
+    target_ctrl_path = get_target_ctrl_path(robot)
+
+    ik_keys = pm.keyframe(target_ctrl_path,
                           attribute='ik',
                           query=True,
                           time='-10:')
@@ -378,23 +384,24 @@ def get_closest_ik_keyframe(robot, current_frame):
     # together
     ik_keys_filtered = [key for key in ik_keys if pm.keyframe(format_path(__A1_FK_CTRL_PATH, robot) + '.rotateY', query=True, time=key)]
 
-    # If there are no IK attribute keyframes on the current robot,
-    # return an empty array.
-    if not ik_keys_filtered:
-        return None, None
+    fk_keys = []
+    # FK keys are those where the IK attribute is keyed false
+    for key in ik_keys_filtered:
+        state = pm.getAttr(target_ctrl_path + '.ik', time=key)
 
-    # Find the IK attribute keyframe that's closest to current time,
+        if not state:  # Signifies an "FK Keyframe"
+            fk_keys.append(key)
+
+    # If there are no FK keyframes on the current robot, return None.
+    if not fk_keys:
+        return None
+
+    # Find the FK keyframe that's closest to current time,
     # above or below the current frame.
-    closest_ik_key = min(ik_keys_filtered, key=lambda x: abs(x - current_frame))
+    closest_fk_key = min(fk_keys, key=lambda x: abs(x - current_frame))
 
-    # Figure out which side of the current keyframe the closest frame is to
-    # use as a for loop range step size. Represented by +1 or -1
-    # i.e. range(*, *, count_direction)
-    sign = lambda x: (1, -1)[x < 0]
-    count_direction = sign(current_frame - closest_ik_key)
-
-    return closest_ik_key, count_direction
-
+    return closest_fk_key
+    
 
 def get_reconcile_axes(robot_name):
     """
@@ -1046,7 +1053,7 @@ def get_axis_limits(robot=None):
             return
 
         robot = robots[0]
-    
+
     target_ctrl_path = get_target_ctrl_path(robot)
 
     axis_position_limits = {}
@@ -1294,7 +1301,7 @@ def get_all_limits(robot):
     """
     limits_data = {}
 
-    limits_data['Position'] = get_axis_limits()
+    limits_data['Position'] = get_axis_limits(robot)
     limits_data['Velocity'] = get_velocity_limits(robot)
     limits_data['Accel'] = get_acceleration_limits(robot)
     limits_data['Jerk'] = get_jerk_limits(robot)
@@ -1718,6 +1725,47 @@ def _normalize_fk_pose(fk_config, axis_offsets, rot_directions):
     return fk_config_norm
 
 
+def _reconcile_fk_pose(robot_name, fk_config):
+    """
+    Finds an FK control value that's closes to adjacent values during IK to
+    FK switch, due to the fact that IK solver only solves between +/- 180
+    """
+    # Find the closest FK keyframe
+    closets_fk_key = get_closest_fk_keyframe(robot_name)
+
+    # If there are no FK keys, return the original config
+    if not closets_fk_key:
+        return fk_config
+
+    # If there are FK keyframes, check which axes need to be reconciled,
+    # then reconcile their FK values by looking at the adjacent key
+    reconcile_axes = get_reconcile_axes(robot_name)
+
+    for i, reconcile_axis in enumerate(reconcile_axes):
+        if reconcile_axis:
+            axis_number = i+1
+
+            # Get the rotation of the axis at the reference keyframe
+            axis_fk_ctrl_path = __FK_CTRLS_PATH + '|{1}' + 'a{}FK_CTRL'.format(axis_number)
+            attr_path = format_path(axis_fk_ctrl_path, robot_name) + '.rotate{}'.format(__ROTATION_AXES[i])
+            
+            ref_val = pm.getAttr(attr_path, time=closets_fk_key)
+            ctrl_val = fk_config[i]
+
+            try:
+                sign = int(ctrl_val/abs(ctrl_val))
+            except ZeroDivisionError:
+                sign = 1
+
+            flipped_val = ctrl_val - (sign * 360)  # This assumes rotations are between +/- 360, which is generally true
+
+
+            if abs(flipped_val - ref_val) < abs(ctrl_val - ref_val):
+                fk_config[i] = flipped_val
+
+    return fk_config
+
+
 def switch_to_ik(robot):
     """
     Switches all robots in scene to IK mode
@@ -1786,36 +1834,33 @@ def switch_to_fk(robot):
     tool_ctrl_path = get_tool_ctrl_path(robot)
     fk_ctrls_path = format_path(__FK_CTRLS_PATH, robot)
 
-    try:
-        # Turn IK control visibility off
-        pm.setAttr(get_target_ctrl_path(robot) + '.v', 0)
+    # Turn IK control visibility off
+    pm.setAttr(get_target_ctrl_path(robot) + '.v', 0)
 
-        if pm.objExists(tool_ctrl_path):
-            pm.setAttr(tool_ctrl_path + '.v'.format(robot), 0)
+    if pm.objExists(tool_ctrl_path):
+        pm.setAttr(tool_ctrl_path + '.v'.format(robot), 0)
 
-            # Turn FK control visibility on
-        pm.setAttr(fk_ctrls_path + '.v'.format(robot), 1)
+    # Turn FK control visibility on
+    pm.setAttr(fk_ctrls_path + '.v'.format(robot), 1)
 
-        # Find axis angles from IK pose, and match FK control handles
-        fk_config = find_fk_config(robot)
+    # Find axis angles from IK pose, and match FK control handles
+    fk_config = find_fk_config(robot)
+    fk_config = _reconcile_fk_pose(robot, fk_config)
 
-        pm.setAttr(format_path(__A1_FK_CTRL_PATH, robot) + '.rotateY',
-                   fk_config[0])
-        pm.setAttr(format_path(__A2_FK_CTRL_PATH, robot) + '.rotateX',
-                   fk_config[1])
-        pm.setAttr(format_path(__A3_FK_CTRL_PATH, robot) + '.rotateX',
-                   fk_config[2])
-        pm.setAttr(format_path(__A4_FK_CTRL_PATH, robot) + '.rotateZ',
-                   fk_config[3])
-        pm.setAttr(format_path(__A5_FK_CTRL_PATH, robot) + '.rotateX',
-                   fk_config[4])
-        pm.setAttr(format_path(__A6_FK_CTRL_PATH, robot) + '.rotateZ',
-                   fk_config[5])
+    pm.setAttr(format_path(__A1_FK_CTRL_PATH, robot) + '.rotateY',
+               fk_config[0])
+    pm.setAttr(format_path(__A2_FK_CTRL_PATH, robot) + '.rotateX',
+               fk_config[1])
+    pm.setAttr(format_path(__A3_FK_CTRL_PATH, robot) + '.rotateX',
+               fk_config[2])
+    pm.setAttr(format_path(__A4_FK_CTRL_PATH, robot) + '.rotateZ',
+               fk_config[3])
+    pm.setAttr(format_path(__A5_FK_CTRL_PATH, robot) + '.rotateX',
+               fk_config[4])
+    pm.setAttr(format_path(__A6_FK_CTRL_PATH, robot) + '.rotateZ',
+               fk_config[5])
 
-        pm.setAttr(target_ctrl_path + '.ik', 0)
-
-    except:
-        pm.warning('Error switching to FK')
+    pm.setAttr(target_ctrl_path + '.ik', 0)
 
 
 def toggle_ik_fk(*args):
