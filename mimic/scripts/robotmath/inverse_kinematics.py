@@ -200,9 +200,14 @@ def solve_spherical_wrist(robot_definition, flange_point, flange_rot, pivot_poin
     
     m1 = flange_rot[0][2] * sin_23 * cos_1 + flange_rot[1][2] * sin_23 * sin_1 + flange_rot[2][2] * cos_23
 
-
+    ## Theta 4 ##
     theta_4 = math.atan2((flange_rot[1][2] * cos_1 - flange_rot[0][2] * sin_1), flange_rot[0][2] * cos_23 * cos_1 + flange_rot[1][2] * cos_23 * sin_1 - flange_rot[2][2] * sin_23)
-    theta_5 = math.atan2((math.sqrt(1 - math.pow(m1, 2))), m1)
+    
+    ## Theta 5 ##
+    n3 = math.sqrt(1 - math.pow(round(m1, 8), 2))
+    theta_5 = math.atan2(n3, m1)
+
+    ## Theta 6 XX
     theta_6 = math.atan2((flange_rot[0][1] * sin_23 * cos_1 + flange_rot[1][1] * sin_23 * sin_1 + flange_rot[2][1] * cos_23), (-flange_rot[0][0] * sin_23 * cos_1 - flange_rot[1][0] * sin_23 * sin_1 - flange_rot[2][0] * cos_23))
 
 
