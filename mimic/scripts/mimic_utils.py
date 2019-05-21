@@ -505,6 +505,35 @@ def add_hud_script_node(*args):
     print 'HUD Script Node Added'
 
 
+def add_mimic_script_node(*args):
+    """
+    Adds a script node to the scene that executes when the scene is open and
+    to turn cycleCheck off
+    :param args: Required for Maya to pass command from the UI.
+    :return:
+    """
+    if pm.objExists('mimicScriptNode'):
+        print('Script Node Already Exists')
+        return
+
+    # Define the command to be executed when the scriptNode is triggered
+    script_str = 'import pymel.core as pm; ' \
+                 'pm.cycleCheck(evaluation=0); ' \
+
+    pm.scriptNode(sourceType="Python",
+                  scriptType=2,
+                  beforeScript=script_str,
+                  name='mimicScriptNode')
+
+    # The scriptNode only works after the scene has been saved, closed, and
+    # reopened. So we have to run the code manually for the initial
+    # scene session.
+    pm.cycleCheck(evaluation=0)
+
+    print 'Robot Script Node Added'
+    print 'cycleCheck OFF'
+
+
 ### ---------------------------------------- ###
 def flip_robot_base(*args):
     """

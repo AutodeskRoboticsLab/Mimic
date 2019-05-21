@@ -1407,3 +1407,4 @@ def add_robot(*args):
 
     mimic_utils.import_robot(dir_rigs)
     mimic_utils.add_hud_script_node()
+    mimic_utils.add_mimic_script_node()
