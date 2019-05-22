@@ -137,6 +137,18 @@ def _build_ik_tab(parent_layout):
     # Create column Layout for IK controls
     ik_tab_layout = pm.columnLayout('ikTab', adj=True, width=100)
 
+    pm.separator(height=3, style='none')
+
+    # IK Configuration Icon
+    pm.gridLayout(numberOfColumns=1,
+                  cellWidth=216,
+                  cellHeight=52)
+
+    # Flip robot base button
+    pm.image(image='IK_config_icon.png')
+    pm.setParent(ik_tab_layout)  # Set parent to IK tab column layout
+
+
     pm.gridLayout(numberOfColumns=3,
                   cellWidth=72,
                   cellHeight=126)
@@ -156,21 +168,8 @@ def _build_ik_tab(parent_layout):
 
     pm.setParent(ik_tab_layout)  # Set parent to IK tab column layout
 
-    pm.gridLayout(numberOfColumns=2,
-                  cellWidth=108,
-                  cellHeight=52)
 
-    # Invert Axis 4 button
-    pm.symbolButton(image='flipA4Icon.png',
-                    command=pm.Callback(mimic_utils.invert_axis, 4),
-                    annotation='Inverts Axis 6 rotation +/- 360 degrees')
-    # Invert Axis 6 button
-    pm.symbolButton(image='flipA6Icon.png',
-                    command=pm.Callback(mimic_utils.invert_axis, 6),
-                    annotation='Inverts Axis 6 rotation +/- 360 degrees')
-    pm.setParent(ik_tab_layout)  # Set parent to IK tab column layout
-
-    pm.separator(height=5, style='none')
+    pm.separator(height=2, style='none')
     pm.separator(height=11, style='out')
 
     # Key Animation Tool checkbox
@@ -683,18 +682,8 @@ def _build_add_robot_frame(parent_layout):
     for rig_name in rig_names:
         pm.menuItem(label=rig_name)
 
-    # Get required rigs directories
-    dir_mimic = general_utils.get_mimic_dir()
-    dir_rigs = dir_mimic + '/rigs'
-    add_robot_command_string = \
-        'import mimic_utils; reload(mimic_utils); ' \
-        'mimic_utils.import_robot("{}"); ' \
-        'mimic_utils.add_mimic_script_node(); ' \
-        'mimic_utils.add_hud_script_node()' \
-            .format(dir_rigs)
-
     pm.button(label=' Add ',
-              command=add_robot_command_string,
+              command=add_robot,
               width=45,
               height=20,
               annotation='Imports selected robot into the scene')
@@ -1393,24 +1382,6 @@ def _build_ui_prefs_frame(parent_layout):
     pm.setParent(parent_layout)
 
 
-def _build_performance_prefs_frame(parent_layout):
-    pm.frameLayout(label="Performance", collapsable=True)
-    performance_prefs_column = pm.columnLayout(adj=True, columnAttach=('both', 5))
-
-    pm.separator(height=2, style='none')
-
-    # Execute reconcile rotation
-    pm.checkBox('cb_executeReconcileRotation',
-                label="Execute Reconcile Rotation",
-                annotation='If checked, reconcileRotation script job' \
-                           'will run',
-                value=mimic_config.EXECUTE_RECONCILE_ROTATION_DEFAULT)
-
-    pm.setParent(performance_prefs_column)
-    pm.separator(height=8, style='none')
-    pm.setParent(parent_layout)
-
-
 def build_prefs_tab(parent_layout):
     # Create preferences tab Layout
     prefs_tab_layout = pm.columnLayout('prefs_tab_layout', height=525, adj=True, width=200)
@@ -1421,9 +1392,19 @@ def build_prefs_tab(parent_layout):
     # UI frame
     _build_ui_prefs_frame(prefs_tab_layout)
 
-    # Performance frame
-    _build_performance_prefs_frame(prefs_tab_layout)
-
     pm.setParent(parent_layout)
 
     return prefs_tab_layout
+
+
+# UTILS
+def add_robot(*args):
+    """
+    """
+    # Get required rigs directories
+    dir_mimic = general_utils.get_mimic_dir()
+    dir_rigs = dir_mimic + '/rigs'
+
+    mimic_utils.import_robot(dir_rigs)
+    mimic_utils.add_hud_script_node()
+    mimic_utils.add_mimic_script_node()
