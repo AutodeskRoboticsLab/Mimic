@@ -19,9 +19,9 @@ def maya_useNewAPI():
 
 
 # Plug-in information:
-kPluginNodeName = 'robotLimitBlender'    # The name of the node.
-kPluginNodeClassify = 'utility/general'     # Where this node will be found in the Maya UI.
-kPluginNodeId = OpenMaya.MTypeId( 0x87004 ) # A unique ID associated to this node type.    
+kPluginNodeName = 'robotLimitBlender'  # The name of the node.
+kPluginNodeClassify = 'utility/general'  # Where this node will be found in the Maya UI.
+kPluginNodeId = OpenMaya.MTypeId(0x87000) # A unique ID associated to this node type.    
 
 #==========================================#
 #                Plug-in                   #
