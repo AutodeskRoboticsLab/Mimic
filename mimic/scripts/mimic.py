@@ -32,9 +32,8 @@ def load_mimic_plugins():
     """
     # Plugin is dependent on the following scripts
     required_plugins = [
-        'robotAccumRot',
         'robotIK',
-        'robotLimitRot',
+        'robotLimitBlender',
         'snapTransforms'
     ]
     # Check to see if each plug-in is loaded

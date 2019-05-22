@@ -18,11 +18,14 @@ Download the latest [release](https://github.com/AutodeskRoboticsLab/Mimic/relea
 macOS   ~/Library/Preferences/Autodesk/maya/modules
 Windows ~/Documents/maya/modules
 ```
-If you're running Windows, you must install NumPy manually for Mimic's Analysis module to run properly. Download NumPy for Windows from the [releases](https://github.com/AutodeskRoboticsLab/Mimic/releases) page and place the unzipped `numpy` root folder in the `scripts/extern` directory. _note: macOS comes with NumPy pre-installed, so if you're using a Mac, you do not have to install NumPy manually_
+_note: the only difference between the MAC and PC versions is the NumPy build that's included_
+
+-We only include a small set of rigs with the main download to save download size. If you need a rig that is otherwise supported, download the manufacturer-specific rigs, grab the rig you need, and drop it into the appropriate[rigs](mimic/rigs) folder in your mimic directory
 
 When you're done, open Maya, click on the Mimic shelf tab, and click on the Mimic icon; that's it!
 
 **Installation tips:**
+
 - If the `modules` directory above does not exist, create it.
 - If you're using Maya 2017 update 3 or earlier, you must [manually load the Mimic shelf](https://youtu.be/bc3SqEXcE5Q?t=1m46s).
 - If you're running Windows and downloaded a release and/or rigs archive,  confirm that it isn't "blocked" before unzipping and installing it (right click the archive, select Properties, check Unblock if necessary).
@@ -38,13 +41,14 @@ You can find tutorials, videos, and other media on our [website](https://www.mim
 *Let us know if what you need isn't listed and we'll try to help!*
 (contact info provided below)
 
-Mimic currently supports the following robots (see [rigs](mimic/rigs)):
+Mimic currently supports the following robots for animation (see [rigs](mimic/rigs)):
 
 ```
 |-- ABB
     |-- IRB 120-3-58
     |-- IRB 1600-6-145
     |-- IRB 1600-10-145
+    |-- IRB 2600-20-165
     |-- IRB 4400-45-196
     |-- IRB 4400-60-196
     |-- IRB 4600-40-255
@@ -53,18 +57,23 @@ Mimic currently supports the following robots (see [rigs](mimic/rigs)):
     |-- IRB 6700-150-320
     |-- IRB 6700-205-280
     |-- IRB 6700-245-300
+    |-- IRBT 4004-9000
 |-- KUKA
     |-- KL 100 6125
     |-- KL 1500-3 6000
+    |-- KL 4000 5000
+    |-- KR 3
+    |-- KR 3 AGILUS
     |-- KR 5 R1400
     |-- KR 5-arc
-    |-- KR 6 R900 sixx
-    |-- KR 10 R900 sixx
-    |-- KR 10 R1100 sixx
+    |-- KR 6 R900 sixx AGILUS
+    |-- KR 10 R900 sixx AGILUS
+    |-- KR 10 R1100 sixx AGILUS
     |-- KR 10 R1420
     |-- KR 16 L6-2
     |-- KR 16 R2010
     |-- KR 16-arc HW
+    |-- KR 22 R1610
     |-- KR 60-3
     |-- KR 120 R2700 HA
     |-- KR 150 R3100 Prime
@@ -72,11 +81,16 @@ Mimic currently supports the following robots (see [rigs](mimic/rigs)):
     |-- KR 200 L140-2
     |-- KR 210 R3100
     |-- KR 210-2
+    |-- KR 240 R2900 Ultra
+    |-- KR 240-2
+    |-- KR 300 R2500 Ultra
     |-- KR 500-2
     |-- KR 500-2 RC
     |-- KR 600 R2830
     |-- KR 1000 TITAN
-|-- Staubli
+|-- Motoman *
+    |-- MH6
+|-- Staubli *
     |-- RX160
     |-- RX160L
     |-- TX40
@@ -84,6 +98,13 @@ Mimic currently supports the following robots (see [rigs](mimic/rigs)):
     |-- TX60L
     |-- TX90
     |-- TX90L
+|-- Universal Robots *
+    |-- UR3
+    |-- UR3e
+    |-- UR5
+    |-- UR5e
+    |-- UR10
+    |-- UR10e
 ```
 
 \* *post processor not yet supported*

@@ -7,6 +7,7 @@
     |-- IRB 120-3-58
     |-- IRB 1600-6-145
     |-- IRB 1600-10-145
+    |-- IRB 2600-20-165
     |-- IRB 4400-45-196
     |-- IRB 4400-60-196
     |-- IRB 4600-40-255
@@ -14,32 +15,55 @@
     |-- IRB 6640-235-255
     |-- IRB 6700-150-320
     |-- IRB 6700-205-280
+    |-- IRB 6700-245-300
+    |-- IRBT 4004-9000
 |-- KUKA
     |-- KL 100 6125
     |-- KL 1500-3 6000
+    |-- KL 4000 5000
+    |-- KR 3
+    |-- KR 3 AGILUS
     |-- KR 5 R1400
     |-- KR 5-arc
-    |-- KR 6 R900 sixx
-    |-- KR 10 R900 sixx
-    |-- KR 10 R1100 sixx
+    |-- KR 6 R900 sixx AGILUS
+    |-- KR 10 R900 sixx AGILUS
+    |-- KR 10 R1100 sixx AGILUS
+    |-- KR 10 R1420
+    |-- KR 16 L6-2
     |-- KR 16 R2010
     |-- KR 16-arc HW
+    |-- KR 22 R1610
     |-- KR 60-3
     |-- KR 120 R2700 HA
+    |-- KR 150 R3100 Prime
     |-- KR 150-2
     |-- KR 200 L140-2
+    |-- KR 210 R3100
     |-- KR 210-2
+    |-- KR 240 R2900 Ultra
+    |-- KR 240-2
+    |-- KR 300 R2500 Ultra
     |-- KR 500-2
     |-- KR 500-2 RC
     |-- KR 600 R2830
     |-- KR 1000 TITAN
-|-- Staubli
+|-- Motoman *
+    |-- MH6
+|-- Staubli *
     |-- RX160
+    |-- RX160L
     |-- TX40
     |-- TX60
     |-- TX60L
     |-- TX90
     |-- TX90L
+|-- Universal Robots *
+    |-- UR3
+    |-- UR3e
+    |-- UR5
+    |-- UR5e
+    |-- UR10
+    |-- UR10e
 ```
 
 *Get robot rigs from the latest
@@ -109,6 +133,7 @@ following structure:
 - All ABB robots credited to [ABB](http://new.abb.com/products/robotics).
 - All KUKA robots credited to [KUKA](https://www.kuka.com/en-us).
 - All Staubli robots credited to [Staubli](https://www.staubli.com/en-us/robotics/).
+- All Universal Robots robots credited to [Staubli](https://www.universal-robots.com/).
 - Exceptions to the above credits (`Robot name, attribution or source`):
     ```
     none, none

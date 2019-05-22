@@ -13,8 +13,6 @@ At time of writing, the following features are available using the Mimic UI:
                 |-- Configuration Bool 1
                 |-- Configuration Bool 2
                 |-- Configuration Bool 3
-                |-- Invert A4
-                |-- Invert A6
                 |-- Key tool controller
                 |-- Set IK Keyframe
             |-- FK Controls
@@ -123,8 +121,6 @@ At time of writing, the following features are available using the Mimic UI:
             |-- Key IK/FK
         |-- UI
             |-- Shader Range
-        |-- Performance
-            |-- Execute Reconcile Rotation
     |-- Output Window
 ```
 

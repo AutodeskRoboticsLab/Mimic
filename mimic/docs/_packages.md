@@ -18,7 +18,7 @@ Packages contained in Mimic are as follows:
         |-- extern
             |-- Qt.py
             |-- pyqtgraph
-            |-- numpy **
+            |-- numpy
         |-- ...
     |-- ...
 ```
@@ -95,6 +95,5 @@ Documentation may be found in:
 #
 
 \* *Not integrated at time of writing*
-\** *If Necessary*
 
 #

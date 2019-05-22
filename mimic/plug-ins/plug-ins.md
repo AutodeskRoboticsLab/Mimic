@@ -11,9 +11,8 @@ The contents of this directory are as follows:
 ```
 |-- plug-ins
     |-- plug-ins.md
-    |-- robotAccumRot.py
     |-- robotIK.py
-    |-- robotLimitRot.py
+    |-- robotLimitBlender.py
     |-- snapTransforms.py
 ```
 
@@ -25,16 +24,13 @@ The contents of this directory are as follows:
 - You can confirm that the plugin has loaded properly, in Maya, check
   *Windows > Settings > Plug-in Manager*
   
-- *robotAccumRot* is a Dependency Graph plug-in that enables the IK solver to
-  evaluate axis angles beyond +/- 180 degrees.
   
 - *robotIK* is a Dependency Graph plug-in and the heart of Mimic's robot rig.
   It performs the Inverse Kinematic solve, along with handling IK-FK switching,
   and more.
 
-- *robotLimitRot* is a Dependency Graph plug-in that allows the physical
-  rotational limits of the robot rig to be taken into account when performing an
-  Inverse Kinematic solve.
+- *robotLimitBlender* is a Dependency Graph plug-in that is used in the shader
+  network that determines if an axis is near a limit.
 
 - *snapTransforms* is a Command plug-in that allows for the robust snapping of
   one objects transforms to another in world space. It is a modified version of a

@@ -43,9 +43,8 @@ receive and send a detailed description to us at [mimic@autodesk.com](mailto:mim
 
     ```
     required_plugins = [
-        'robotAccumRot',
         'robotIK',
-        'robotLimitRot',
+        'robotLimitBlender',
         'snapTransforms'
         # ...
         ]
@@ -55,12 +54,13 @@ receive and send a detailed description to us at [mimic@autodesk.com](mailto:mim
   such as in the following.
 
     ```
-    + mimic 1.0 ../modules/mimic
+    + mimic 1.3.0 ../modules/mimic
     ``` 
     
     ```
     MIMIC_VERSION_MAJOR = 1
-    MIMIC_VERSION_MINOR = 0
+    MIMIC_VERSION_MINOR = 3
+    MIMIC_VERSION_PATCH = 0 
     ```
 
 

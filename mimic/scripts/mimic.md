@@ -14,7 +14,7 @@ located in the `scripts` directory and prefixed with `mimic` as such.
         |-- mimic.py
         |-- mimic_config.py
         |-- mimic_external_axes.py
-        |-- mimic_io.py *
+        |-- mimic_io.py
         |-- mimic_program.py
         |-- mimic_ui.py
         |-- mimic_utils.py
@@ -48,7 +48,5 @@ located in the `scripts` directory and prefixed with `mimic` as such.
 - `mimic_utils.py`
   contains the majority of functions on which Mimic runs and, so, is the longest
   Python module in the repository.
-
-\* *Not implemented at time of writing.*
 
 #
