@@ -1,0 +1,8 @@
+DEF example()
+  BAS(#INITMOV, 0)
+  $ADVANCE=5
+  ; Go to start position
+{}
+  ; Go to programmed positions
+{}
+END

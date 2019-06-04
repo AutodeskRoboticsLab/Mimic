@@ -1,0 +1,48 @@
+&ACCESS RVP
+&REL 36
+DEF example()
+
+    DECL INT RETURN_VALUE       ; Return value
+    DECL INT MY_VAR             ; Var
+    DECL INT INT_PARAM[16]      ; Required object
+    DECL REAL REAL_PARAM[16]    ; Required object
+    E6POS MY_DUMMY_POS          ; Var
+    E6AXIS MY_START_AXIS        ; Var
+    DECL INT POS_TYPE           ; Return value -2 if requested position has been determined
+
+    ;FOLD BASISTECH INI
+        GLOBAL INTERRUPT DECL 3 WHEN $STOPMESS==TRUE DO IR_STOPM()
+        INTERRUPT ON 3
+        BAS (#INITMOV,0 )
+    ;ENDFOLD (BASISTECH INI)
+
+    ; Set up initial parameters for program
+    MY_START_AXIS = {A1 0, A2 -90, A3 90, A4 0, A5 0, A6 0, e1 0, e2 0, e3 0, e4 0, e5 0, e6 0}
+    MY_DUMMY_POS = {X 0, Y 0, Z 0, A 0, B 0, C 0}
+
+    ; Check whether the path table is loaded.
+    RETURN_VALUE = EMI_RECSTATE(Device[], "example.emily")
+    IF RETURN_VALUE <> 1 THEN ; If not, load path table.
+        MY_VAR = MD_CMD(Device[], "LOAD example.emily", INT_PARAM[], REAL_PARAM[])
+        RETURN_VALUE = EMI_RECSTATE(Device[], "example.emily")
+    ENDIF
+
+    ; Get starting position from emily file
+    POS_TYPE = EMI_startPOS(Device[], "example.emily", MY_DUMMY_POS, MY_START_AXIS)
+    IF POS_TYPE <> -2 THEN ; Halt if unsuccessful.
+        HALT
+    ENDIF
+
+    ; Move to start position
+    PTP MY_START_AXIS
+
+    ; Move through path table
+    MOVE_EMI Device[] "example.emily" FLT 0
+
+    ; Unload the path table
+    MY_VAR = MD_CMD(Device[], "UNLOAD example.emily", INT_PARAM[], REAL_PARAM[])
+
+    ; Return to start
+    PTP MY_START_AXIS
+
+END
