@@ -2300,6 +2300,45 @@ def key_ik_fk(*args):
             key_fk()
     except:
         pm.warning('Error keying IK/FK')
+
+
+def set_pose(pose, robots=None):
+    """
+    Sets the pose of the selected robots to the input argument.
+    Sets the pose in whichever mode, ik or fk, the robot is in
+    :param pose: list, list of axis values representing a robot pose
+    """
+    if not robots:
+        robots = get_robot_roots()
+        if not robots:
+            raise MimicError('No robots selected; select at least one valid robot')
+
+    for robot in robots:
+        target_ctrl_path = get_target_ctrl_path(robot)
+
+        # Check if the robot is in IK-mode
+        in_ik_mode = pm.getAttr(target_ctrl_path + '.ik')
+        
+        # If the robot is in IK-mode, we have to switch to FK mode to set the 
+        # pose, then we switch back
+        if in_ik_mode:
+            switch_to_fk(robot)
+
+        # TODO: HARD CODED - Number of robot axes; should include external axes
+        num_axes = 6
+        for i in range(num_axes):
+            rotation_axis = __ROTATION_AXES[i]
+            axis_number = i + 1  # Axes are 1-indexed
+
+            val = pose[i]
+
+            ns = robot.namespace()
+            pm.setAttr('{0}|{1}robot_GRP|{1}FK_CTRLS|{1}a{2}FK_CTRL.rotate{3}'
+                       .format(robot, ns, axis_number, rotation_axis), val)
+
+        # Switch back to IK-mode if necessary
+        if in_ik_mode:
+            switch_to_ik(robot)
 ### ---------------------------------------- ###
 
 
