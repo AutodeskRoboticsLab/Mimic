@@ -15,12 +15,17 @@ from KUKA.EntertainTech.entertaintech \
 from KUKA.KRL.krl \
     import SimpleKRLProcessor \
     as __SimpleKRLProcessor
+from GENERAL.CSV.comma_separated_vals \
+    import SimpleCSVProcessor \
+    as __SimpleCSVProcessor
+
 
 # Add your processor to private list here:
 __supported_processors = [
     __SimpleRAPIDProcessor,
     __SimpleKRLProcessor,
-    __SimpleEntertainTechProcessor
+    __SimpleEntertainTechProcessor,
+    __SimpleCSVProcessor
 ]
 
 
