@@ -122,6 +122,15 @@ def save_program(*args):
                                          'No Program Exported. ' \
                                          'See Mimic output window for details.')
 
+    # If axis 2 and 3 are coupled (as they are with FANUC, for example),
+    # Modify A3 accordingly before post-processing
+    # Note: we need to do this after limit checking to get accurate derivatives
+    robot_name = program_settings[0]
+    robot = pm.ls(robot_name)[0]
+
+    if mimic_utils.axes_coupled(robot):
+        command_dicts = _couple_axes(command_dicts)
+
     # Continue to save program:
     _process_program(command_dicts, *program_settings)
 
@@ -368,6 +377,7 @@ def _get_command_dicts(robot, animation_settings, postproc_settings, user_option
         # Check commands for axis flips and reconcile them if necessary
         command_dicts = _reconcile_command_rotations(robot, command_dicts)
         command_dicts = _bound_accumulated_rotations(robot, command_dicts)
+
 
     return command_dicts
 
@@ -794,6 +804,36 @@ def _bound_accumulated_rotations(robot_name, command_dicts):
                     reconciled_axes = postproc.Axes(*command_axes[command_index])
                     command_dicts[command_index][postproc.AXES] = reconciled_axes
 
+
+    return command_dicts
+
+
+def _couple_axes(command_dicts):
+    """
+    If axis 2 and 3 are coupled (as they are with FANUC, for example),
+    Modify A3 accordingly
+    """
+    # Get axes, if they exist
+    command_axes = []
+    for command_dict in command_dicts:
+        axes = command_dict[postproc.AXES] if postproc.AXES in command_dict else None
+        command_axes.append(list(axes))
+
+    # Make sure the user has selected use of axes
+    if not all(x is None for x in command_axes):
+        # Get indices for command and axis
+        for command_index in range(len(command_dicts)):
+            theta_2 = command_axes[command_index][1]
+            theta_3 = command_axes[command_index][2]
+
+            theta_3_coupled = theta_3 - theta_2
+
+            # Replace theta_3 in the command_axes list with the coupled value
+            command_axes[command_index][2] = theta_3_coupled
+
+            # Replace the original commands with the new commands
+            coupled_commands = postproc.Axes(*command_axes[command_index])
+            command_dicts[command_index][postproc.AXES] = coupled_commands
 
     return command_dicts
 

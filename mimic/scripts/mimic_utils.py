@@ -449,6 +449,25 @@ def get_reconcile_axes(robot_name):
     return reconcile_axes
 
 
+def axes_coupled(robot):
+    """
+    Determines if the output values of A3 and A2 are coupled.
+    This is standard before for FANUC, for example
+    :param robot: transform of robot being checked
+    :return: True if axes are coupled, False if not
+    """
+
+    target_ctrl_path = get_target_ctrl_path(robot)
+    attr_name = 'axisCoupling'
+
+    attr_path = target_ctrl_path + '.' + attr_name
+
+    if not pm.objExists(attr_path):
+        return False
+    else:
+        return pm.getAttr(attr_path)
+
+
 def accumulate_rotation(a_in, a_0):
     """
     Compares current Axis value with its previous value to determine if there
