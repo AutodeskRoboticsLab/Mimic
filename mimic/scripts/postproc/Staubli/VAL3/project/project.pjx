@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://www.staubli.com/robotics/VAL3/Project/3">
+<Parameters version="s7.5.3" stackSize="5000" millimeterUnit="true" />
+<Programs>
+<Program file="MoveJoint.pgx" />
+<Program file="MoveLine.pgx" />
+<Program file="start.pgx" />
+<Program file="stop.pgx" />
+<Program file="main.pgx" />
+</Programs>
+<Database>
+<Data file="project.dtx" />
+</Database>
+<Libraries />
+</Project>

@@ -2,18 +2,14 @@
 
 ### SimpleCSVProcessor
 
-The SimpleCSVProcessor is a Post Processor for Mimic designed to program KUKA
-robots using the EntertainTech programming language and EMILY output file extension. The
-KUKA.EntertainTech installation option is required for use of this package. This processor
-IS time-based.
+The SimpleCSVProcessor is a Post Processor for Mimic designed to export paths as CSVs.
 
 ```
 Name: SimpleCSVProcessor
-Robot type: KUKA
+Robot type: All
 Processor language: EntertainTech
-Output file extension: EMILY
-Required installation options: KUKA.EntertainTech
-Time-based: True
+Output file extension: CSV
+Time-based: N/A
 ```
 
 

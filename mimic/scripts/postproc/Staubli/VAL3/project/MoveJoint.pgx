@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Programs xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.staubli.com/robotics/VAL3/Program/2">
+  <Program name="MoveJoint">
+    <Parameters xmlns="http://www.staubli.com/robotics/VAL3/Param/1">
+      <Parameter name="x_nJ1" type="num" xsi:type="element" />
+      <Parameter name="x_nJ2" type="num" xsi:type="element" />
+      <Parameter name="x_nJ3" type="num" xsi:type="element" />
+      <Parameter name="x_nJ4" type="num" xsi:type="element" />
+      <Parameter name="x_nJ5" type="num" xsi:type="element" />
+      <Parameter name="x_nJ6" type="num" xsi:type="element" />
+    </Parameters>
+    <Locals>
+      <Local name="l_jJoint" type="joint" xsi:type="array" size="1" />
+    </Locals>
+    <Code><![CDATA[begin
+  l_jJoint.j1 = x_nJ1
+  l_jJoint.j2 = x_nJ2
+  l_jJoint.j3 = x_nJ3
+  l_jJoint.j4 = x_nJ4
+  l_jJoint.j5 = x_nJ5
+  l_jJoint.j6 = x_nJ6
+  movej(l_jJoint, tCurrentTool, mCurrentSpeed)
+end]]></Code>
+  </Program>
+</Programs>

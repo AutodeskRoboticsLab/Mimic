@@ -11,6 +11,8 @@ Mimic currently supports the following post processors
 |-- KUKA
     |-- EntertainTech *
     |-- KRL
+|-- Staubli
+    |-- VAL3
 | -- GENERAL
     |-- CSV
 ```

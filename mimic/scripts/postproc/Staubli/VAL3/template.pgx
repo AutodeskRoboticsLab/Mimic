@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Programs xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.staubli.com/robotics/VAL3/Program/2">
+  <Program name="main">
+    <Code><![CDATA[begin
+  close(tCurrentTool)
+  pPointRx.config.shoulder = lefty
+  pPointRx.config.elbow = epositive
+  pPointRx.config.wrist = wpositive
+  pPointRx2.config.shoulder = lefty
+  pPointRx2.config.elbow = epositive
+  pPointRx2.config.wrist = wpositive
+  mCurrentSpeed.tvel = 100.00
+  mCurrentSpeed.blend = joint
+  mCurrentSpeed.reach = 0.010
+  mCurrentSpeed.leave = 0.010
+  // Program start
+  mCurrentSpeed.tvel = 200.000
+{}
+  
+  waitEndMove()
+  // Program end
+  
+end]]></Code>
+  </Program>
+</Programs>

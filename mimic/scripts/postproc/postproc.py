@@ -207,7 +207,11 @@ class PostProcessor(object):
         """
         if template_filename == '' or template_filename is None:
             template_filename = self.program_template_name
-        return self._get_program_path(template_filename)
+
+        default_directory = self._get_program_directory(directory=None)
+        program_template_path = '{}/{}.{}'.format(default_directory, template_filename, self.program_file_extension)
+        
+        return program_template_path
 
     def get_program_output_path(self, output_filename=None):
         """
@@ -408,7 +412,6 @@ def confirm_path_exists(path):
     :param path:
     :return:
     """
-    # TODO: Unclear where this is used and why
     if os.path.exists(path):
         return path
     else:

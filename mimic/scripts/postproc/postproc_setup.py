@@ -15,6 +15,9 @@ from KUKA.EntertainTech.entertaintech \
 from KUKA.KRL.krl \
     import SimpleKRLProcessor \
     as __SimpleKRLProcessor
+from Staubli.VAL3.val3 \
+    import SimpleVAL3Processor \
+    as __SimpleVAL3Processor
 from GENERAL.CSV.comma_separated_vals \
     import SimpleCSVProcessor \
     as __SimpleCSVProcessor
@@ -24,6 +27,7 @@ from GENERAL.CSV.comma_separated_vals \
 __supported_processors = [
     __SimpleRAPIDProcessor,
     __SimpleKRLProcessor,
+    __SimpleVAL3Processor,
     __SimpleEntertainTechProcessor,
     __SimpleCSVProcessor
 ]

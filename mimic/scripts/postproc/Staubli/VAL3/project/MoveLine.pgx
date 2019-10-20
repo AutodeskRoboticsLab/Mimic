@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Programs xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.staubli.com/robotics/VAL3/Program/2">
+  <Program name="MoveLine">
+    <Parameters xmlns="http://www.staubli.com/robotics/VAL3/Param/1">
+      <Parameter name="x_nX" type="num" xsi:type="element" />
+      <Parameter name="x_nY" type="num" xsi:type="element" />
+      <Parameter name="x_nZ" type="num" xsi:type="element" />
+      <Parameter name="x_nRx" type="num" xsi:type="element" />
+      <Parameter name="x_nRy" type="num" xsi:type="element" />
+      <Parameter name="x_nRz" type="num" xsi:type="element" />
+    </Parameters>
+    <Code><![CDATA[begin
+  pPointRx.trsf.x = x_nX
+  pPointRx.trsf.y = x_nY
+  pPointRx.trsf.z = x_nZ
+  pPointRx.trsf.rx = x_nRx
+  pPointRx.trsf.ry = x_nRy
+  pPointRx.trsf.rz = x_nRz
+  movel(pPointRx,tCurrentTool,mCurrentSpeed)
+end]]></Code>
+  </Program>
+</Programs>
