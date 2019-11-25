@@ -1151,9 +1151,20 @@ def _build_add_io_frame(parent_layout):
 
     pm.optionMenu('ioTypeMenu',
                   label='IO Type:     ',
-                  height=18)
+                  height=18,
+                  changeCommand=__update_enable_resolution)
 
     io_type = ['digital', 'analog']
+    for attr in io_type:
+        pm.menuItem(label=attr)
+
+    pm.separator(height=3, style='none')
+
+    pm.optionMenu('ioResolutionMenu',
+                  label='IO Resolution:',
+                  height=18)
+
+    io_type = ['binary', '16-bit']
     for attr in io_type:
         pm.menuItem(label=attr)
 
@@ -1172,11 +1183,17 @@ def _build_add_io_frame(parent_layout):
               label='Add IO',
               height=25,
               backgroundColor=[.361, .361, .361],
-              command=mimic_io.add_io)
+              command=pm.Callback(mimic_io.add_io))
     pm.separator(height=5, style='none')
 
     pm.setParent(parent_layout)
 
+def __update_enable_resolution(*args):
+    io_type = pm.optionMenu('ioTypeMenu', query=True, value=True)
+    if io_type == 'digital':
+        pm.optionMenu('ioResolutionMenu', edit=True, enable=True)
+    else:
+        pm.optionMenu('ioResolutionMenu', edit=True, enable=False)
 
 def _build_io_info_frame(parent_layout):
     # IO Info
@@ -1187,7 +1204,7 @@ def _build_io_info_frame(parent_layout):
 
     pm.textScrollList('tsl_ios',
                       allowMultiSelection=False,
-                      height=219,
+                      height=198,
                       selectCommand=mimic_io.io_selected)
 
     pm.gridLayout(nc=2, cw=109, ch=25)

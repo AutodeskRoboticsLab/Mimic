@@ -31,7 +31,7 @@ class mFIZ_remap(OpenMaya.MPxNode):
     iris_in_attr = OpenMaya.MObject()
     zoom_in_attr = OpenMaya.MObject()
 
-    resolution_enum_attr = OpenMaya.MObject()
+    # resolution_enum_attr = OpenMaya.MObject()
 
     # Outputs 
     focus_out_attr = OpenMaya.MObject()
@@ -55,7 +55,7 @@ class mFIZ_remap(OpenMaya.MPxNode):
         iris_in_data_handle = pDataBlock.inputValue(mFIZ_remap.iris_in_attr)
         zoom_in_data_handle = pDataBlock.inputValue(mFIZ_remap.zoom_in_attr)
 
-        resolution_enum_data_handle = pDataBlock.inputValue(mFIZ_remap.resolution_enum_attr)
+        # resolution_enum_data_handle = pDataBlock.inputValue(mFIZ_remap.resolution_enum_attr)
 
 
         # Output Data Handles 
@@ -69,11 +69,11 @@ class mFIZ_remap(OpenMaya.MPxNode):
         iris_in_value = iris_in_data_handle.asFloat()
         zoom_in_value = zoom_in_data_handle.asFloat()
 
-        resolution_enum_value = resolution_enum_data_handle.asInt()
+        # resolution_enum_value = resolution_enum_data_handle.asInt()
 
 
         in_values = [focus_in_value, iris_in_value, zoom_in_value]
-        out_values = self._map_values(in_values, output_min, output_max)
+        out_values = self._map_values(in_values)
 
         # Set output data handles
         focus_out_data_handle.setInt(out_values[0])
@@ -85,7 +85,7 @@ class mFIZ_remap(OpenMaya.MPxNode):
         iris_out_data_handle.setClean()
         zoom_out_data_handle.setClean()
         
-    def _map_values(self, input_values, output_min, output_max):
+    def _map_values(self, input_values):
         """
         """
         # Define input min/max
@@ -93,10 +93,10 @@ class mFIZ_remap(OpenMaya.MPxNode):
         input_min = 0
         input_max = 1
 
-        '''
-        output_min = self.motor_range.min
-        output_max = self.motor_range.max
-        '''
+        # TO-DO: these are hardcoded but should be tied to input attribute
+        output_min = 0
+        output_max = 65535  # 16-bit unsigned max
+        
 
         ouput_vals = []
         for val in input_values:
@@ -200,71 +200,31 @@ def nodeInitializer():
     numericAttributeFn.setMax(1)
     mFIZ_remap.addAttribute(mFIZ_remap.zoom_in_attr)
         
-    #-----------------------------------------#      
-    #                Connection               #
-    #-----------------------------------------# 
-    mFIZ_remap.live_attr = numericAttributeFn.create('live', 'live', OpenMaya.MFnNumericData.kBoolean, 0)                                                           
-    numericAttributeFn.writable = True 
-    numericAttributeFn.connectable = False 
-    numericAttributeFn.storable = False 
-    numericAttributeFn.hidden = False
-    mFIZ_remap.addAttribute(mFIZ_remap.live_attr)
-
-    #-----------------------------------------#      
-    #                 Port Name               #
-    #-----------------------------------------# 
-    mFIZ_remap.port_name_attr = typedAttributeFn.create('portName', 'portName', OpenMaya.MFnData.kString)                                                           
-    typedAttributeFn.writable = True 
-    typedAttributeFn.connectable = False 
-    typedAttributeFn.storable = False 
-    typedAttributeFn.hidden = False
-    mFIZ_remap.addAttribute(mFIZ_remap.port_name_attr)
-
-    #-----------------------------------------#      
-    #                 API Type                #
-    #-----------------------------------------#
-    mFIZ_remap.api_attr= typedAttributeFn.create('api', 'api', OpenMaya.MFnData.kString)
-    typedAttributeFn.writable = True
-    typedAttributeFn.storable = False
-    typedAttributeFn.connectable = False
-    typedAttributeFn.hidden = False
-    mFIZ_remap.addAttribute(mFIZ_remap.api_attr)
-    ''' 
-    mFIZ_remap.api_attr= numericAttributeFn.create('api', 'api', OpenMaya.MFnNumericData.kInt, 0)
-    numericAttributeFn.writable = True
-    numericAttributeFn.storable = False
-    numericAttributeFn.connectable = False
-    numericAttributeFn.hidden = False
-    mFIZ_remap.addAttribute(mFIZ_remap.api_attr)     
-    '''
-
-    #-----------------------------------------#      
-    #       Stop Playback on Disconnect       #
-    #-----------------------------------------# 
-    mFIZ_remap.stop_playback_on_disconnect_attr = numericAttributeFn.create('stopPlaybackOnDisconnect', 'stopPlaybackOnDisconnect', OpenMaya.MFnNumericData.kBoolean, 0)                                                           
-    numericAttributeFn.writable = True 
-    numericAttributeFn.connectable = False 
-    numericAttributeFn.storable = True 
-    numericAttributeFn.hidden = False
-    mFIZ_remap.addAttribute(mFIZ_remap.stop_playback_on_disconnect_attr)
 
 
     #==================================#
     #     OUTPUT NODE ATTRIBUTE(S)     #
     #==================================#
-    mFIZ_remap.data_sent_attr = numericAttributeFn.create('dataSent', 'dataSent', OpenMaya.MFnNumericData.kBoolean, 0)                                                           
+    mFIZ_remap.focus_out_attr = numericAttributeFn.create('focusMapped', 'focusMapped', OpenMaya.MFnNumericData.kInt, 0)                                                           
     numericAttributeFn.writable = False 
     numericAttributeFn.storable = False
     numericAttributeFn.readable = True 
     numericAttributeFn.hidden = False
-    mFIZ_remap.addAttribute(mFIZ_remap.data_sent_attr)
+    mFIZ_remap.addAttribute(mFIZ_remap.focus_out_attr)
 
+    mFIZ_remap.iris_out_attr = numericAttributeFn.create('irisMapped', 'irisMapped', OpenMaya.MFnNumericData.kInt, 0)                                                           
+    numericAttributeFn.writable = False 
+    numericAttributeFn.storable = False
+    numericAttributeFn.readable = True 
+    numericAttributeFn.hidden = False
+    mFIZ_remap.addAttribute(mFIZ_remap.iris_out_attr)
 
-    mFIZ_remap.controller_attr = messageAttributeFn.create('controller', 'controller')                                                           
-    messageAttributeFn.writable = True 
-    messageAttributeFn.storable = True
-    messageAttributeFn.hidden = False
-    mFIZ_remap.addAttribute(mFIZ_remap.controller_attr)
+    mFIZ_remap.zoom_out_attr = numericAttributeFn.create('zoomMapped', 'zoomMapped', OpenMaya.MFnNumericData.kInt, 0)                                                           
+    numericAttributeFn.writable = False 
+    numericAttributeFn.storable = False
+    numericAttributeFn.readable = True 
+    numericAttributeFn.hidden = False
+    mFIZ_remap.addAttribute(mFIZ_remap.zoom_out_attr)
 
     
     #===================================#
@@ -273,12 +233,11 @@ def nodeInitializer():
 
     input_attrs = [mFIZ_remap.focus_in_attr,
                    mFIZ_remap.iris_in_attr,
-                   mFIZ_remap.zoom_in_attr,
-                   mFIZ_remap.live_attr,
-                   mFIZ_remap.api_attr,
-                   mFIZ_remap.stop_playback_on_disconnect_attr]
+                   mFIZ_remap.zoom_in_attr]
 
-    output_attrs = [mFIZ_remap.data_sent_attr]
+    output_attrs = [mFIZ_remap.focus_out_attr,
+                    mFIZ_remap.iris_out_attr,
+                    mFIZ_remap.zoom_out_attr]
 
     for input_attr in input_attrs:
         for output_attr in output_attrs:

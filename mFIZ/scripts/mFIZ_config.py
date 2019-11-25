@@ -22,7 +22,7 @@ DEFAULT_STOP_PLAYBACK_ON_DISCONNECT = True
 
 
 # List of required plugins
-REQUIRED_PLUGINS = ['mFIZ']
+REQUIRED_PLUGINS = ['mFIZ', 'mFIZ_remap']
 
 
 # Suppoerted Motor APIs

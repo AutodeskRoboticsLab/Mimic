@@ -108,12 +108,8 @@ def _get_io_type(io_path):
     :return io_type: string, e.g. 'digital' or 'analog'
     """
 
-    attribute_path = io_path + '_value'
-
-    if pm.getAttr(attribute_path, type=True) == 'bool':
-        io_type = 'digital'
-    else:
-        io_type = 'analog'
+    attribute_path = io_path + '_ioType'
+    io_type = pm.getAttr(attribute_path)
 
     return io_type
 
@@ -272,6 +268,19 @@ def _get_io_params():
         query=True,
         value=True)
 
+    # Resolution is currently only enabled for digital outputs
+    # If the dropdown isn't enabled, default to None
+    io_param_dict['Resolition'] = None
+
+    res_enabled = pm.optionMenu( 'ioResolutionMenu', query=True, enable=True)
+
+    if res_enabled:
+        io_param_dict['Resolition'] = pm.optionMenu(
+            'ioResolutionMenu',
+            query=True,
+            value=True)
+
+
     _check_io_params(io_param_dict)
 
     # Ensure IO name input complies with Maya's attribute name requirements
@@ -303,18 +312,20 @@ def _get_selection_input():
     return robot
 
 
-def add_io(*args):
+def add_io(io_params=None):
     """
     Adds an IO to a robot based on user inputs in Mimic UI.
     :param args: required by Maya to call a function from UI button
     """
-    # Get the IO's parameters from the Mimic UI
-    io_params = _get_io_params()
+    # If no IO arams are passed, get them from the Mimic UI
+    if not io_params:
+        io_params = _get_io_params()
 
     io_name = io_params['IO Name']
     io_number = io_params['IO Number']
     postproc_id = io_params['Postproc ID']
     io_type = io_params['Type']
+    io_resolution = io_params['Resolution']
     ignore_in_postproc = io_params['Ignore']
 
     # Get and check the proper controllers from viewport selection
@@ -330,7 +341,12 @@ def add_io(*args):
 
     # Establish attribute type from input Type
     if io_type == 'digital':
-        attr_type = 'bool'
+        if io_resolution == 'binary':
+            attr_type = 'bool'
+        elif io_resolution == '16-bit':
+            attr_type = 'long'
+        else:
+            attr_type = 'bool'
     else:
         attr_type = 'float'
 
@@ -340,7 +356,7 @@ def add_io(*args):
     pm.addAttr(target_CTRL,
                longName=parent_attribute,
                niceName='IO: {}'.format(io_name),
-               numberOfChildren=4,
+               numberOfChildren=5,
                category='io',
                attributeType='compound')
     # Define 4 children of the IO parent attribute
@@ -366,6 +382,12 @@ def add_io(*args):
                defaultValue=1,
                parent=parent_attribute)
     pm.addAttr(target_CTRL,
+               longName=io_name + '_ioType',
+               niceName='IO Type',
+               keyable=False,
+               dataType='string',
+               parent=parent_attribute)
+    pm.addAttr(target_CTRL,
                longName=io_name + '_ignore',
                niceName='Ignore',
                keyable=False,
@@ -386,6 +408,7 @@ def add_io(*args):
         pass
 
     pm.setAttr(io_parent_attribute + '_postprocID', postproc_id)
+    pm.setAttr(io_parent_attribute + '_ioType', io_type, lock=True)
     pm.setAttr(io_parent_attribute + '_ignore', ignore_in_postproc)
 
     # Select the robot's target/tool controller
@@ -598,6 +621,9 @@ def update_io_UI(io_info):
     pm.optionMenu('ioTypeMenu',
                   edit=True,
                   value=io_info['Type'],
+                  enable=False)
+    pm.optionMenu('ioResolutionMenu',
+                  edit=True,
                   enable=False)
     pm.checkBox('cb_ignoreIO',
                 edit=True,
