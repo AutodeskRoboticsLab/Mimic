@@ -187,6 +187,7 @@ def get_mFIZ_module_dir():
 # --------------------------------------------------------- #
 
 
+# --------------------------------------------------------- #
 def get_all_controllers():
     """
     """
@@ -201,6 +202,13 @@ def get_all_controllers():
         mFIZ_controllers.append(controller)
 
     return mFIZ_controllers
+
+
+def is_mFIZ_ctrl(node):
+    """
+    Checks if input argument is an mFIZ controller
+    """
+    return pm.attributeQuery('mFIZ_node', node=node, exists=True)
 
 
 class mFIZError(Exception):

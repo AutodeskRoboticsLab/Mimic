@@ -13,29 +13,16 @@ This plugin can be used on its own; however, it can also be used to integrate le
 
 ### Installation
 
-Download the latest [release](<url>) and copy the contents of it to one of the following directories, depending on your operating system:
+Download the latest Mimic [release](https://github.com/AutodeskRoboticsLab/Mimic/releases) and copy the contents of it to one of the following directories, depending on your operating system:
+
 ```
 macOS   ~/Library/Preferences/Autodesk/maya/modules
 Windows ~/Documents/maya/modules
 ```
 
-To run mFIZ, create a new shelf button that runs the following code, or run the following code manually from Maya's Script Editor
+This will create a shelf with an mFIZ button. That's it!
 
-```
-import sys
-sys.dont_write_bytecode = True  # don't write PYCs
-
-
-import mFIZ_ui
-reload(mFIZ_ui)
-mFIZ_win = mFIZ_ui.run()
-```
-
-Note: this will eventually be a shelf button on the Mimic shelf, or a standalone shelf
-
-**Installation tips:**
-- If the `modules` directory above does not exist, create it.
-- See [Troublshooting](mFIZ/docs/troubleshooting.md) for more
+See Mimic Installation instructions for troubleshooting.
 
 
 

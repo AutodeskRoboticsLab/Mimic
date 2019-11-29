@@ -18,10 +18,12 @@ import general_utils
 import mimic_config
 import mimic_program
 import mimic_utils
+import mFIZ_utils
 
 reload(mimic_utils)
 reload(mimic_config)
 reload(mimic_program)
+reload(mFIZ_utils)
 reload(general_utils)
 
 
@@ -157,9 +159,7 @@ def _get_io_ignore(io_path):
     attribute_path = io_path + '_ignore'
     return mimic_utils.get_attribute_value(attribute_path)
 
-
 # ------------------
-
 
 def _check_io_name(robot_name, io_name):
     """
@@ -706,6 +706,135 @@ def io_selected(*args):
     target_CTRL = mimic_utils.get_target_ctrl_path(robot)
     pm.select(target_CTRL)
 
+# ------------------
+
+def add_mFIZ_node(*args):
+    """
+    Connects mFIZ node to robot as Digital Outputs
+    """
+
+    sel = pm.ls(selection=True, type='transform')
+    robots = mimic_utils.get_robot_roots()
+
+    # Exception handling
+    if not sel:
+        pm.warning('Nothing selected; ' \
+                   'select a valid robot control and mFIZ controller')
+        return
+    if not robots:
+        pm.warning('No robot selected; ' \
+                   'select a valid robot')
+        return
+    if len(robots) > 1:
+        pm.warning('Too many robots selected; ' \
+                   'select a single robot')
+        return
+    if len(sel) > 2:
+        pm.warning('Too many selections; ' \
+                   'select a single robot control, and single mFIZ controller')
+        return
+    if len(sel) == 1:
+        pm.warning('Not enough selections; ' \
+                   'select a single robot control, and single mFIZ controller')
+        return
+
+    robot = robots[0] 
+
+
+    # Find which selected object is the mFIZ controller
+    if not mimic_utils.get_robot_roots(sel=[sel[0]]):
+        mFIZ_ctrl = sel[0]
+    else:
+        mFIZ_ctrl = sel[1]
+
+    # Check if mFIZ_ctrl selection is actually an mFIZ controller
+    if not mFIZ_utils.is_mFIZ_ctrl(mFIZ_ctrl):
+        pm.warning('No mFIZ controller selected; ' \
+                   'select a valid mFIZ controller')
+        return
+
+    # Wheeew...now that that's done we can get to work...
+
+    # Add Focus, Iris, Zoom as Digital Outputs to the robot
+    _add_mFIZ_attrs_as_outputs(robot)
+
+    # Create an mFIZ remap node to remap FIZ values from 0 - 1 to 16-bit integers
+    remap_node = _add_mFIZ_remap_node()
+
+    # Connect mFIZ controller attributes to remap node, and remap node to robot IOs
+    _connect_remap_node(robot, mFIZ_ctrl, remap_node)
+
+
+FIZ_ATTRS = ['focus', 'iris', 'zoom']
+
+def _add_mFIZ_attrs_as_outputs(robot):
+    """
+    """
+    # First, we get the IO numbers currently assigned to the robot and increment
+    # ours by 1 to avoid conflicts
+    io_numbers = []
+    robots_ios = get_io_names(robot)
+
+    target_ctrl_path = mimic_utils.get_target_ctrl_path(robot)
+    
+    for io_name in robots_ios:
+        io_numbers.append(pm.getAttr('{}.{}_ioNumber'.format(target_ctrl_path, io_name)))
+
+    if io_numbers:
+        io_number = max(io_numbers) + 1
+    else:
+        io_number = 1
+
+    # For each FIZ Attribute, create and add IO to the robot
+    postproc_id = 0  # Begin postproc_ID attr increment
+        
+    fiz_attrs = FIZ_ATTRS
+
+    for attr in fiz_attrs:
+        
+        io_param_dict = {}
+        
+        io_param_dict['IO Name'] = attr
+        io_param_dict['Postproc ID'] = str(postproc_id)
+        io_param_dict['IO Number'] = io_number
+        io_param_dict['Type'] = 'digital'
+        io_param_dict['Resolution'] = '16-bit'
+        io_param_dict['Ignore'] = False
+        
+        add_io(io_params=io_param_dict)
+        
+        io_number += 1
+        postproc_id += 16
+    
+    pm.headsUpMessage('FIZ outputs added successfully to {}'.format(robot))
+
+
+def _add_mFIZ_remap_node():
+    """
+    """
+    node = pm.createNode('mFIZ_remap')
+    
+    return node
+
+
+def _connect_remap_node(robot, mFIZ_ctrl, remap_node):
+    """
+    """
+    target_ctrl_path = mimic_utils.get_target_ctrl_path(robot)
+
+    # Connect FIZ attrs from mfIZ node to remap node
+    fiz_attrs = FIZ_ATTRS
+
+    for attr in fiz_attrs:
+        mFIZ_attr = '{}.{}'.format(mFIZ_ctrl, attr)
+        remap_in_attr = '{}.{}'.format(remap_node, attr)
+        remap_out_attr = '{}.{}Mapped'.format(remap_node, attr)
+        robot_attr = '{}.{}_value'.format(target_ctrl_path, attr)
+        
+        pm.connectAttr(mFIZ_attr, remap_in_attr)
+        pm.connectAttr(remap_out_attr, robot_attr)
+        
+# ------------------
 
 class MimicError(Exception):
     pass
