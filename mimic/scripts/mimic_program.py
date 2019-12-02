@@ -648,6 +648,11 @@ def _check_robot_postproc_compatibility(robot, processor):
     robot_type = mimic_utils.get_robot_type(robot)
     processor_type = processor.type_robot
 
+    
+    # Always return without a warning if the processor is of type "GENERAL"
+    if processor_type == 'GENERAL':
+        return warning
+    
     if robot_type != processor_type:
         warning = 'WARNING!\n' \
                   'The type of robot ({}) \n' \
@@ -1135,9 +1140,11 @@ def _sample_frame_get_outs(robot_name, frame, out_type='digital'):
 
     # Get all external axes for this robot
     io_names = mimic_io.get_io_names(robot_name)
+
     # Get info dict for each of those IOs
     for io_name in io_names:
         info = mimic_io.get_io_info_simple(robot_name, io_name, frame)
+
         # Get values from info dict
         ignore = info[key_ignore]
         if not ignore:

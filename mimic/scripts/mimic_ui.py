@@ -89,7 +89,6 @@ def build_mimic_ui():
     pm.window('mimic_win', height=560, width=245, edit=True)
     mimic_win.show()
 
-
 # MIMIC WINDOW
 def create_mimic_window(window_name):
     # If the window already exists, delete the window
@@ -130,7 +129,6 @@ def assign_tabs(tabs, tab_layout, change_command=''):
         pm.tabLayout(tab_layout,
                      edit=True,
                      changeCommand=change_command)
-
 
 # ANIMATE TAB
 def _build_ik_tab(parent_layout):
@@ -438,7 +436,6 @@ def build_animate_tab(parent_layout):
 
     return animate_tab_layout
 
-
 # PROGRAM TAB
 def _build_general_settings_tab(parent_layout):
     # Create column Layout for General settings
@@ -658,7 +655,6 @@ def build_program_tab(parent_layout):
     pm.setParent(parent_layout)
 
     return program_tab_layout
-
 
 # SETUP TAB
 # SETUP - General
@@ -1100,7 +1096,7 @@ def _build_external_axes_tab(parent_layout):
     pm.setParent(parent_layout)
     return external_axes_tab_layout
 
-# SETUP = IOs
+# SETUP - IOs
 def _build_add_io_frame(parent_layout):
     pm.frameLayout('add_io_frame',
                     label="Add IO",
@@ -1151,9 +1147,20 @@ def _build_add_io_frame(parent_layout):
 
     pm.optionMenu('ioTypeMenu',
                   label='IO Type:     ',
-                  height=18)
+                  height=18,
+                  changeCommand=__update_enable_resolution)
 
     io_type = ['digital', 'analog']
+    for attr in io_type:
+        pm.menuItem(label=attr)
+
+    pm.separator(height=3, style='none')
+
+    pm.optionMenu('ioResolutionMenu',
+                  label='IO Resolution:',
+                  height=18)
+
+    io_type = ['binary', '16-bit']
     for attr in io_type:
         pm.menuItem(label=attr)
 
@@ -1172,10 +1179,18 @@ def _build_add_io_frame(parent_layout):
               label='Add IO',
               height=25,
               backgroundColor=[.361, .361, .361],
-              command=mimic_io.add_io)
+              command=pm.Callback(mimic_io.add_io))
     pm.separator(height=5, style='none')
 
     pm.setParent(parent_layout)
+
+
+def __update_enable_resolution(*args):
+    io_type = pm.optionMenu('ioTypeMenu', query=True, value=True)
+    if io_type == 'digital':
+        pm.optionMenu('ioResolutionMenu', edit=True, enable=True)
+    else:
+        pm.optionMenu('ioResolutionMenu', edit=True, enable=False)
 
 
 def _build_io_info_frame(parent_layout):
@@ -1187,7 +1202,7 @@ def _build_io_info_frame(parent_layout):
 
     pm.textScrollList('tsl_ios',
                       allowMultiSelection=False,
-                      height=219,
+                      height=198,
                       selectCommand=mimic_io.io_selected)
 
     pm.gridLayout(nc=2, cw=109, ch=25)
@@ -1223,6 +1238,34 @@ def _build_io_tab(parent_layout):
     pm.setParent(parent_layout)
     return io_tab_layout
 
+# SETUP - mFIZ
+def _build_add_mFIZ_node_frame(parent_layout):
+    # Create frame layout with one column
+    add_mFIZ_node_frame = pm.frameLayout(label="Add Robot", collapsable=True)
+    add_mFIZ_node_col = pm.columnLayout(adj=True, columnAttach=('both', 5))
+    pm.separator(height=5, style='none')
+
+    pm.button(label='Add mFIZ Node',
+              command=mimic_io.add_mFIZ_node,
+              height=20,
+              annotation='Attaches selected mFIZ node to selected Robot')
+
+    pm.setParent(add_mFIZ_node_frame)
+
+    pm.separator(style='none')
+    pm.setParent(parent_layout)
+
+
+def _build_mFIZ_tab(parent_layout):
+    mFIZ_tab_layout = pm.columnLayout('mFIZTab',
+                                       adj=True,
+                                       width=100)
+
+    _build_add_mFIZ_node_frame(mFIZ_tab_layout)
+
+    pm.setParent(parent_layout)
+    return mFIZ_tab_layout
+
 # SETUP - Comms
 def _build_comms_tab(parent_layout):
     comms_tab_layout = pm.columnLayout('commsTab',
@@ -1251,11 +1294,13 @@ def build_setup_tab(parent_layout):
     general_setup_tab_layout = _build_general_setup_tab(setup_tabs_layout)
     external_axes_tab_layout = _build_external_axes_tab(setup_tabs_layout)
     io_tab_layout = _build_io_tab(setup_tabs_layout)
+    mFIZ_tab_layout = _build_mFIZ_tab(setup_tabs_layout)
     # comms_tab_layout = _build_comms_tab(setup_tabs_layout)
 
     tabs = [[general_setup_tab_layout, 'General'],
-            [external_axes_tab_layout, 'External Axes'],
+            [external_axes_tab_layout, 'E. Axes'],
             [io_tab_layout, 'IOs'],
+            [mFIZ_tab_layout, 'mFIZ'],
             # [comms_tab_layout, 'Comms']
             ]
 
@@ -1264,7 +1309,6 @@ def build_setup_tab(parent_layout):
     pm.setParent(parent_layout)
 
     return setup_tab_layout
-
 
 # PREFS TAB
 def _build_hotkeys_frame(parent_layout):
@@ -1395,7 +1439,6 @@ def build_prefs_tab(parent_layout):
     pm.setParent(parent_layout)
 
     return prefs_tab_layout
-
 
 # UTILS
 def add_robot(*args):

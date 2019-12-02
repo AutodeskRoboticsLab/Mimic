@@ -2321,7 +2321,7 @@ def key_ik_fk(*args):
         pm.warning('Error keying IK/FK')
 
 
-def set_pose(pose, robots=None):
+def set_pose(pose, robots=None, require_selection=True):
     """
     Sets the pose of the selected robots to the input argument.
     Sets the pose in whichever mode, ik or fk, the robot is in
@@ -2330,8 +2330,11 @@ def set_pose(pose, robots=None):
     if not robots:
         robots = get_robot_roots()
         if not robots:
-            raise MimicError('No robots selected; select at least one valid robot')
-
+            if require_selection:
+                raise MimicError('No robots selected; select at least one valid robot')
+            else:
+                return
+                
     for robot in robots:
         target_ctrl_path = get_target_ctrl_path(robot)
 

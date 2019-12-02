@@ -58,6 +58,8 @@ Mimic currently supports the following robots for animation (see [rigs](mimic/ri
     |-- IRB 6700-205-280
     |-- IRB 6700-245-300
     |-- IRBT 4004-9000
+|-- Kawasaki
+    |-- RS020N
 |-- KUKA
     |-- KL 100 6125
     |-- KL 1500-3 6000
@@ -70,17 +72,25 @@ Mimic currently supports the following robots for animation (see [rigs](mimic/ri
     |-- KR 10 R900 sixx AGILUS
     |-- KR 10 R1100 sixx AGILUS
     |-- KR 10 R1420
+    |-- KR 12 R1800
+    |-- KR 12 R1800-2
     |-- KR 16 L6-2
+    |-- KR 16 R1610
     |-- KR 16 R2010
     |-- KR 16-arc HW
+    |-- KR 20 R1810
+    |-- KR 20 R1810-2
     |-- KR 22 R1610
+    |-- KR 30-3
     |-- KR 60-3
+    |-- KR 120 R2500 Pro
     |-- KR 120 R2700 HA
     |-- KR 150 R3100 Prime
     |-- KR 150-2
     |-- KR 200 L140-2
     |-- KR 210 R3100
     |-- KR 210-2
+    |-- KR 240 L180-2
     |-- KR 240 R2900 Ultra
     |-- KR 240-2
     |-- KR 300 R2500 Ultra

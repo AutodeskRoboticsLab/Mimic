@@ -18,10 +18,12 @@ import general_utils
 import mimic_config
 import mimic_program
 import mimic_utils
+import mFIZ_utils
 
 reload(mimic_utils)
 reload(mimic_config)
 reload(mimic_program)
+reload(mFIZ_utils)
 reload(general_utils)
 
 
@@ -108,12 +110,8 @@ def _get_io_type(io_path):
     :return io_type: string, e.g. 'digital' or 'analog'
     """
 
-    attribute_path = io_path + '_value'
-
-    if pm.getAttr(attribute_path, type=True) == 'bool':
-        io_type = 'digital'
-    else:
-        io_type = 'analog'
+    attribute_path = io_path + '_ioType'
+    io_type = pm.getAttr(attribute_path)
 
     return io_type
 
@@ -161,9 +159,7 @@ def _get_io_ignore(io_path):
     attribute_path = io_path + '_ignore'
     return mimic_utils.get_attribute_value(attribute_path)
 
-
 # ------------------
-
 
 def _check_io_name(robot_name, io_name):
     """
@@ -272,6 +268,19 @@ def _get_io_params():
         query=True,
         value=True)
 
+    # Resolution is currently only enabled for digital outputs
+    # If the dropdown isn't enabled, default to None
+    io_param_dict['Resolition'] = None
+
+    res_enabled = pm.optionMenu( 'ioResolutionMenu', query=True, enable=True)
+
+    if res_enabled:
+        io_param_dict['Resolition'] = pm.optionMenu(
+            'ioResolutionMenu',
+            query=True,
+            value=True)
+
+
     _check_io_params(io_param_dict)
 
     # Ensure IO name input complies with Maya's attribute name requirements
@@ -303,18 +312,20 @@ def _get_selection_input():
     return robot
 
 
-def add_io(*args):
+def add_io(io_params=None):
     """
     Adds an IO to a robot based on user inputs in Mimic UI.
     :param args: required by Maya to call a function from UI button
     """
-    # Get the IO's parameters from the Mimic UI
-    io_params = _get_io_params()
+    # If no IO arams are passed, get them from the Mimic UI
+    if not io_params:
+        io_params = _get_io_params()
 
     io_name = io_params['IO Name']
     io_number = io_params['IO Number']
     postproc_id = io_params['Postproc ID']
     io_type = io_params['Type']
+    io_resolution = io_params['Resolution']
     ignore_in_postproc = io_params['Ignore']
 
     # Get and check the proper controllers from viewport selection
@@ -330,7 +341,12 @@ def add_io(*args):
 
     # Establish attribute type from input Type
     if io_type == 'digital':
-        attr_type = 'bool'
+        if io_resolution == 'binary':
+            attr_type = 'bool'
+        elif io_resolution == '16-bit':
+            attr_type = 'long'
+        else:
+            attr_type = 'bool'
     else:
         attr_type = 'float'
 
@@ -340,7 +356,7 @@ def add_io(*args):
     pm.addAttr(target_CTRL,
                longName=parent_attribute,
                niceName='IO: {}'.format(io_name),
-               numberOfChildren=4,
+               numberOfChildren=5,
                category='io',
                attributeType='compound')
     # Define 4 children of the IO parent attribute
@@ -366,6 +382,12 @@ def add_io(*args):
                defaultValue=1,
                parent=parent_attribute)
     pm.addAttr(target_CTRL,
+               longName=io_name + '_ioType',
+               niceName='IO Type',
+               keyable=False,
+               dataType='string',
+               parent=parent_attribute)
+    pm.addAttr(target_CTRL,
                longName=io_name + '_ignore',
                niceName='Ignore',
                keyable=False,
@@ -386,6 +408,7 @@ def add_io(*args):
         pass
 
     pm.setAttr(io_parent_attribute + '_postprocID', postproc_id)
+    pm.setAttr(io_parent_attribute + '_ioType', io_type, lock=True)
     pm.setAttr(io_parent_attribute + '_ignore', ignore_in_postproc)
 
     # Select the robot's target/tool controller
@@ -599,6 +622,9 @@ def update_io_UI(io_info):
                   edit=True,
                   value=io_info['Type'],
                   enable=False)
+    pm.optionMenu('ioResolutionMenu',
+                  edit=True,
+                  enable=False)
     pm.checkBox('cb_ignoreIO',
                 edit=True,
                 value=io_info['Ignore'])
@@ -680,6 +706,135 @@ def io_selected(*args):
     target_CTRL = mimic_utils.get_target_ctrl_path(robot)
     pm.select(target_CTRL)
 
+# ------------------
+
+def add_mFIZ_node(*args):
+    """
+    Connects mFIZ node to robot as Digital Outputs
+    """
+
+    sel = pm.ls(selection=True, type='transform')
+    robots = mimic_utils.get_robot_roots()
+
+    # Exception handling
+    if not sel:
+        pm.warning('Nothing selected; ' \
+                   'select a valid robot control and mFIZ controller')
+        return
+    if not robots:
+        pm.warning('No robot selected; ' \
+                   'select a valid robot')
+        return
+    if len(robots) > 1:
+        pm.warning('Too many robots selected; ' \
+                   'select a single robot')
+        return
+    if len(sel) > 2:
+        pm.warning('Too many selections; ' \
+                   'select a single robot control, and single mFIZ controller')
+        return
+    if len(sel) == 1:
+        pm.warning('Not enough selections; ' \
+                   'select a single robot control, and single mFIZ controller')
+        return
+
+    robot = robots[0] 
+
+
+    # Find which selected object is the mFIZ controller
+    if not mimic_utils.get_robot_roots(sel=[sel[0]]):
+        mFIZ_ctrl = sel[0]
+    else:
+        mFIZ_ctrl = sel[1]
+
+    # Check if mFIZ_ctrl selection is actually an mFIZ controller
+    if not mFIZ_utils.is_mFIZ_ctrl(mFIZ_ctrl):
+        pm.warning('No mFIZ controller selected; ' \
+                   'select a valid mFIZ controller')
+        return
+
+    # Wheeew...now that that's done we can get to work...
+
+    # Add Focus, Iris, Zoom as Digital Outputs to the robot
+    _add_mFIZ_attrs_as_outputs(robot)
+
+    # Create an mFIZ remap node to remap FIZ values from 0 - 1 to 16-bit integers
+    remap_node = _add_mFIZ_remap_node()
+
+    # Connect mFIZ controller attributes to remap node, and remap node to robot IOs
+    _connect_remap_node(robot, mFIZ_ctrl, remap_node)
+
+
+FIZ_ATTRS = ['focus', 'iris', 'zoom']
+
+def _add_mFIZ_attrs_as_outputs(robot):
+    """
+    """
+    # First, we get the IO numbers currently assigned to the robot and increment
+    # ours by 1 to avoid conflicts
+    io_numbers = []
+    robots_ios = get_io_names(robot)
+
+    target_ctrl_path = mimic_utils.get_target_ctrl_path(robot)
+    
+    for io_name in robots_ios:
+        io_numbers.append(pm.getAttr('{}.{}_ioNumber'.format(target_ctrl_path, io_name)))
+
+    if io_numbers:
+        io_number = max(io_numbers) + 1
+    else:
+        io_number = 1
+
+    # For each FIZ Attribute, create and add IO to the robot
+    postproc_id = 0  # Begin postproc_ID attr increment
+        
+    fiz_attrs = FIZ_ATTRS
+
+    for attr in fiz_attrs:
+        
+        io_param_dict = {}
+        
+        io_param_dict['IO Name'] = attr
+        io_param_dict['Postproc ID'] = str(postproc_id)
+        io_param_dict['IO Number'] = io_number
+        io_param_dict['Type'] = 'digital'
+        io_param_dict['Resolution'] = '16-bit'
+        io_param_dict['Ignore'] = False
+        
+        add_io(io_params=io_param_dict)
+        
+        io_number += 1
+        postproc_id += 16
+    
+    pm.headsUpMessage('FIZ outputs added successfully to {}'.format(robot))
+
+
+def _add_mFIZ_remap_node():
+    """
+    """
+    node = pm.createNode('mFIZ_remap')
+    
+    return node
+
+
+def _connect_remap_node(robot, mFIZ_ctrl, remap_node):
+    """
+    """
+    target_ctrl_path = mimic_utils.get_target_ctrl_path(robot)
+
+    # Connect FIZ attrs from mfIZ node to remap node
+    fiz_attrs = FIZ_ATTRS
+
+    for attr in fiz_attrs:
+        mFIZ_attr = '{}.{}'.format(mFIZ_ctrl, attr)
+        remap_in_attr = '{}.{}'.format(remap_node, attr)
+        remap_out_attr = '{}.{}Mapped'.format(remap_node, attr)
+        robot_attr = '{}.{}_value'.format(target_ctrl_path, attr)
+        
+        pm.connectAttr(mFIZ_attr, remap_in_attr)
+        pm.connectAttr(remap_out_attr, robot_attr)
+        
+# ------------------
 
 class MimicError(Exception):
     pass
