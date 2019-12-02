@@ -6,18 +6,14 @@ global proc shelf_Mimic () {
 
     shelfButton
         -enableCommandRepeat 1
-        -flexibleWidthType 3
-        -flexibleWidthValue 32
         -enable 1
         -width 35
-        -height 34
+        -height 35
         -manage 1
         -visible 1
         -preventOverride 0
         -annotation "Launches Mimic Robot UI" 
         -enableBackground 0
-        -backgroundColor 0 0 0 
-        -highlightColor 0.321569 0.521569 0.65098 
         -align "center" 
         -label "Mimic UI" 
         -labelOffset 0
@@ -41,18 +37,14 @@ global proc shelf_Mimic () {
     ;
     shelfButton
         -enableCommandRepeat 1
-        -flexibleWidthType 3
-        -flexibleWidthValue 64
         -enable 1
-        -width 35
+        -width 34
         -height 34
         -manage 1
         -visible 1
         -preventOverride 0
         -annotation "Launches mFIZ UI" 
         -enableBackground 0
-        -backgroundColor 0 0 0 
-        -highlightColor 0.321569 0.521569 0.65098 
         -align "center" 
         -label "mFIZ UI" 
         -labelOffset 0
