@@ -40,6 +40,7 @@ _fields = [
     'Include_analog_outputs',
     'Include_analog_inputs',
     'Include_checksum',
+    'Include_timestamp'
 ]
 UserOptions = namedtuple(
     USER_OPTIONS, _fields
@@ -62,7 +63,8 @@ def configure_user_options(
         include_digital_inputs=False,
         include_analog_outputs=False,
         include_analog_inputs=False,
-        include_checksum=False):
+        include_checksum=False,
+        include_timestamp=False):
     """
     Configure user options. Defaults every parameter to False unless specified
     by user!
@@ -100,7 +102,8 @@ def configure_user_options(
         Include_digital_inputs=include_digital_inputs,
         Include_analog_outputs=include_analog_outputs,
         Include_analog_inputs=include_analog_inputs,
-        Include_checksum=include_checksum
+        Include_checksum=include_checksum,
+        Include_timestamp=include_timestamp
     )
 
 # Default user options

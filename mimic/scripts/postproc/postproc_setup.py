@@ -21,7 +21,9 @@ from Staubli.VAL3.val3 \
 from GENERAL.CSV.comma_separated_vals \
     import SimpleCSVProcessor \
     as __SimpleCSVProcessor
-
+from GENERAL.TSV.tab_separated_vals \
+    import SimpleTSVProcessor \
+    as __SimpleTSVProcessor
 
 # Add your processor to private list here:
 __supported_processors = [
@@ -29,7 +31,8 @@ __supported_processors = [
     __SimpleKRLProcessor,
     __SimpleVAL3Processor,
     __SimpleEntertainTechProcessor,
-    __SimpleCSVProcessor
+    __SimpleCSVProcessor,
+    __SimpleTSVProcessor
 ]
 
 

@@ -15,6 +15,7 @@ Mimic currently supports the following post processors
     |-- VAL3
 | -- GENERAL
     |-- CSV
+    |-- TSV
 ```
 
 \* *external installation option required*

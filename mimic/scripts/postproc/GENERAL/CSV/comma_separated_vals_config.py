@@ -1,7 +1,7 @@
 #!usr/bin/env python
 
 """
-This module contains basic configuration parameters for SimpleEntertainTechProcessor.
+This module contains basic configuration parameters for SimpleCSVProcessor.
 """
 
 # System parameters

@@ -1,14 +1,14 @@
 # Mimic
 
-### SimpleCSVProcessor
+### SimpleTSVProcessor
 
-The SimpleCSVProcessor is a Post Processor for Mimic designed to export paths as CSVs.
+The SimpleTSVProcessor is a Post Processor for Mimic designed to export paths as TSVs.
 
 ```
-Name: SimpleCSVProcessor
+Name: SimpleTSVProcessor
 Robot type: All
 Processor language: General
-Output file extension: CSV
+Output file extension: TSV
 Time-based: N/A
 ```
 
@@ -18,11 +18,11 @@ Time-based: N/A
 This package contains the following directories and/or files:
 
 ```
-|-- CSV
+|-- TSV
     |-- __init__.py
-    |-- comma_separated_vals.md
-    |-- comma_separated_vals.py
-    |-- comma_separated_vals_config.py
+    |-- tab_separated_vals.md
+    |-- tab_separated_vals.py
+    |-- tab_separated_vals_config.py
     |-- template.emily
     |-- example.src
     |-- example.dat
@@ -33,7 +33,7 @@ This package contains the following directories and/or files:
 ### Warning!
 
 - DO NOT modify or mutate the value of parameters that are either `__private`,
-  `_protected`, or located in `comma_separated_vals.py` unless you intend to extend the core
+  `_protected`, or located in `tab_separated_vals.py` unless you intend to extend the core
   functionality of this package.
 - It is highly recommended that you test your robot-control code in a safety
   certified simulator and implement such monitoring in your workcell prior to
@@ -59,8 +59,8 @@ parameters that must be modified to suit user and application requirements.
 User parameters can be found in the following files:
 
 ```
-comma_separated_vals_config.py
-template.csv
+tab_separated_vals_config.py
+template.tsv
 ```
 
 This package comes with a functional default program that must be modified to
@@ -68,7 +68,7 @@ suit user and application requirements.
 The default program template used by this package is as follows:
 
 ```
-Time, Axis 1, Axis 2, Axis 3, Axis 4, Axis 5, Axis 6
+Time    Axis_1    Axis_2    Axis_3    Axis_4    Axis_5    Axis_6
 {}
 ```
 
