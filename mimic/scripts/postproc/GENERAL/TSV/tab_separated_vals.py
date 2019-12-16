@@ -212,7 +212,7 @@ def _process_records_command(command, opts):
         params.extend(formatted_params)
 
     # Structure and format data, command
-    formatted_record = '    '.join(param for param in params)
+    formatted_record = '\t'.join(param for param in params)
     return formatted_record
 
 
