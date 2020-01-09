@@ -283,7 +283,7 @@ class DataControlWidget(QtWidgets.QWidget):
         main_layout.addWidget(toggle_widget)
 
         # Add a spacing character
-        main_layout.addWidget(QtWidgets.QLabel(unichr(0x2022)), alignment=4)
+        main_layout.addWidget(QtWidgets.QLabel(unichr(0x2022)), alignment=QtCore.Qt.AlignCenter)
 
         # Create and add "isolate" toggle
         isolate_widget = self.__build_isolate_toggle_widget()
