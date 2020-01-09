@@ -18,5 +18,9 @@ PYTHONPATH +:= scripts/extern
 MAYA_SHELF_PATH +:= shelves/2019
 PYTHONPATH +:= scripts/extern
 
++ MAYAVERSION:2020 mimic 1.4.0 ../modules/mimic
+MAYA_SHELF_PATH +:= shelves/2020
+PYTHONPATH +:= scripts/extern
+
 + mFIZ 1.0.0 ../modules/mFIZ
 PYTHONPATH +:= scripts/mFIZ_extern
