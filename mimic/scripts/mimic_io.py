@@ -263,6 +263,10 @@ def _get_io_params():
         'ioTypeMenu',
         query=True,
         value=True)
+    io_param_dict['Resolution'] = pm.optionMenu(
+        'ioResolutionMenu',
+        query=True,
+        value=True)
     io_param_dict['Ignore'] = pm.checkBox(
         'cb_ignoreIO',
         query=True,
