@@ -274,12 +274,12 @@ def _get_io_params():
 
     # Resolution is currently only enabled for digital outputs
     # If the dropdown isn't enabled, default to None
-    io_param_dict['Resolition'] = None
+    io_param_dict['Resolution'] = None
 
     res_enabled = pm.optionMenu( 'ioResolutionMenu', query=True, enable=True)
 
     if res_enabled:
-        io_param_dict['Resolition'] = pm.optionMenu(
+        io_param_dict['Resolution'] = pm.optionMenu(
             'ioResolutionMenu',
             query=True,
             value=True)
