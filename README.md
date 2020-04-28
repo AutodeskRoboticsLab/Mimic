@@ -162,8 +162,7 @@ See [LICENSE](mimic/docs/LICENSE.md) for details.
 
 - Be careful out there! Mimic is not a safety certified monitoring tool.
   Users of this software are responsible for safe robot programming and operation.
-- Developed to work with Autodesk Maya 2016, Autodesk Maya 2017, and Autodesk
-  Maya 2018; Mimic may or may not be compatible with other versions.
+- Developed to work with Autodesk Maya 2016-2020; is not compatible with versions prior to Maya 2016 due to changes in Maya's Python API
 - Developed to work with macOS and Windows; Maya is not compatible with other
   operating systems but *most* of the Mimic backend is.
 - Do not modify names or hierarchies within robot rigs!

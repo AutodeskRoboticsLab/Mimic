@@ -287,6 +287,7 @@ def _get_settings_for_postproc(robot):
     output_filename = pm.textField('t_outputFileName', text=True, query=True)
     template_filename = pm.textField('t_templateFileName', text=True, query=True)
     overwrite_option = pm.checkBox('cb_overwriteFile', value=True, query=True)
+    preview_in_viewport_option = pm.checkBox('cb_previewInViewport', value=True, query=True)
 
     # Get time interval in seconds
     animation_settings = _get_settings_for_animation(robot)
@@ -340,7 +341,8 @@ def _get_settings_for_postproc(robot):
         'Output Directory': output_directory,
         'Output Filename': output_filename,
         'Template Filename': template_filename,
-        'Overwrite Option': overwrite_option
+        'Overwrite Option': overwrite_option,
+        'Preview in Viewport': preview_in_viewport_option
     }
     return postproc_settings
 
@@ -371,12 +373,15 @@ def _get_command_dicts(robot, animation_settings, postproc_settings, user_option
 
     # Get commands from sampled frames
     command_dicts = _sample_frames_get_command_dicts(robot, frames, animation_settings, time_interval_in_seconds,
-                                                     user_options)
+                                                     user_options, postproc_settings)
     
     if using_sample_rate:
         # Check commands for axis flips and reconcile them if necessary
-        command_dicts = _reconcile_command_rotations(robot, command_dicts)
-        command_dicts = _bound_accumulated_rotations(robot, command_dicts)
+        # Only reconcile if we're using axes. Exclude poses
+        if postproc.AXES in command_dicts[0]:
+
+            command_dicts = _reconcile_command_rotations(robot, command_dicts)
+            command_dicts = _bound_accumulated_rotations(robot, command_dicts)
 
 
     return command_dicts
@@ -905,7 +910,7 @@ def _get_frames_using_keyframes_only(robot, animation_settings):
     return frames
 
 
-def _sample_frames_get_command_dicts(robot_name, frames, animation_settings, time_interval_in_seconds, user_options):
+def _sample_frames_get_command_dicts(robot_name, frames, animation_settings, time_interval_in_seconds, user_options, postproc_settings):
     """
     Sample robot commands using a list of frames and user options.
     :param robot_name:
@@ -920,10 +925,14 @@ def _sample_frames_get_command_dicts(robot_name, frames, animation_settings, tim
     start_frame = animation_settings['Start Frame']
     end_frame = animation_settings['End Frame']
 
+    preview_in_viewport = postproc_settings['Preview in Viewport']
+
     for frame in frames:
-        # Set the background to the current frame
-        # TODO: Implement this! This rocks:
-        # pm.currentTime(frame)
+
+        if preview_in_viewport:
+            # Set the background to the current frame
+            pm.currentTime(frame)
+
         # Create a dict of datatypes per frame
         command_dict = {}
         # Add this frame number/step/index to the dictionary
@@ -982,13 +991,12 @@ def _sample_frame_get_axes(robot_name, frame):
     """
 
     axes = []
-    pm.currentTime(frame)
 
     target_ctrl_path = mimic_utils.get_target_ctrl_path(robot_name)
     for i in range(6):
         axis_number = i + 1  # Axis numbers are 1-indexed
         axis_path = target_ctrl_path + '.axis{}'.format(axis_number)
-        axis = pm.getAttr(axis_path)
+        axis = pm.getAttr(axis_path, time=frame)
 
         axes.append(axis)
         
@@ -1004,6 +1012,7 @@ def _sample_frame_get_pose(robot_name, frame):
     """
     # Set the time
     # TODO: Implement this in parent function
+    # Need to figure out how to query xform at specific frame (like with getAttr)
     pm.currentTime(frame)
 
     # tool_name = get_tool_name(robot_name)

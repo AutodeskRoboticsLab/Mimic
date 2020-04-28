@@ -626,7 +626,15 @@ def _build_program_settings_frame(parent_layout):
                            'a program will be written')
     pm.separator(height=3, style='none')
 
-    pm.separator(height=3, style='none')
+    # Preview Options
+    pm.separator(height=11, style='out')
+    pm.checkBox('cb_previewInViewport',
+                label="Preview in viewport",
+                value=postproc_config.OPTS_PREVIEW_IN_VIEWPORT,
+                annotation='If checked, program will play in viewport during ' \
+                           'post-process. Leave unchecked for faster results.')
+    pm.separator(height=6, style='none')
+
     pm.button('Analyze Program',
               command=mimic_program.analyze_program,
               height=25,

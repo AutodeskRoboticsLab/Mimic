@@ -16,3 +16,6 @@ DEFAULT_SAMPLE_RATE_UNITS = 'frames'  # 'seconds' or 'frames'
 # Output options
 OPTS_IGNORE_WARNINGS = False
 OPTS_OVERWRITE_EXISTING_FILE = True
+
+# Preview option
+OPTS_PREVIEW_IN_VIEWPORT = False
