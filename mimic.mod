@@ -14,7 +14,7 @@ PYTHONPATH +:= scripts/extern
 MAYA_SHELF_PATH +:= shelves/2018
 PYTHONPATH +:= scripts/extern
 
-+ MAYAVERSION:2019 PLATFORM:mac mimic 1.4.1 ../modules/mimic
++ MAYAVERSION:2019 mimic 1.4.1 ../modules/mimic
 MAYA_SHELF_PATH +:= shelves/2019
 PYTHONPATH +:= scripts/extern
 
