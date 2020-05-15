@@ -72,9 +72,8 @@ TEMPLATES = {
 
 # COMMANDS
 RECORDS_COMMAND = 'RECORDS_COMMAND'
-_time_index = 'time_index'
 _records_command_fields = [
-    _time_index,
+    postproc.TIME_INDEX,
     postproc.AXES,
     postproc.EXTERNAL_AXES,
     postproc.DIGITAL_OUTPUT,
@@ -154,11 +153,7 @@ class SimpleEntertainTechProcessor(postproc.PostProcessor):
         # Try to get a RecordCommand
         params = []
         for field in _records_command_fields:
-            if field == _time_index:  # Get the timestamp itself
-                time_index = params_dict['Time Index']
-                param = time_index
-            else:
-                param = params_dict[field] if field in params_dict else None
+            param = params_dict[field] if field in params_dict else None
             params.append(param)
         if params.count(None) != len(params):
             # params.insert(0, self.time_index)  # Include current time-index

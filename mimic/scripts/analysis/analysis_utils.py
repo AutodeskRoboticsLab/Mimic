@@ -258,7 +258,7 @@ def _generate_derivative_dicts(command_dicts, order):
 
                 displacement = current_axis - previous_axis
                 # Do we need to compute displacement_time between every frame? Does this change?
-                displacement_time = current_command['Time Index'] - previous_command['Time Index']
+                displacement_time = current_command[postproc.TIME_INDEX] - previous_command[postproc.TIME_INDEX]
                 derivative = displacement / displacement_time
                 current_axes_derivative[axis_index] = derivative
 
@@ -295,7 +295,7 @@ def _generate_derivative_dicts(command_dicts, order):
                 for derivative_index, current_axis in enumerate(current_axes):
                     previous_axis = previous_axes[derivative_index]
                     displacement = current_axis - previous_axis
-                    displacement_time = current_command['Time Index'] - previous_command['Time Index']
+                    displacement_time = current_command[postproc.TIME_INDEX] - previous_command[postproc.TIME_INDEX]
                     derivative = displacement / displacement_time
                     current_axes_derivative[derivative_index] = derivative
 

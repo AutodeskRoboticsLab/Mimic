@@ -43,6 +43,8 @@ __identifier = 'identifier'
 __value = 'value'
 
 # STRUCTURES
+TIME_INDEX = 'time_index'
+
 AXES = 'axes'
 Axes = namedtuple(
     AXES, [
