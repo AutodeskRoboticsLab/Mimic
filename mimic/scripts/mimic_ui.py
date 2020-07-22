@@ -633,6 +633,11 @@ def _build_program_settings_frame(parent_layout):
                 value=postproc_config.OPTS_PREVIEW_IN_VIEWPORT,
                 annotation='If checked, program will play in viewport during ' \
                            'post-process. Leave unchecked for faster results.')
+    pm.checkBox('cb_promptOnRedundantSolutions',
+            label="Prompt on redundant solutions",
+            value=postproc_config.OPTS_REDUNDANT_SOLUTIONS_USER_PROMPT,
+            annotation='If checked, Maya will as the user to select between ' \
+                       'redundant solutions on axes where they occur.')
     pm.separator(height=6, style='none')
 
     pm.button('Analyze Program',

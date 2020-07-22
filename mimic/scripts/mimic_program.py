@@ -729,6 +729,8 @@ def _bound_accumulated_rotations(robot_name, command_dicts):
     if not all(x is None for x in command_axes):
         for i, reconcile_axis in enumerate(reconcile_axes):
             if reconcile_axis:
+                valid_solutions = []
+
                 axis_number = i + 1  # Axis numbers are 1-indexed
                 axis_name = 'Axis {}'.format(axis_number)
 
@@ -737,7 +739,7 @@ def _bound_accumulated_rotations(robot_name, command_dicts):
                 limit_max = rotation_limits[axis_name]['Max Limit']
 
                 # Create a list of commands for the axis to be checked
-                axis_vals_init = [ axis[i] for axis in command_axes]
+                axis_vals_init = [axis[i] for axis in command_axes]
 
                 axis_min = min(axis_vals_init)
                 axis_max = max(axis_vals_init)
@@ -751,13 +753,6 @@ def _bound_accumulated_rotations(robot_name, command_dicts):
                 print "Axis Max: ", axis_max
                 '''
 
-                ## Perform conditional checks
-                # If no limits are violated, continue to the next axis without
-                # modifying the commands
-                if axis_min >= limit_min and axis_max <= limit_max:
-                    # print '## No limits exceeded, no shift'
-                    continue
-
                 # If both the max and min axis values exceed their respective
                 # limits, then there's nothing we can do about it, so we don't
                 # modify the commands
@@ -765,46 +760,99 @@ def _bound_accumulated_rotations(robot_name, command_dicts):
                     # print '## Both limits exceeded, but no shift'
                     continue
 
-                ## Try bounding the values between the limits by shifting
-                ## the commands by +/- 360 degrees
+                # If no limits are violated, add the axes to the list of valid solutions
+                if axis_min >= limit_min and axis_max <= limit_max:
+                    valid_solutions.append(axis_vals_init)              
 
-                coeff = -1 if axis_min < limit_min else 1
+                # Get the shifted axes and append them to the valid_solutions if they're valide (i.e. not 'None')
+                axis_vals_shift = _shift_accumulated_axes(axis_vals_init, limit_max, limit_min)
 
-                # Check if the adjusted values would still violate the limits
-                # and if so, only shift them if the violation is smaller
-                axis_min_shift = axis_min - (coeff * 360)
-                axis_max_shift = axis_max - (coeff * 360)
+                if axis_vals_shift:
+                    valid_solutions.append(axis_vals_shift)
 
-                # print "Axis Min Shifted: ", axis_min_shift
-                # print "Axis Max Shifted: ", axis_max_shift
+                # If we have no valid solitions, continue with the initial solition
+                if len(valid_solutions) == 0:
+                    # print 'No valid solutions, returning initial solutions'
+                    sol = axis_vals_init
+                # If we only have one valid solution, we can return that solution
+                elif len(valid_solutions) == 1:
+                    # print 'Only one valid solution'
+                    sol = valid_solutions[0]
+                # If we have two valid solutions, prompt the user to pick which one they want
+                # if they have the option checked on the program UI, otherwise, return the 
+                # first solution
+                else:
+                    # print 'Two valid solutions -> user choice'
+                    prompt_opt = pm.checkBox('cb_promptOnRedundantSolutions', value=True, query=True)
 
-                if axis_min_shift < limit_min:
-                    if abs(axis_min - limit_min) < abs(axis_min_shift - limit_min):
-                        # print '## Min limit exceeded, but no shift'
-                        continue
-                elif axis_max_shift > limit_max:
-                    if abs(axis_max - limit_max) < abs(axis_max_shift - limit_max):
-                        # print '## Max limit exceeded, but no shift'
-                        continue
-
-                # If we've mad it this far it means we should shift all of the 
-                # rotation values of the current axis by +/- 360
-                # print '## Limit exceeded and values shifted'
-                
-                axis_vals_shift = [ val - (coeff * 360) for val in axis_vals_init ]
-                
-                # print "Shifted Axis {} vals: ".format(i+1), axis_vals_shift
-
-
-                # Drop the shifted values back into the command_dicts
+                    # If the user option for this feature is selected, prompt the user
+                    if prompt_opt:
+                        user_selection = _get_bounded_solution_user_input(valid_solutions, axis_number)
+                        sol = valid_solutions[user_selection]
+                    # Otherwise, continue with the initial solution
+                    else:
+                        sol = axis_vals_init
+                # Drop the final solution back into the command_dict
                 for command_index in range(len(command_dicts)):
-                    command_axes[command_index][i] = axis_vals_shift[command_index]       
+                    command_axes[command_index][i] = sol[command_index]       
 
                     reconciled_axes = postproc.Axes(*command_axes[command_index])
                     command_dicts[command_index][postproc.AXES] = reconciled_axes
-
-
+                
     return command_dicts
+
+def _shift_accumulated_axes(initial_vals, limit_max, limit_min):
+    axis_min = min(initial_vals)
+    axis_max = max(initial_vals)
+
+    axis_vals_shift = []
+
+    ## Try bounding the values between the limits by shifting
+    ## the commands by +/- 360 degrees
+
+    coeff = -1 if (limit_max - axis_max) > -(limit_min - axis_min) else 1
+
+    # Check if the adjusted values would still violate the limits
+    # and if so, return an empty list
+    axis_min_shift = axis_min - (coeff * 360)
+    axis_max_shift = axis_max - (coeff * 360)
+
+    # print "Axis Min Shifted: ", axis_min_shift
+    # print "Axis Max Shifted: ", axis_max_shift
+
+    if axis_min_shift < limit_min or axis_max_shift > limit_max:
+        return
+
+    # If we've made it this far, it means the shifted values won't violate the 
+    # limits, so get the shifted values    
+    axis_vals_shift = [val - (coeff * 360) for val in initial_vals]
+    
+    return axis_vals_shift
+
+
+def _get_bounded_solution_user_input(valid_solutions, axis_number):
+    # print valid_solutions
+    sol_0_init = valid_solutions[0][0]
+    sol_1_init = valid_solutions[1][0]
+
+    sol_0_str = str(int(round(sol_0_init)))
+    sol_1_str = str(int(round(sol_1_init)))
+
+
+    result = pm.confirmDialog(
+        title='Select Axis Solution',
+        message='Axis {0} has multiple valid solutions.\n\nWould you like Axis {0} to start at:'.format(axis_number),
+        button=[sol_0_str, sol_1_str],
+        defaultButton=sol_0_str,
+        cancelButton=sol_0_str,
+        dismissString=sol_0_str)
+
+    if result == sol_0_str:
+        return 0
+    elif result == sol_1_str:
+        return 1
+    else:
+        return 0
 
 
 def _couple_axes(command_dicts):
