@@ -2761,7 +2761,6 @@ def add_limits_to_robot(robot, limit_type):
     """
     target_ctrl_path = get_target_ctrl_path(robot)
 
-    print limit_type
     # Get nominal limits from mimic config file
     nominal_limit = mimic_config.NOMINAL_LIMIT[limit_type]
 
