@@ -289,15 +289,6 @@ def _get_settings_for_postproc(robot):
     overwrite_option = pm.checkBox('cb_overwriteFile', value=True, query=True)
     preview_in_viewport_option = pm.checkBox('cb_previewInViewport', value=True, query=True)
 
-    # Get time interval in seconds
-    animation_settings = _get_settings_for_animation(robot)
-    framerate = animation_settings['Framerate']
-    if time_interval_units == 'seconds':
-        sample_rate_sec = float(time_interval_value)
-    else:  # time_interval_units == 'frames'
-        sample_rate_sec = float(time_interval_value) / float(framerate)
-    time_interval_in_seconds = sample_rate_sec
-
     # Check for warnings
     if using_time_interval:
         # Confirm that the time interval is valid
@@ -335,7 +326,6 @@ def _get_settings_for_postproc(robot):
         'Using Keyframes Only': using_keyframes_only,
         'Time Interval Value': time_interval_value,
         'Time Interval Units': time_interval_units,
-        'Time Interval in Seconds': time_interval_in_seconds,
         'Ignore Warnings': ignore_warnings,
         'Processor Type': processor_type,
         'Output Directory': output_directory,
@@ -360,7 +350,6 @@ def _get_command_dicts(robot, animation_settings, postproc_settings, user_option
     # Determine sample mode
     using_sample_rate = postproc_settings['Using Time Interval']
     using_keyframes_only = postproc_settings['Using Keyframes Only']
-    time_interval_in_seconds = postproc_settings['Time Interval in Seconds']
 
     # Get frames to sample
     frames = []
@@ -372,7 +361,7 @@ def _get_command_dicts(robot, animation_settings, postproc_settings, user_option
         pass
 
     # Get commands from sampled frames
-    command_dicts = _sample_frames_get_command_dicts(robot, frames, animation_settings, time_interval_in_seconds,
+    command_dicts = _sample_frames_get_command_dicts(robot, frames, animation_settings,
                                                      user_options, postproc_settings)
     
     if using_sample_rate:
@@ -516,7 +505,7 @@ def _print_violations(violation_dicts, limits, limit_type):
                 return 
 
             warning += warning_template.format(
-                general_utils.num_to_str(violation['Time Index'], precision=3),
+                general_utils.num_to_str(violation[postproc.TIME_INDEX], precision=3),
                 general_utils.num_to_str(violation['Frame'], precision=3),
                 axis_limit,
                 general_utils.num_to_str(violation[postproc.AXES][axis_num], precision=3),
@@ -553,7 +542,7 @@ def _print_axis_stats(axis_stats, limit_type):
         res[0] += min_max_template.format('Time', 'Frame', 'Min', **min_max_padding)
         for axis_index, command in enumerate(axis_stats['min']):
             res[axis_index+1] += min_max_template.format(
-                general_utils.num_to_str(command['Time Index'], precision=3),
+                general_utils.num_to_str(command[postproc.TIME_INDEX], precision=3),
                 general_utils.num_to_str(command['Frame'], precision=3),
                 general_utils.num_to_str(command[postproc.AXES][axis_index], precision=3),
                 **min_max_padding)
@@ -563,7 +552,7 @@ def _print_axis_stats(axis_stats, limit_type):
         res[0] += min_max_template.format('Time', 'Frame', 'Max', **min_max_padding)
         for axis_index, command in enumerate(axis_stats['max']):
             res[axis_index+1] += min_max_template.format(
-                general_utils.num_to_str(command['Time Index'], precision=3),
+                general_utils.num_to_str(command[postproc.TIME_INDEX], precision=3),
                 general_utils.num_to_str(command['Frame'], precision=3),
                 general_utils.num_to_str(command[postproc.AXES][axis_index], precision=3),
                 **min_max_padding)
@@ -910,7 +899,7 @@ def _get_frames_using_keyframes_only(robot, animation_settings):
     return frames
 
 
-def _sample_frames_get_command_dicts(robot_name, frames, animation_settings, time_interval_in_seconds, user_options, postproc_settings):
+def _sample_frames_get_command_dicts(robot_name, frames, animation_settings, user_options, postproc_settings):
     """
     Sample robot commands using a list of frames and user options.
     :param robot_name:
@@ -921,7 +910,6 @@ def _sample_frames_get_command_dicts(robot_name, frames, animation_settings, tim
     """
     # Initialize output array.
     command_dicts = []
-    time_index_count = 0
     start_frame = animation_settings['Start Frame']
     end_frame = animation_settings['End Frame']
 
@@ -938,8 +926,7 @@ def _sample_frames_get_command_dicts(robot_name, frames, animation_settings, tim
         # Add this frame number/step/index to the dictionary
         command_dict['Frame'] = frame
         command_dict['Framerate'] = animation_settings['Framerate']
-        command_dict['Time Index'] = time_index_count * time_interval_in_seconds
-        time_index_count += 1
+        command_dict[postproc.TIME_INDEX] = (frame-start_frame) / animation_settings['Framerate']
 
         # Get motion parameters
         if not user_options.Ignore_motion:
