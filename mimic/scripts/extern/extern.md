@@ -32,9 +32,10 @@ _Used for creating back-compatible UIs with PySide 2_
 A pure-Python graphics library for PyQt/PySide 
 _Used for graphing in Mimic's Analysis package_
 **Notes:**  
-	- At the time of this writing, the most recent PyQtGraph release (0.10.0) lacked features necessary for Mimic's Analysis graphing module, so the master origin head was used 
+	- At the time of this writing, the most recent PyQtGraph release (0.10.0) lacked features necessary for Mimic's Analysis graphing module, so the main branch head was used 
 	- Fixed small bug in PyQtGraph that caused misalignment of legend items [see: `mimic/scripts/extern/pyqtgraph/graphicsItems/LegendItem.py` [`commit`](https://github.com/AutodeskRoboticsLab/Mimic/commit/67a8389a707bd8e1d5a0619a93cc150b5237d01b#diff-a1a34d87a522bc6af94dae6db694521c)] 
 	- Reorded libOrder in pyqtgraph/Qt.py to fix an [import error](https://github.com/AutodeskRoboticsLab/Mimic/issues/3) some users were facing
+	- Fixed small bug in pyqtgraph/widgets/GraphicsView.py that caused an error in Maya2020 due to mismatching type signature during a MouseMoveEvent [`commit`](https://github.com/AutodeskRoboticsLab/Mimic/commit/b2d38031cf2c6d34e412ff76469cb6168de3c169)]
 > 
 * **NumPy** [version*][[source](https://github.com/numpy/numpy)][[license](http://www.numpy.org/license.html#license)][[website](http://www.numpy.org/)] 
 the fundamental package for scientific computing with Python 
