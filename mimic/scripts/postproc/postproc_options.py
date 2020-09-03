@@ -208,7 +208,7 @@ def create_options_dict(selected_options, supported_options):
         # Set the checkbox parameters for the Mimic UI
         _checkbox_name_pretty = format_field_name_for_pretty_ui(field)
         _checkbox_name = format_field_name_for_checkbox(field)
-        _checkbox_value = selected_options[i] and supported_options[i]
+        _checkbox_value = selected_options[i]
         _checkbox_enable = supported_options[i]
         options_dict[_checkbox_name_pretty] = {
             __name: _checkbox_name,
