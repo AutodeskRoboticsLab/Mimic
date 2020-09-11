@@ -91,6 +91,7 @@ def save_program(*args):
     Save the program.
     :return:
     """
+    start = time.time()
     # Do this first upon button click!
     _clear_output_window()
 
@@ -157,6 +158,7 @@ def save_program(*args):
                           'See Mimic output window for details')
 
     _destroy_progress_window()
+    print('export time:', time.time() - start)
 
 
 def _process_program(command_dicts, robot, animation_settings, postproc_settings, user_options):
@@ -973,6 +975,7 @@ def _sample_frames_get_command_dicts(robot_name, frames, animation_settings, use
     end_frame = animation_settings['End Frame']
 
     preview_in_viewport = postproc_settings['Preview in Viewport']
+    export_progress = 0
 
     for frame in frames:
 
@@ -1021,7 +1024,7 @@ def _sample_frames_get_command_dicts(robot_name, frames, animation_settings, use
                 pass
         command_dicts.append(command_dict)
         pm.refresh()
-        _update_export_progress_window(start_frame, end_frame, frame)
+        export_progress = _update_export_progress_window(start_frame, end_frame, frame, export_progress)
     # Reset current frame (just in case)
     pm.currentTime(frames[0])
 
@@ -1256,7 +1259,7 @@ def _destroy_progress_window():
     pm.progressWindow(endProgress=True)
 
 
-def _update_export_progress_window(start_frame, end_frame, frame_index):
+def _update_export_progress_window(start_frame, end_frame, frame_index, prev_progress):
     """
     """
 
@@ -1265,6 +1268,7 @@ def _update_export_progress_window(start_frame, end_frame, frame_index):
         _destroy_progress_window()
         raise mimic_utils.MimicError('Path Export Cancelled')
 
+    export_progress = 0
 
     frame_range = end_frame - start_frame
     if (frame_range == 0):
@@ -1272,6 +1276,12 @@ def _update_export_progress_window(start_frame, end_frame, frame_index):
     else:
         export_bar_range = 100
         step = ((frame_index - start_frame) * export_bar_range) / frame_range
-        pm.progressWindow(edit=True,
-                          progress=int(step),
-                          status='{}%'.format(int(step)))
+        export_progress = int(step)
+
+        # Updating the Maya UI is slow, so we only make updates if we need to.
+        if export_progress != prev_progress:
+            pm.progressWindow(edit=True,
+                              progress=export_progress,
+                              status='{}%'.format(export_progress))
+
+    return export_progress
