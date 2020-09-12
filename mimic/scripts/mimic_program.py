@@ -1242,9 +1242,10 @@ def _sample_frame_get_configuration(robot_name, frame):
 
 def _initialize_export_progress_window(title):
     """
+    Create progress window with a range from 0 - 100%.
+
+    :param title: Title of progress window
     """
-    # Only one progress window can exist at a time, so we have to destroy any
-    # extant progress window before creating our own
     _destroy_progress_window()
 
     #  Create our progress window
@@ -1256,11 +1257,22 @@ def _initialize_export_progress_window(title):
 
 
 def _destroy_progress_window():
+    """ Destroy any extant progress windows. Only one progress window can exist
+    at a time.
+    """
     pm.progressWindow(endProgress=True)
 
 
 def _update_export_progress_window(start_frame, end_frame, frame_index, prev_progress):
     """
+    Update progress displayed in the progress window. Check if user has pressed
+    'Esc' and raise MimicError to cancel export.
+
+    :param start_frame: export starting frame
+    :param end_frame: export ending frame
+    :param frame_index: most recently processed frame (between start and end)
+    :param prev_progress: previous export progress (integer from 0 - 100)
+    :return: current export progress (integer from 0 - 100)
     """
 
     # Check if the user pressed 'Esc'
@@ -1271,9 +1283,7 @@ def _update_export_progress_window(start_frame, end_frame, frame_index, prev_pro
     export_progress = 0
 
     frame_range = end_frame - start_frame
-    if (frame_range == 0):
-        step = 0
-    else:
+    if frame_range:
         export_bar_range = 100
         step = ((frame_index - start_frame) * export_bar_range) / frame_range
         export_progress = int(step)
