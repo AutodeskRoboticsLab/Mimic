@@ -1247,7 +1247,7 @@ def _initialize_export_progress_window(title):
 
     #  Create our progress window
     pm.progressWindow(title=title,
-                      status='0%',
+                      status='Progress:',
                       progress=0,
                       maxValue=100,
                       isInterruptable=True)
@@ -1287,8 +1287,9 @@ def _update_export_progress_window(start_frame, end_frame, frame_index, prev_pro
 
         # Updating the Maya UI is slow, so we only make updates if we need to.
         if export_progress != prev_progress:
-            pm.progressWindow(edit=True,
-                              progress=export_progress,
-                              status='{}%'.format(export_progress))
+            if export_progress % 2 == 0:
+                pm.progressWindow(edit=True,
+                                  progress=export_progress,
+                                  status='Progress:')
 
     return export_progress
