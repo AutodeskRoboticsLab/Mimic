@@ -4,7 +4,6 @@
 """
 Check and save program functionality used by Mimic.
 """
-import time
 
 try:
     import pymel.core as pm
@@ -91,7 +90,6 @@ def save_program(*args):
     Save the program.
     :return:
     """
-    start = time.time()
     # Do this first upon button click!
     _clear_output_window()
 
@@ -158,7 +156,6 @@ def save_program(*args):
                           'See Mimic output window for details')
 
     _destroy_progress_window()
-    print('export time:', time.time() - start)
 
 
 def _process_program(command_dicts, robot, animation_settings, postproc_settings, user_options):
