@@ -54,8 +54,8 @@ def analyze_program(*args):
     _initialize_export_progress_window('Analyzing')
     try:
         command_dicts = _get_command_dicts(*program_settings)
-    except mimic_utils.MimicError as e:
-        pm.headsUpMessage(e)
+    except mimic_utils.MimicError:
+        pm.headsUpMessage('Program analysis canceled.')
         return
 
     violation_exception, violation_warning = _check_command_dicts(command_dicts, *program_settings)
@@ -107,8 +107,8 @@ def save_program(*args):
     _initialize_export_progress_window('Saving')
     try:
         command_dicts = _get_command_dicts(*program_settings)
-    except mimic_utils.MimicError as e:
-        pm.headsUpMessage(e)
+    except mimic_utils.MimicError:
+        pm.headsUpMessage('Program save canceled.')
         return
 
     violation_exception, violation_warning = _check_command_dicts(command_dicts, *program_settings)
@@ -1278,7 +1278,7 @@ def _update_export_progress_window(start_frame, end_frame, frame_index, prev_pro
     # Check if the user pressed 'Esc'
     if pm.progressWindow(query=True, isCancelled=True):
         _destroy_progress_window()
-        raise mimic_utils.MimicError('Path Export Cancelled')
+        raise mimic_utils.MimicError('Path export canceled by user.')
 
     export_progress = 0
 
