@@ -40,7 +40,6 @@ def analyze_program(*args):
     """
     # Initialize Mimic UI State
     _clear_output_window()
-    _initialize_export_progress_bar()
 
     # Check program, commands, raise exception on failure
     program_settings = _get_settings()
@@ -49,11 +48,17 @@ def analyze_program(*args):
     animation_settings = program_settings[1]
     start_frame = animation_settings['Start Frame']
     pm.currentTime(start_frame)
-    
-    command_dicts = _get_command_dicts(*program_settings)
+
+    # Create progress window and analyze program
+    _initialize_export_progress_window('Analyzing')
+    try:
+        command_dicts = _get_command_dicts(*program_settings)
+    except mimic_utils.MimicError:
+        pm.headsUpMessage('Program analysis canceled.')
+        return
 
     violation_exception, violation_warning = _check_command_dicts(command_dicts, *program_settings)
-    _initialize_export_progress_bar(is_on=False)
+    _destroy_progress_window()
 
     # If PyQtGraph imports correctly, we can run the analysis graphing utility
     # Likeliest cause of import failure is no or improper installation of numPy
@@ -87,7 +92,6 @@ def save_program(*args):
     """
     # Do this first upon button click!
     _clear_output_window()
-    _initialize_export_progress_bar()
 
     # Check program, commands, raise exception on failure
     program_settings = _get_settings()
@@ -97,7 +101,13 @@ def save_program(*args):
 
     pm.currentTime(start_frame)
 
-    command_dicts = _get_command_dicts(*program_settings)
+    # Create progress window and save program
+    _initialize_export_progress_window('Saving')
+    try:
+        command_dicts = _get_command_dicts(*program_settings)
+    except mimic_utils.MimicError:
+        pm.headsUpMessage('Program save canceled.')
+        return
 
     violation_exception, violation_warning = _check_command_dicts(command_dicts, *program_settings)
 
@@ -109,7 +119,7 @@ def save_program(*args):
 
     if not using_keyframes_only:
         if violation_exception:
-            _initialize_export_progress_bar(is_on=False)
+            _destroy_progress_window()
 
             pm.scrollField(OUTPUT_WINDOW_NAME,
                    insertText='\n\nNO PROGRAM EXPORTED!',
@@ -145,7 +155,7 @@ def save_program(*args):
         pm.headsUpMessage('Program exported successfuly; ' \
                           'See Mimic output window for details')
 
-    _initialize_export_progress_bar(is_on=False)
+    _destroy_progress_window()
 
 
 def _process_program(command_dicts, robot, animation_settings, postproc_settings, user_options):
@@ -962,6 +972,7 @@ def _sample_frames_get_command_dicts(robot_name, frames, animation_settings, use
     end_frame = animation_settings['End Frame']
 
     preview_in_viewport = postproc_settings['Preview in Viewport']
+    export_progress = 0
 
     for frame in frames:
 
@@ -1010,7 +1021,7 @@ def _sample_frames_get_command_dicts(robot_name, frames, animation_settings, use
                 pass
         command_dicts.append(command_dict)
         pm.refresh()
-        _update_export_progress_bar(start_frame, end_frame, frame)
+        export_progress = _update_export_progress_window(start_frame, end_frame, frame, export_progress)
     # Reset current frame (just in case)
     pm.currentTime(frames[0])
 
@@ -1226,22 +1237,58 @@ def _sample_frame_get_configuration(robot_name, frame):
     return configuration
 
 
-def _initialize_export_progress_bar(is_on=True):
+def _initialize_export_progress_window(title):
     """
+    Create progress window with a range from 0 - 100%.
+
+    :param title: Title of progress window
     """
-    pm.progressBar('pb_exportProgress', edit=True, progress=0)
-    pm.progressBar('pb_exportProgress', edit=True, visible=is_on)
+    _destroy_progress_window()
+
+    #  Create our progress window
+    pm.progressWindow(title=title,
+                      status='0%',
+                      progress=0,
+                      maxValue=100,
+                      isInterruptable=True)
 
 
-def _update_export_progress_bar(start_frame, end_frame, frame_index):
+def _destroy_progress_window():
+    """ Destroy any extant progress windows. Only one progress window can exist
+    at a time.
     """
+    pm.progressWindow(endProgress=True)
+
+
+def _update_export_progress_window(start_frame, end_frame, frame_index, prev_progress):
     """
+    Update progress displayed in the progress window. Check if user has pressed
+    'Esc' and raise MimicError to cancel export.
+
+    :param start_frame: export starting frame
+    :param end_frame: export ending frame
+    :param frame_index: most recently processed frame (between start and end)
+    :param prev_progress: previous export progress (integer from 0 - 100)
+    :return: current export progress (integer from 0 - 100)
+    """
+
+    # Check if the user pressed 'Esc'
+    if pm.progressWindow(query=True, isCancelled=True):
+        _destroy_progress_window()
+        raise mimic_utils.MimicError('Path export canceled by user.')
+
+    export_progress = 0
+
     frame_range = end_frame - start_frame
-
-    if (frame_range == 0):
-        step = 0
-    else:
+    if frame_range:
         export_bar_range = 100
         step = ((frame_index - start_frame) * export_bar_range) / frame_range
-        pm.progressBar('pb_exportProgress', edit=True, progress=int(step))
+        export_progress = int(step)
 
+        # Updating the Maya UI is slow, so we only make updates if we need to.
+        if export_progress != prev_progress:
+            pm.progressWindow(edit=True,
+                              progress=export_progress,
+                              status='{}%'.format(export_progress))
+
+    return export_progress
