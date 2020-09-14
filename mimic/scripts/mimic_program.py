@@ -1287,9 +1287,8 @@ def _update_export_progress_window(start_frame, end_frame, frame_index, prev_pro
 
         # Updating the Maya UI is slow, so we only make updates if we need to.
         if export_progress != prev_progress:
-            if export_progress % 2 == 0:
-                pm.progressWindow(edit=True,
-                                  progress=export_progress,
-                                  status='Progress:')
+            pm.progressWindow(edit=True,
+                              progress=export_progress,
+                              status='Progress:')
 
     return export_progress
