@@ -59,10 +59,12 @@ class robotAxisDynamics(OpenMaya.MPxNode):
 
         # Output Data Handles
         # vel_data_handle = pDataBlock.outputValue(robotAxisDynamics.vel_attr)
-        accel_data_handle = pDataBlock.outputValue(robotAxisDynamics.accel_attr)
-        jerk_data_handle = pDataBlock.outputValue(robotAxisDynamics.jerk_attr)
+        # accel_data_handle = pDataBlock.outputValue(robotAxisDynamics.accel_attr)
+        # jerk_data_handle = pDataBlock.outputValue(robotAxisDynamics.jerk_attr)
 
         vel_array_data_handle = pDataBlock.outputArrayValue(robotAxisDynamics.vel_attr)
+        accel_array_data_handle = pDataBlock.outputArrayValue(robotAxisDynamics.accel_attr)
+        jerk_array_data_handle = pDataBlock.outputArrayValue(robotAxisDynamics.jerk_attr)
 
         ## Extract the actual value associated to our input attribute
         # pos = pos_data_handle.asAngle().asDegrees()
@@ -73,103 +75,124 @@ class robotAxisDynamics(OpenMaya.MPxNode):
         # ==================================#
         if live:
 
-            for i in range(num_elements):
-                pos_array_data_handle.jumpToLogicalElement(i)
-                pos_data_handle = pos_array_data_handle.inputValue()
+            # for i in range(num_elements):
+            #     pos_array_data_handle.jumpToLogicalElement(i)
+            #     pos_data_handle = pos_array_data_handle.inputValue()
+            #
+            #     axis_i_pos = pos_data_handle.asAngle().asDegrees()
+            #
+            #     try:
+            #         vel_array_data_handle.jumpToLogicalElement(i)
+            #         vel_data_handle = vel_array_data_handle.outputValue()
+            #     except:
+            #         vel_data_handle = vel_array_data_handle.builder().addElement(i)
+            #
+            #     # Convert to MAngle data type for output
+            #     # (the "2" is for data type degrees. 1 = radians)
+            #     # axis_i_vel = OpenMaya.MAngle(axis_i_pos - 10, 2)
+            #
+            #     # Set the Output Values
+            #     # vel_data_handle.setMAngle(axis_i_vel)
+            #     print "Pos: {} | Vel: {}".format(axis_i_pos, axis_i_pos - 10)
+            #     vel_data_handle.setFloat(axis_i_pos - 10)
 
-                axis_i_pos = pos_data_handle.asAngle().asDegrees()
-
-                try:
-                    vel_array_data_handle.jumpToLogicalElement(i)
-                    vel_data_handle = vel_array_data_handle.outputValue()
-                except:
-                    vel_data_handle = vel_array_data_handle.builder().addElement(i)
-
-                # Convert to MAngle data type for output
-                # (the "2" is for data type degrees. 1 = radians)
-                # axis_i_vel = OpenMaya.MAngle(axis_i_pos - 10, 2)
-
-                # Set the Output Values
-                # vel_data_handle.setMAngle(axis_i_vel)
-                print "Pos: {} | Vel: {}".format(axis_i_pos, axis_i_pos - 10)
-                vel_data_handle.setFloat(axis_i_pos - 10)
-
-                # if not vel_array_data_handle.next():
-                #     vel_array_data_handle.builder().growArray(1)
 
             # TODO Go back to original way of accessing input plug elements, but use output array builder to add
             # Corresponding output elements
 
-            # obj = self.thisMObject()
-            # objMfn = OpenMaya.MFnDependencyNode(obj)
-            #
-            # ## Get the plug of the node. (networkedplug = False, as it no longer profides a speed improvement)
-            # plug = objMfn.findPlug('position', False)
-            #
-            # axis_position_indices = plug.getExistingArrayAttributeIndices()
-            #
-            # if axis_position_indices:
-            #     axis_position_connections = []
-            #
-            #     # Get the current time
-            #     time_0 = OpenMayaAnim.MAnimControl.currentTime()
-            #
-            #     time__2 = time_0 - 2
-            #     time__1 = time_0 - 1
-            #     time_1 = time_0 + 1
-            #     time_2 = time_0 + 2
-            #
-            #     delta_t_sec = (time_0 - time__1).asUnits(OpenMaya.MTime.kSeconds)
-            #
-            #     mdg__2 = OpenMaya.MDGContext(OpenMaya.MTime(time__2))
-            #     mdg__1 = OpenMaya.MDGContext(OpenMaya.MTime(time__1))
-            #     mdg_0 = OpenMaya.MDGContext(OpenMaya.MTime(time_0))
-            #     mdg_1 = OpenMaya.MDGContext(OpenMaya.MTime(time_1))
-            #     mdg_2 = OpenMaya.MDGContext(OpenMaya.MTime(time_2))
-            #
-            #     for i in axis_position_indices:
-            #         axis_i_plug = plug.elementByLogicalIndex(i)
-            #
-            #         # Check if the plug still has a connection; if not, continue to the next one
-            #         if not axis_i_plug.isConnected:
-            #             continue
-            #
-            #         # If the plug has a connection, add its index to the list of axes
-            #         axis_position_connections.append(i)
-            #
-            #         p__2 = axis_i_plug.asMAngle(mdg__2).asDegrees()
-            #         p__1 = axis_i_plug.asMAngle(mdg__1).asDegrees()
-            #         p_0 = axis_i_plug.asMAngle(mdg_0).asDegrees()
-            #         p_1 = axis_i_plug.asMAngle(mdg_1).asDegrees()
-            #         p_2 = axis_i_plug.asMAngle(mdg_2).asDegrees()
-            #
-            #         stencil = [p__2, p__1, p_0, p_1, p_2]
-            #
-            #         ####ACCUMULATE ROTATIONS#####
-            #         for i, point in enumerate(stencil):
-            #             if i == 0:
-            #                 continue
-            #             else:
-            #                 p_in = point
-            #                 p_0 = stencil[i - 1]
-            #
-            #                 stencil[i] = self.accumulate_rotation(p_in, p_0)
-            #
-            #         derivatives = self.five_point_stencil(stencil, delta_t_sec)
-            #
-            #         vel = abs(round(derivatives[0], 2))
-            #         accel = abs(round(derivatives[1], 2))
-            #         jerk = abs(round(derivatives[2], 2))
-            #
-            # # Set the Output Values
-            # # vel_data_handle.setFloat(vel)
-            # # accel_data_handle.setFloat(accel)
-            # # jerk_data_handle.setFloat(jerk)
+            obj = self.thisMObject()
+            objMfn = OpenMaya.MFnDependencyNode(obj)
+
+            ## Get the plug of the node. (networkedplug = False, as it no longer profides a speed improvement)
+            plug = objMfn.findPlug('position', False)
+
+            axis_position_indices = plug.getExistingArrayAttributeIndices()
+
+            if axis_position_indices:
+                axis_position_connections = []
+
+                # Get the current time
+                time_0 = OpenMayaAnim.MAnimControl.currentTime()
+
+                time__2 = time_0 - 2
+                time__1 = time_0 - 1
+                time_1 = time_0 + 1
+                time_2 = time_0 + 2
+
+                delta_t_sec = (time_0 - time__1).asUnits(OpenMaya.MTime.kSeconds)
+
+                mdg__2 = OpenMaya.MDGContext(OpenMaya.MTime(time__2))
+                mdg__1 = OpenMaya.MDGContext(OpenMaya.MTime(time__1))
+                mdg_0 = OpenMaya.MDGContext(OpenMaya.MTime(time_0))
+                mdg_1 = OpenMaya.MDGContext(OpenMaya.MTime(time_1))
+                mdg_2 = OpenMaya.MDGContext(OpenMaya.MTime(time_2))
+
+                for i in axis_position_indices:
+                    axis_i_plug = plug.elementByLogicalIndex(i)
+
+                    # Check if the plug still has a connection; if not, continue to the next one
+                    if not axis_i_plug.isConnected:
+                        continue
+
+                    # If the plug has a connection, add its index to the list of axes
+                    axis_position_connections.append(i)
+
+                    p__2 = axis_i_plug.asMAngle(mdg__2).asDegrees()
+                    p__1 = axis_i_plug.asMAngle(mdg__1).asDegrees()
+                    p_0 = axis_i_plug.asMAngle(mdg_0).asDegrees()
+                    p_1 = axis_i_plug.asMAngle(mdg_1).asDegrees()
+                    p_2 = axis_i_plug.asMAngle(mdg_2).asDegrees()
+
+                    stencil = [p__2, p__1, p_0, p_1, p_2]
+
+                    ####ACCUMULATE ROTATIONS#####
+                    for j, point in enumerate(stencil):
+                        if j == 0:
+                            continue
+                        else:
+                            p_in = point
+                            p_0 = stencil[j - 1]
+
+                            stencil[j] = self.accumulate_rotation(p_in, p_0)
+
+                    derivatives = self.five_point_stencil(stencil, delta_t_sec)
+
+                    vel = abs(round(derivatives[0], 2))
+                    accel = abs(round(derivatives[1], 2))
+                    jerk = abs(round(derivatives[2], 2))
+
+                    try:
+                        vel_array_data_handle.jumpToLogicalElement(i)
+                        vel_data_handle = vel_array_data_handle.outputValue()
+                    except:
+                        vel_data_handle = vel_array_data_handle.builder().addElement(i)
+
+                    try:
+                        accel_array_data_handle.jumpToLogicalElement(i)
+                        accel_data_handle = accel_array_data_handle.outputValue()
+                    except:
+                        accel_data_handle = accel_array_data_handle.builder().addElement(i)
+
+                    try:
+                        jerk_array_data_handle.jumpToLogicalElement(i)
+                        jerk_data_handle = jerk_array_data_handle.outputValue()
+                    except:
+                        jerk_data_handle = jerk_array_data_handle.builder().addElement(i)
+
+                    # Set the Output Values
+                    vel_data_handle.setFloat(vel)
+                    vel_data_handle.setClean()
+
+                    accel_data_handle.setFloat(accel)
+                    accel_data_handle.setClean()
+
+                    jerk_data_handle.setFloat(jerk)
+                    jerk_data_handle.setClean()
 
         # Mark the output data handle as being clean;
-        vel_data_handle.setClean()
-        accel_data_handle.setClean()
-        jerk_data_handle.setClean()
+        vel_array_data_handle.setAllClean()
+        accel_array_data_handle.setClean()
+        jerk_array_data_handle.setClean()
 
     def five_point_stencil(self, stencil, delta_t):
         """
