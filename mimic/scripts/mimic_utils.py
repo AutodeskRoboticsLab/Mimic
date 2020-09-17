@@ -2734,20 +2734,23 @@ def get_maya_framerate():
     Get the animation framerate setting used in the Maya scene.
     :return:
     """
-    if pm.currentUnit(time=True, query=True) == 'game':
+    current_unit = pm.currentUnit(time=True, query=True)
+    if current_unit == 'game':
         framerate = 15.
-    elif pm.currentUnit(time=True, query=True) == 'film':
+    elif current_unit == 'film':
         framerate = 24.
-    elif pm.currentUnit(time=True, query=True) == 'pal':
+    elif current_unit == 'pal':
         framerate = 25.
-    elif pm.currentUnit(time=True, query=True) == 'ntsc':
+    elif current_unit == 'ntsc':
         framerate = 30.
-    elif pm.currentUnit(time=True, query=True) == 'show':
+    elif current_unit == 'show':
         framerate = 48.
-    elif pm.currentUnit(time=True, query=True) == 'palf':
+    elif current_unit == 'palf':
         framerate = 50.
-    elif pm.currentUnit(time=True, query=True) == 'ntscf':
+    elif current_unit == 'ntscf':
         framerate = 60.
+    elif 'fps' in current_unit:
+    	framerate = float(current_unit.split('fps')[0])
     else:
         pm.currentUnit(time='film')
         framerate = 24.
