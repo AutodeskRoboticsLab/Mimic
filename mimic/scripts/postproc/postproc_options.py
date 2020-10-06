@@ -6,6 +6,9 @@ be integrated by all processor subclasses.
 """
 
 import sys
+import mimic_config
+reload(mimic_config)
+
 sys.dont_write_bytecode = True
 
 try:
@@ -64,10 +67,14 @@ def configure_user_options(
         include_analog_outputs=False,
         include_analog_inputs=False,
         include_checksum=False,
-        include_timestamp=False):
+        include_timestamp=False,
+        *args,
+        **kwargs):
     """
     Configure user options. Defaults every parameter to False unless specified
-    by user!
+    by user! Params args and kwargs capture any variables that may be passed
+    from old/bad configs.
+
     :param ignore_motion: Ignore all motion commands.
     :param use_motion_as_variables: Use motion as variables.
     :param use_linear_motion: Move linearly.
@@ -84,6 +91,7 @@ def configure_user_options(
     :param include_analog_outputs: Include analog outputs in command.
     :param include_analog_inputs: Include analog inputs in command.
     :param include_checksum: Include a CRC32 checksum in output.
+    :param include_timestamp: Include a timestamp in output.
     :return:
     """
     return UserOptions(
@@ -106,11 +114,6 @@ def configure_user_options(
         Include_timestamp=include_timestamp
     )
 
-# Default user options
-DEFAULT_USER_OPTIONS = configure_user_options(
-        use_nonlinear_motion=True,
-        include_axes=True
-)
 
 # System parameters
 __name = 'name'
@@ -202,6 +205,7 @@ def create_options_dict(selected_options, supported_options):
     :param supported_options: Processor-supported options
     :return:    """
     # Begin creating the dictionary
+    print(selected_options)
     options_dict = OrderedDict()
     for i in range(len(selected_options)):
         field = _fields[i]  # name of the option
@@ -233,8 +237,7 @@ def build_options_columns(name, options_dict, parent_tab_layout):
                  numberOfColumns=1,
                  adjustableColumn=1,
                  columnAttach=(1, 'left', 3),
-                 columnWidth=[(1, 200)],
-                 )
+                 columnWidth=[(1, 200)])
     # Rename the columns
     global _OPTS_COLUMN_NAME
     _OPTS_COLUMN_NAME = _OPTS_COLUMN_NAME.format(name)
@@ -242,27 +245,36 @@ def build_options_columns(name, options_dict, parent_tab_layout):
                     parent=name,
                     adj=True,
                     width=200)
+    print(options_dict)
     for i, option in enumerate(options_dict):
         pm.checkBox(options_dict[option][__name],  # cb_...
                     label=option,  # _checkbox_name_pretty
                     value=options_dict[option][__value],
                     enable=options_dict[option][__enable],
                     visible=options_dict[option][__visible],
-                    parent=_OPTS_COLUMN_NAME)
+                    parent=_OPTS_COLUMN_NAME,
+                    changeCommand=pm.CallbackWithArgs(mimic_config.Prefs.update_postproc_options,
+                                                      mimic_config.FILE,
+                                                      option))
     # Return to parent
     pm.setParent(parent_tab_layout)
 
 
-def overwrite_options(*args):
+def _overwrite_options(pref_level, all_visible, value, *args):
     """
     Overwrite the given checkbox parameters.
     :return:
     """
+    print('in _overwrite_options(): pref_level:{}, args:{}'.format(pref_level, value))
+    mimic_config.Prefs.set('DEFAULT_POST_PROCESSOR', value, pref_level)
+
     # Get the new parameters from the Mimic UI
     try:
         selected_options = get_user_selected_options()
     except Exception:  # none configured
-        selected_options = DEFAULT_USER_OPTIONS
+        # TODO(Harry): When does this exception actually fire?
+        selected_options = configure_user_options(
+                                mimic_config.Prefs.get_postproc_options(pref_level))
     supported_options = get_processor_supported_options()
     options_dict = create_options_dict(selected_options, supported_options)
 
@@ -272,4 +284,13 @@ def overwrite_options(*args):
                     edit=True,
                     value=options_dict[option][__value],
                     enable=options_dict[option][__enable],
-                    visible=options_dict[option][__visible])
+                    visible=True if all_visible else options_dict[option][__visible])
+
+
+# TODO(Harry): Clean up this mess
+def overwrite_options(pref_level, *args):
+    _overwrite_options(pref_level, False, *args)
+
+
+def overwrite_options_all_visible(pref_level, *args):
+    _overwrite_options(pref_level, True, *args)

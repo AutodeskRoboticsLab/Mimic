@@ -22,6 +22,10 @@ reload(general_utils)
 reload(mimic_config)
 reload(mimic_ui)
 
+mimic_config.Prefs.delete_prefs(mimic_config.FILE)
+mimic_config.Prefs.delete_prefs(mimic_config.USER)
+mimic_config.Prefs.save_prefs_in_maya_file(general_utils.get_mimic_dir())
+
 
 def load_mimic_plugins():
     """
@@ -121,3 +125,6 @@ def run():
     load_mimic_plugins()
     # Build the UI itself
     mimic_ui.build_mimic_ui()
+
+    # Register callbacks that reload mimic when a file is opened/created
+    mimic_config.register_config_callbacks()

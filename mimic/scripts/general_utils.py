@@ -23,6 +23,8 @@ import math
 
 import mimic_config
 
+reload(mimic_config)
+
 
 def get_mimic_version():
     """
@@ -94,7 +96,7 @@ def get_rigs_dict():
     return rigs
 
 
-def get_rigs_names(rigs):
+def get_rigs_names(rigs, default_rig=None):
     """
     Get the names of all rigs from rigs dictionary.
     :param rigs: rigs dictionary.
@@ -103,10 +105,9 @@ def get_rigs_names(rigs):
     names = rigs.keys()
     names.sort()
     # Get default from config
-    default = mimic_config.DEFAULT_ROBOT
-    if default in names:
-        names.remove(default)
-        names.insert(0, default)
+    if default_rig in names:
+        names.remove(default_rig)
+        names.insert(0, default_rig)
     return names
 
 

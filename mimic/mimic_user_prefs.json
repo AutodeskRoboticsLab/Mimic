@@ -1,0 +1,41 @@
+{
+    "DEFAULT_SAMPLE_RATE_UNITS": "frames", 
+    "DEFAULT_OUTPUT_NAME": "output123", 
+    "OPTS_IGNORE_WARNINGS": false, 
+    "DEFAULT_SAMPLE_RATE_VALUE": 1, 
+    "DEFAULT_TEMPLATE_NAME": "template", 
+    "NOMINAL_ACCELERATION_LIMIT": 9999.9, 
+    "POSTPROC": {
+        "DEFAULT": {
+            "INCLUDE_EXTERNAL_AXES": false, 
+            "INCLUDE_DIGITAL_INPUTS": false, 
+            "IGNORE_MOTION": false, 
+            "USE_NONLINEAR_MOTION": true, 
+            "INCLUDE_TIMESTAMP": false, 
+            "IGNORE_IOS": false, 
+            "INCLUDE_DIGITAL_OUTPUTS": false, 
+            "INCLUDE_CONFIGURATION": false, 
+            "INCLUDE_ANALOG_INPUTS": false, 
+            "INCLUDE_CHECKSUM": false, 
+            "USE_CONTINUOUS_MOTION": false, 
+            "USE_MOTION_AS_VARIABLES": false, 
+            "USE_LINEAR_MOTION": false, 
+            "INCLUDE_AXES": true, 
+            "INCLUDE_ANALOG_OUTPUTS": false, 
+            "PROCESS_IOS_FIRST": false, 
+            "INCLUDE_POSE": false
+        }
+    }, 
+    "NOMINAL_JERK_LIMIT": 99999.9, 
+    "SAMPLE_KEYFRAMES_ONLY": false, 
+    "ANIMATION_RANGE_START": 1, 
+    "SHADER_RANGE": 20, 
+    "DEFAULT_ROBOT": "KUKA KR 1000 TITAN", 
+    "DEFAULT_PROGRAM_DIRECTORY": "", 
+    "OPTS_OVERWRITE_EXISTING_FILE": true, 
+    "OPTS_REDUNDANT_SOLUTIONS_USER_PROMPT": false, 
+    "DEFAULT_POST_PROCESSOR": "", 
+    "NOMINAL_VELOCITY_LIMIT": 999.9, 
+    "ANIMATION_RANGE_END": 200, 
+    "OPTS_PREVIEW_IN_VIEWPORT": false
+}

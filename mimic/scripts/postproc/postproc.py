@@ -8,8 +8,11 @@ Generic post processor object.
 import os
 from collections import namedtuple
 
-import postproc_config
 import general_utils
+import mimic_config
+
+reload(general_utils)
+reload(mimic_config)
 
 # PARAMS
 __axis_1 = 'axis_1'
@@ -152,13 +155,16 @@ class PostProcessor(object):
         :param type_processor: Type of this processor
         :param program_file_extension: Type of the output file
         """
+        print('PostProcessor.__init__()')
         # Set processor parameters
         self.type_robot = type_robot
         self.type_processor = type_processor
         self.program_file_extension = program_file_extension
         self.program_directory = self._get_program_directory()
-        self.program_template_name = self._get_program_name(default=postproc_config.DEFAULT_TEMPLATE_NAME)
-        self.program_output_name = self._get_program_name(default=postproc_config.DEFAULT_OUTPUT_NAME)
+        self.program_template_name = self._get_program_name(
+            default=mimic_config.Prefs.get('DEFAULT_TEMPLATE_NAME'))
+        self.program_output_name = self._get_program_name(
+            default=mimic_config.Prefs.get('DEFAULT_OUTPUT_NAME'))
         self.default_program = def_program_template
 
     def _get_program_directory(self, directory=None):
@@ -345,8 +351,9 @@ class PostProcessor(object):
         :param template_filename: Filename for template itself.
         :return:
         """
+        print('Postprocessor.process()')
         self.program_template_name = self._get_program_name(
-            template_filename, default=postproc_config.DEFAULT_TEMPLATE_NAME)
+            template_filename, default=mimic_config.Prefs.get('DEFAULT_TEMPLATE_NAME'))
         processed_commands = []
         for command in commands:
             processed_command = self._process_command(command, opts)
@@ -365,7 +372,7 @@ class PostProcessor(object):
         :return:
         """
         self.program_output_name = self._get_program_name(
-            output_filename, default=postproc_config.DEFAULT_OUTPUT_NAME)
+            output_filename, default=mimic_config.Prefs.get('DEFAULT_OUTPUT_NAME'))
         output_path = self._adjust_program_output_path(output_filename, overwrite)
         with open(output_path, 'w') as f:
             f.write(content)
