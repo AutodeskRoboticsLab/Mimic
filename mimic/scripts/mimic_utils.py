@@ -2798,13 +2798,10 @@ def add_limits_to_robot(robot, limit_type):
     target_ctrl_path = get_target_ctrl_path(robot)
 
     # Get nominal limits from mimic config file
-    # TODO(Harry): Clean this up?
-    if limit_type == 'Velocity':
-        nominal_limit = mimic_config.Pref.get('NOMINAL_VELOCITY_LIMIT')
-    elif limit_type == 'Accel':
-        nominal_limit = mimic_config.Pref.get('NOMINAL_ACCELERATION_LIMIT')
-    elif limit_type == 'Jerk':
-        nominal_limit = mimic_config.Pref.get('NOMINAL_JERK_LIMIT')
+    limits = {'Velocity': 'NOMINAL_VELOCITY_LIMIT',
+              'Accel': 'NOMINAL_ACCELERATION_LIMIT',
+              'Jerk': 'NOMINAL_JERK_LIMIT'}
+    nominal_limit = mimic_config.Prefs.get(limits.get(limit_type, None))
 
     # Define Parent Attribute
     parent_attr_path = 'axis{}Limits'.format(limit_type)
