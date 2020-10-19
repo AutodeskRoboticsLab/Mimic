@@ -141,7 +141,7 @@ class Prefs(object):
         print('get()', local_key, pref_level)
         # Make sure the preference should exist.
         assert local_key in cls.defaults, \
-            'Error retrieving preference {}.Preference does not exist'.format(local_key)
+            'Error retrieving preference {}. Preference does not exist'.format(local_key)
 
         prefs = cls.get_prefs_dict(pref_level)
 
@@ -389,6 +389,7 @@ class Prefs(object):
 
     @classmethod
     def set_user_pref(cls, local_key, val, *args):
+        print('set_user_prefs()', (local_key, val, args))
         cls.set(local_key, val, pref_level=USER)
 
     @classmethod

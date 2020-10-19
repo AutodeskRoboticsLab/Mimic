@@ -516,10 +516,10 @@ def _build_general_settings_tab(parent_layout):
                       select=1 if selected_units == 'seconds' else 2,  # 1-based integer
                       onCommand1 = pm.CallbackWithArgs(
                           Prefs.set,
-                          'DEFAULT_SAMPLE_RATE_UNITS', 'seconds'),
+                          'DEFAULT_SAMPLE_RATE_UNITS', 'seconds', mimic_config.FILE),
                       onCommand2 = pm.CallbackWithArgs(
                           Prefs.set,
-                          'DEFAULT_SAMPLE_RATE_UNITS', 'frames'))
+                          'DEFAULT_SAMPLE_RATE_UNITS', 'frames', mimic_config.FILE))
     pm.setParent('..')
 
     pm.rowLayout(numberOfColumns=1,
@@ -532,10 +532,10 @@ def _build_general_settings_tab(parent_layout):
                    select=Prefs.get('SAMPLE_KEYFRAMES_ONLY'),
                    onCommand=pm.CallbackWithArgs(
                        Prefs.set,
-                       'SAMPLE_KEYFRAMES_ONLY', True),
+                       'SAMPLE_KEYFRAMES_ONLY', True, mimic_config.FILE),
                    offCommand=pm.CallbackWithArgs(
                        Prefs.set,
-                       'SAMPLE_KEYFRAMES_ONLY', False))
+                       'SAMPLE_KEYFRAMES_ONLY', False, mimic_config.FILE))
     pm.setParent('..')
 
     pm.rowLayout(numberOfColumns=3,
