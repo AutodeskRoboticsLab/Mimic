@@ -80,6 +80,7 @@ class MimicPreferencesWindow(object):
         pm.separator(defineTemplate=self.ui_template, height=5, style='none')
         pm.columnLayout(defineTemplate=self.ui_template, adj=True, columnAttach=('both', 5))
         pm.textField(defineTemplate=self.ui_template, font=mimic_ui.FONT)
+        # pm.frameLayout(defineTemplate=self.ui_template, collapsable=True)
 
     def _delete_window(self):
         # If the window already exists, delete the window
@@ -319,11 +320,10 @@ class MimicPreferencesWindow(object):
                 with pm.rowLayout(columnWidth2=(60, 1)):
                     # Post processor option menu list
                     pm.text(label='Processor:')
-                    pm.optionMenu('postProcessorList',
+                    pm.optionMenu('prefs_postProcessorList',
                                   height=20,
                                   changeCommand=pm.CallbackWithArgs(
-                                      postproc_options.overwrite_options_all_visible,
-                                      mimic_config.USER))
+                                      postproc_options.update_prefs_ui_postroc_options))
 
                     # Get supported post-processors and fill option menu list
                     post_processors = postproc_setup.get_processor_names(mimic_config.USER)
@@ -335,7 +335,8 @@ class MimicPreferencesWindow(object):
                 with pm.columnLayout(columnAttach=('left', 65)):
                     # Get the options
                     selected_options = Prefs.get_postproc_options(mimic_config.USER)
-                    supported_options = postproc_options.get_processor_supported_options()
+                    supported_options = postproc_options.get_processor_supported_options(
+                        'prefs_postProcessorList')
 
                     # Create the options dictionary and build the output
                     options_dict = postproc_options.create_options_dict(
@@ -343,7 +344,7 @@ class MimicPreferencesWindow(object):
 
                     # Construct the output columns
                     for option_name, option_val in options_dict.items():
-                        pm.checkBox(option_val['name'],  # cb_...
+                        pm.checkBox('prefs_' + option_val['name'],  # cb_...
                                     label=option_name,  # _checkbox_name_pretty
                                     value=option_val['value'],
                                     enable=option_val['enable'],

@@ -569,8 +569,7 @@ def _build_general_settings_tab(parent_layout):
     pm.optionMenu('postProcessorList',
                   label='Processor:',
                   height=18,
-                  changeCommand=pm.CallbackWithArgs(postproc_options.overwrite_options,
-                                                    mimic_config.FILE))
+                  changeCommand=pm.CallbackWithArgs(postproc_options.overwrite_options))
 
     # Get supported post-processors and fill option menu list
     supported_post_processors = postproc_setup.get_processor_names(mimic_config.FILE)

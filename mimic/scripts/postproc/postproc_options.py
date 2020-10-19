@@ -92,6 +92,8 @@ def configure_user_options(
     :param include_analog_inputs: Include analog inputs in command.
     :param include_checksum: Include a CRC32 checksum in output.
     :param include_timestamp: Include a timestamp in output.
+    :param args: Unused - capture any invalid params
+    :param kwargs: Unused - capture any invalid params.
     :return:
     """
     return UserOptions(
@@ -145,7 +147,7 @@ def format_field_name_for_pretty_ui(field):
     return field.replace('_', ' ')
 
 
-def get_user_selected_options():
+def get_user_selected_options(field_namespace=''):
     """
     Get the user-selected options from the Mimic UI and output a complete
     UserOptions tuple. Queries checkboxes only!
@@ -155,7 +157,7 @@ def get_user_selected_options():
     # Get user-selected options from UI
     for i in range(len(_fields)):
         field = _fields[i]
-        checkbox_name = format_field_name_for_checkbox(field)
+        checkbox_name = field_namespace + format_field_name_for_checkbox(field)
         checkbox_value = pm.checkBox(checkbox_name,
                                      value=True,
                                      query=True)
@@ -164,13 +166,13 @@ def get_user_selected_options():
     return UserOptions(*values)
 
 
-def get_processor_supported_options():
+def get_processor_supported_options(postproc_list='postProcessorList'):
     """
     Get the user-selected options from the user-selected processor and output
     a complete UserOptions tuple.
     :return:
     """
-    processor_type = pm.optionMenu('postProcessorList',
+    processor_type = pm.optionMenu(postproc_list,
                                    query=True,
                                    value=True)
     processor = postproc_setup.POST_PROCESSORS[processor_type]()
@@ -260,37 +262,67 @@ def build_options_columns(name, options_dict, parent_tab_layout):
     pm.setParent(parent_tab_layout)
 
 
-def _overwrite_options(pref_level, all_visible, value, *args):
+def _overwrite_options(post_proc, postproc_list, field_namespace, pref_level, all_visible):
     """
-    Overwrite the given checkbox parameters.
+    Update the Postrocessor options UI in the Mimic ui and the Preferences ui windows.
+
+    Get the available Postprocessor options. Display all options as checkboxes,
+    and automatically check the user-selected boxes. Save updates as options are
+    selected/deselected.
+
+    :param post_proc: bool: value of the option that was selected
+    :param postproc_list: str: id of the postproc option list to update
+    :param field_namespace: str: namespace of the checkbox fields
+    :param pref_level: mimic_config preference level
+    :param all_visible: bool: Will update UI to display un-selectable options
+
     :return:
     """
-    print('in _overwrite_options(): pref_level:{}, args:{}'.format(pref_level, value))
-    mimic_config.Prefs.set('DEFAULT_POST_PROCESSOR', value, pref_level)
+    print('in _overwrite_options(): '
+          'post_proc:{}, '
+          'postproc_list:{}, '
+          'window_name:{}, '
+          'pref_level:{}, '
+          'all_visible:{}'
+          .format(post_proc, postproc_list, field_namespace, pref_level, all_visible))
+
+    mimic_config.Prefs.set('DEFAULT_POST_PROCESSOR', post_proc, pref_level)
 
     # Get the new parameters from the Mimic UI
     try:
-        selected_options = get_user_selected_options()
+        selected_options = get_user_selected_options(field_namespace)
     except Exception:  # none configured
         # TODO(Harry): When does this exception actually fire?
         selected_options = configure_user_options(
                                 mimic_config.Prefs.get_postproc_options(pref_level))
-    supported_options = get_processor_supported_options()
+    supported_options = get_processor_supported_options(postproc_list)
     options_dict = create_options_dict(selected_options, supported_options)
 
     # Fill both columns with User-Options
     for i, option in enumerate(options_dict):
-        pm.checkBox(options_dict[option][__name],  # cb_...
+
+        print('i:{}, option:{}, value:{}'.format(i, option, options_dict[option][__value]))
+        print('options_dict:{}'.format(options_dict))
+        pm.checkBox(field_namespace + options_dict[option][__name],  # cb_...
                     edit=True,
                     value=options_dict[option][__value],
                     enable=options_dict[option][__enable],
                     visible=True if all_visible else options_dict[option][__visible])
 
 
-# TODO(Harry): Clean up this mess
-def overwrite_options(pref_level, *args):
-    _overwrite_options(pref_level, False, *args)
+# TODO(Harry): Verify Postproc options work!!!
+def overwrite_options(post_proc, *args):
+    _overwrite_options(post_proc=post_proc,
+                       postproc_list='postProcessorList',
+                       field_namespace='',
+                       pref_level=mimic_config.FILE,
+                       all_visible=False)
 
 
-def overwrite_options_all_visible(pref_level, *args):
-    _overwrite_options(pref_level, True, *args)
+def update_prefs_ui_postroc_options(post_proc, *args):
+    print('postproc:{}, args:{}'.format(post_proc, args))
+    _overwrite_options(post_proc=post_proc,
+                       postproc_list='prefs_postProcessorList',
+                       field_namespace='prefs_',
+                       pref_level=mimic_config.USER,
+                       all_visible=True)
