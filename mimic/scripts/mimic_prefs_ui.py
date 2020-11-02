@@ -98,7 +98,6 @@ class MimicPreferencesWindow(object):
         and back-end functions
         :return:
         """
-        # TODO(Harry): Lock window width
         # Create window
         mimic_prefs_window = pm.window(self.window_name,
                                        sizeable=False,
@@ -115,8 +114,11 @@ class MimicPreferencesWindow(object):
         pm.setUITemplate(self.ui_template, pushTemplate=True)
 
         # TODO(Harry): Align Mimic Logo
-        with pm.columnLayout(width=300, columnAttach=('both', 0)):
-            pm.image(image='mimic_logo.png', width=244, height=60)
+        with pm.columnLayout(width=300, columnAttach=('left', 0)):
+            padding = (300 - 244) / 2
+            with pm.rowLayout(numberOfColumns=1, height=60,
+                              columnAttach=(1, 'both', padding)):
+                pm.image(image='mimic_logo.png', width=244, height=60)
 
         # Set up Tabs
         form = pm.formLayout()
@@ -130,14 +132,18 @@ class MimicPreferencesWindow(object):
             self._build_motion_limits_frame()
             self._build_ui_settings_frame()
             self._build_program_settings_frame()
-            self._build_postproc_settings_frame()
             self._build_buttons()
+
+        # Build "PostProcessor" Tab
+        with pm.columnLayout(width=270, columnAttach=('both', 0)) as postproc_tab:
+            self._build_postproc_settings_frame()
 
         # Build "Hotkeys" Tab
         with pm.columnLayout(width=270, columnAttach=('both', 0)) as hotkeys_tab:
             self._build_hotkeys_frame()
 
         pm.tabLayout(tabs, edit=True, tabLabel=((general_tab, 'General'),
+                                                (postproc_tab, 'PostProcessor'),
                                                 (hotkeys_tab, 'Hotkeys')))
 
         # Reset UI template
