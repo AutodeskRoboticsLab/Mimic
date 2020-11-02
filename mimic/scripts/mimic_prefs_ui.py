@@ -80,7 +80,8 @@ class MimicPreferencesWindow(object):
         pm.separator(defineTemplate=self.ui_template, height=5, style='none')
         pm.columnLayout(defineTemplate=self.ui_template, adj=True, columnAttach=('both', 5))
         pm.textField(defineTemplate=self.ui_template, font=mimic_ui.FONT)
-        # pm.frameLayout(defineTemplate=self.ui_template, collapsable=True)
+        # TODO(Harry): Fix window height when collapsing frames
+        pm.frameLayout(defineTemplate=self.ui_template, collapsable=True)
 
     def _delete_window(self):
         # If the window already exists, delete the window
@@ -134,7 +135,7 @@ class MimicPreferencesWindow(object):
             self._build_program_settings_frame()
             self._build_buttons()
 
-        # Build "PostProcessor" Tab
+        # Build "Post Processor" Tab
         with pm.columnLayout(width=270, columnAttach=('both', 0)) as postproc_tab:
             self._build_postproc_settings_frame()
 
@@ -142,9 +143,15 @@ class MimicPreferencesWindow(object):
         with pm.columnLayout(width=270, columnAttach=('both', 0)) as hotkeys_tab:
             self._build_hotkeys_frame()
 
+        # Build "Hotkeys" Tab
+        with pm.columnLayout(width=270, columnAttach=('both', 0)) as advanced_tab:
+            self._build_advanced_frame()
+
+
         pm.tabLayout(tabs, edit=True, tabLabel=((general_tab, 'General'),
-                                                (postproc_tab, 'PostProcessor'),
-                                                (hotkeys_tab, 'Hotkeys')))
+                                                (postproc_tab, 'Post Processor'),
+                                                (hotkeys_tab, 'Hotkeys'),
+                                                (advanced_tab, 'Advanced')))
 
         # Reset UI template
         pm.setUITemplate(self.ui_template, popTemplate=True)
@@ -319,8 +326,8 @@ class MimicPreferencesWindow(object):
                                                               'OPTS_REDUNDANT_SOLUTIONS_USER_PROMPT'))
 
     def _build_postproc_settings_frame(self):
-        # Postprocessor Settings Frame
-        with pm.frameLayout(label="Postprocessor Settings"):
+        # Post Processor Settings Frame
+        with pm.frameLayout(label="Post Processor Settings"):
             with pm.columnLayout():
                 pm.separator()
                 with pm.rowLayout(columnWidth2=(60, 1)):
@@ -363,12 +370,6 @@ class MimicPreferencesWindow(object):
     def _build_buttons(self):
         # Buttons
         with pm.columnLayout():
-            pm.separator()
-            # TODO(Harry): Confirmation window. Does user REALLY want to reset??
-            pm.button('Reset to Defaults',
-                      command=self._confirm_reset_default_prefs,
-                      height=25,
-                      annotation='Reset Preferences to default values.')
             pm.separator()
             # TODO(Harry): Add pm.setFocus('something') to release focus
             pm.button('Save Preferences',
@@ -449,3 +450,14 @@ class MimicPreferencesWindow(object):
                               height=20,
                               command=pm.Callback(mimic_utils.remove_hotkey,
                                                   key_ik_fk_cmd_name))
+
+    def _build_advanced_frame(self):
+        with pm.frameLayout(label="Advanced"):
+            with pm.columnLayout():
+                pm.separator()
+                # TODO(Harry): Confirmation window. Does user REALLY want to reset??
+                pm.button('Reset to Defaults',
+                          command=self._confirm_reset_default_prefs,
+                          height=25,
+                          annotation='Reset Preferences to default values.')
+                pm.separator()
