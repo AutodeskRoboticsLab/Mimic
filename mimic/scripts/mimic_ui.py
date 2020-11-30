@@ -545,7 +545,6 @@ def _build_general_settings_tab(parent_layout):
                  height=20)
     pm.text(label='Animation frame range:')
 
-    # TODO(Harry): Add these to file-level preferences
     pm.intField("i_programStartFrame",
                 value=pm.playbackOptions(animationStartTime=True, query=True),
                 minValue=-10,
@@ -564,7 +563,6 @@ def _build_general_settings_tab(parent_layout):
 
     pm.separator(height=5, style='none')
 
-    # TODO(Harry): Make sure the postprocessor selection works
     # Post processor option menu list
     pm.optionMenu('postProcessorList',
                   label='Processor:',

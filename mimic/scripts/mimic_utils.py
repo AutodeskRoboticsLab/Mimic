@@ -339,35 +339,22 @@ def clear_fk_pose_ui(*args):
         pm.textField('t_a{}'.format(i + 1), edit=True, text='')
 
 
-def set_program_dir(*args):
-    """
-    Creates a file dialog box that allows the user to select a directory to
-    save program files.
-    :param args: Required for Maya to pass command from the UI.
-    :return:
-    """
-
-    # Propt user with file dialog box.
-    # If they don't provide any input, exit the function.
-    directory = pm.fileDialog2(fileMode=2, dialogStyle=2,
-                               startingDirectory=mimic_config.get_pref('DEFAULT_PROGRAM_DIRECTORY'))
-    if not directory:
-        return
-
-    # Assign user input to the Program Directory Text field in the Mimic UI.
-    pm.textField('t_programDirectoryText', edit=True, text=directory[0])
-    mimic_config.update_pref('DEFAULT_PROGRAM_DIRECTORY', directory[0])
-
-
-# TODO(Harry) Documentation
 def set_dir(text_field, pref_name, start_dir_callback, update_pref_callback, *args):
     """
     Creates a file dialog box that allows the user to select a directory to
     save program files.
+
+    :param text_field: str - Name of the text field that should be updated with
+        the directory path
+    :param pref_name: str - Preference name (key) in preference dict
+    :param start_dir_callback: callable - Accepts pref_name and returns path
+        to the starting directory of the file dialog box
+    :param update_pref_callback: callable - Affepts pref_name and str of the
+        selected directory. Updates the corresponding preference with the newly
+        selected directory. Returns None.
     :param args: Required for Maya to pass command from the UI.
     :return:
     """
-
     start_dir = start_dir_callback(pref_name)
 
     # Prompt user with file dialog box.
@@ -381,7 +368,6 @@ def set_dir(text_field, pref_name, start_dir_callback, update_pref_callback, *ar
     pm.textField(text_field, edit=True, text=directory[0])
     if update_pref_callback:
         update_pref_callback(pref_name, directory[0])
-
 
 
 def get_closest_fk_keyframe(robot):

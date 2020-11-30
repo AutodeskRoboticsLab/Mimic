@@ -155,7 +155,6 @@ class PostProcessor(object):
         :param type_processor: Type of this processor
         :param program_file_extension: Type of the output file
         """
-        print('PostProcessor.__init__()')
         # Set processor parameters
         self.type_robot = type_robot
         self.type_processor = type_processor
@@ -351,7 +350,6 @@ class PostProcessor(object):
         :param template_filename: Filename for template itself.
         :return:
         """
-        print('Postprocessor.process()')
         self.program_template_name = self._get_program_name(
             template_filename, default=mimic_config.Prefs.get('DEFAULT_TEMPLATE_NAME'))
         processed_commands = []

@@ -37,127 +37,195 @@ reload(analysis)
 Prefs = mimic_config.Prefs
 
 
-class MimicPreferencesWindow(object):
-    def __init__(self):
-        self.ui_template = 'PrefsTemplate'
-        self.window_name = 'mimic_preferences'
-        self.window_title = 'Mimic Preferences'
-        self._delete_window()
-        self._build_ui_template()
-        self._load_prefs()
-        window = self._build_ui()
-        window.show()
-
-    def _confirm_reset_default_prefs(self, *args):
-        delete_prefs = pm.confirmDialog \
-            (title='Reset Mimic Preferences',
-             messageAlign='right',
-             message='Are you sure you want to reset to default preferences?\n'
-                     'This will delete all user preferences.',
-             button=['Yes', 'No'], defaultButton='Yes',
-             cancelButton='No',
-             dismissString='No', icon='warning')
-
-        if delete_prefs == 'Yes':
-            Prefs.reset_user_prefs_file(general_utils.get_mimic_dir())
-            Prefs.load_into_environment(mimic_config.DEFAULT)
-            pm.deleteUI(self.window_name)
-
-            command = "import sys\n" \
-                      "sys.dont_write_bytecode = True  # don't write PYCs\n" \
-                      "import mimic_prefs_ui\n" \
-                      "reload(mimic_prefs_ui)\n" \
-                      "mimic_prefs_ui.MimicPreferencesWindow()"
-            pm.evalDeferred(command)
-
-    def _build_ui_template(self):
-        if pm.uiTemplate(self.ui_template, exists=True):
-            pm.deleteUI(self.ui_template, uiTemplate=True)
-
-        pm.uiTemplate(self.ui_template)
-        pm.rowLayout(defineTemplate=self.ui_template, numberOfColumns=2, adjustableColumn=2,
-                     columnWidth2=(90, 1), height=20)
-        pm.separator(defineTemplate=self.ui_template, height=5, style='none')
-        pm.columnLayout(defineTemplate=self.ui_template, adj=True, columnAttach=('both', 5))
-        pm.textField(defineTemplate=self.ui_template, font=mimic_ui.FONT)
-        # TODO(Harry): Fix window height when collapsing frames
-        pm.frameLayout(defineTemplate=self.ui_template, collapsable=True)
-
-    def _delete_window(self):
-        # If the window already exists, delete the window
-        if pm.window(self.window_name, exists=True):
-            pm.deleteUI(self.window_name, window=True)
-
-    def _load_prefs(self):
-        print('_load_prefs()')
-        Prefs.load_into_environment(mimic_config.DEFAULT)
-        Prefs.load_into_environment(mimic_config.USER, general_utils.get_mimic_dir())
-
-    def _build_ui(self):
+class Window(object):
+    """
+    Main Window class that other UI windows should inherit from. Right now only
+    the Preferences window inherits from this class. It should probably get
+    moved out to mimic_ui if we want other windows to inherit from it.
+    """
+    def __init__(self, title, name, width):
         """
-        Builds main Preferences UI and defines relationships between UI buttons/features
-        and back-end functions
-        :return:
+        :param title: str - window title displayed at the tope of the window
+        :param name:  str - unique identifier for the window
+        :param width:  int - desired window width. This can be overridden by
+            chilren UI elements that require additional width
         """
+        self.window_title = title
+        self.window_name = name
+        self.window_width = width  # Overall window width
+        # Maximum width of a nested/inner frame (assumes a 5px pad on left/right of window)
+        self.frame_width = self.window_width - 10
+
+    def _create_window(self):
         # Create window
-        mimic_prefs_window = pm.window(self.window_name,
+        window = pm.window(self.window_name,
                                        sizeable=False,
                                        resizeToFitChildren=True,
                                        title=self.window_title)
 
         # Set window size. This needs to be set separately from window creation,
-        # because Maya overrides settings passsed during window creation.
+        # because Maya overrides settings passed during window creation.
         # Setting height/width equal to one forces the window to resize to the
         # smallest possible size to contain any children UI elements
-        pm.window(mimic_prefs_window, edit=True, width=1, height=1)
+        pm.window(window, edit=True, width=1, height=1)
+        return window
+
+    def reload_window(self):
+        """
+        Relauches the window.
+        :return: None
+        """
+        command = "import sys\n" \
+                  "sys.dont_write_bytecode = True  # don't write PYCs\n" \
+                  "import {}\n" \
+                  "reload({})\n" \
+                  "{}.{}()".format(__name__,
+                                   __name__,
+                                   __name__,
+                                   self.__class__.__name__)
+        pm.evalDeferred(command)
+
+    def delete_window(self):
+        """
+        Delete the window.
+        :return: None
+        """
+        # If the window already exists, delete the window
+        if pm.window(self.window_name, exists=True):
+            pm.deleteUI(self.window_name, window=True)
+
+    def _push_ui_template(self):
+        """
+        Create a UI template that holds default parameters for commonly used UI
+        elements. Push the template onto the UI stack so that all following UI
+        elements will automatically inherit these default parameters. This must
+        be called after the UI window is created.
+        """
+        if pm.uiTemplate(self.window_name, exists=True):
+            pm.deleteUI(self.window_name, uiTemplate=True)
+
+        pm.uiTemplate(self.window_name)
+        pm.setUITemplate(self.window_name, pushTemplate=True)
+
+    def _pop_ui_template(self):
+        """
+        Pop the UI template from the UI stack. All elements after this call will
+        not inherit from the window's UI template.
+        """
+        pm.setUITemplate(self.window_name, popTemplate=True)
+
+    @staticmethod
+    def warning_window(title, message):
+        """
+        Display simple Yes/No confirmation window with a warning icon.
+
+        :param title: str - Title of the confirmation window
+        :param message: str - Message that the window should display
+
+        :return: bool: True is user clicks "Yes", otherwise False
+        """
+        res = pm.confirmDialog(title=title,
+                               messageAlign='right',
+                               message=message,
+                               button=['Yes', 'No'],
+                               defaultButton='Yes',
+                               cancelButton='No',
+                               dismissString='No',
+                               icon='warning')
+        return True if res == 'Yes' else False
+
+
+class MimicPreferencesWindow(Window):
+    def __init__(self):
+        super(MimicPreferencesWindow, self).__init__(title='Mimic Preferences',
+                                                     name='mimic_preferences',
+                                                     width=310)
+        # TODO(evanatherton): Replace this header
+        self.header_file = 'mimic_logo.png'
+        self.header_width = 244
+        self.header_height = 60
+
+        self.delete_window()
+
+        # Load Default Mimic prefs into Maya environment
+        Prefs.copy_prefs(mimic_config.DEFAULT, mimic_config.USER)
+        Prefs.copy_prefs(mimic_config.USER_JSON, mimic_config.USER)
+
+        self._push_ui_template()
+        self.__build_ui()
+
+    def _push_ui_template(self):
+        """
+        Set UI style.
+        :return: None
+        """
+        # Call super class to set up the UI template for us
+        super(MimicPreferencesWindow, self)._push_ui_template()
 
         # Set UI template
-        pm.setUITemplate(self.ui_template, pushTemplate=True)
+        pm.rowLayout(defineTemplate=self.window_name, numberOfColumns=2, adjustableColumn=2,
+                     columnWidth2=(90, 1), height=20)
+        pm.separator(defineTemplate=self.window_name, height=5, style='none')
+        pm.columnLayout(defineTemplate=self.window_name, adj=True, columnAttach=('both', 5))
+        pm.textField(defineTemplate=self.window_name, font=mimic_ui.FONT)
+        pm.frameLayout(defineTemplate=self.window_name, collapsable=False)
+        pm.button(defineTemplate=self.window_name, height=25)
 
-        # TODO(Harry): Align Mimic Logo
-        with pm.columnLayout(width=300, columnAttach=('left', 0)):
-            padding = (300 - 244) / 2
-            with pm.rowLayout(numberOfColumns=1, height=60,
-                              columnAttach=(1, 'both', padding)):
-                pm.image(image='mimic_logo.png', width=244, height=60)
+    def __build_ui(self):
+        """
+        Builds main Preferences UI and defines relationships between UI
+        buttons/features and back-end functions
+        :return: None
+        """
+        # Create window
+        mimic_prefs_window = self._create_window()
+        self._push_ui_template()
 
-        # Set up Tabs
-        form = pm.formLayout()
-        tabs = pm.tabLayout(innerMarginWidth=5, innerMarginHeight=5)
-        pm.formLayout(form, edit=True, attachForm=(
-            (tabs, 'top', 0), (tabs, 'left', 0), (tabs, 'bottom', 0), (tabs, 'right', 0)))
+        # Draw header/logo
+        with pm.columnLayout(width=self.window_width, columnAttach=('left', 0)):
+            header_padding = (self.window_width - self.header_width) / 2
+            with pm.rowLayout(numberOfColumns=1, height=self.header_height,
+                              columnAttach=(1, 'both', header_padding)):
+                pm.image(image=self.header_file)
+
+        # Set up Tab Layout
+        tabs = pm.tabLayout()
 
         # Build "General" Tab
-        with pm.columnLayout(width=250, columnAttach=('both', 0)) as general_tab:
-            self._build_general_settings_frame()
-            self._build_motion_limits_frame()
-            self._build_ui_settings_frame()
-            self._build_program_settings_frame()
-            self._build_buttons()
+        with pm.columnLayout(width=self.frame_width, columnAttach=('both', 0)) as general_tab:
+            self.__build_general_settings_frame()
+            self.__build_motion_limits_frame()
+            self.__build_ui_settings_frame()
+            self.__build_program_settings_frame()
+            self.__build_save_prefs_button()
 
         # Build "Post Processor" Tab
-        with pm.columnLayout(width=270, columnAttach=('both', 0)) as postproc_tab:
-            self._build_postproc_settings_frame()
+        with pm.columnLayout(width=self.frame_width, columnAttach=('both', 0)) as postproc_tab:
+            self.__build_postproc_settings_frame()
 
         # Build "Hotkeys" Tab
-        with pm.columnLayout(width=270, columnAttach=('both', 0)) as hotkeys_tab:
-            self._build_hotkeys_frame()
+        with pm.columnLayout(width=self.frame_width, columnAttach=('both', 0)) as hotkeys_tab:
+            self.__build_hotkeys_frame()
 
-        # Build "Hotkeys" Tab
-        with pm.columnLayout(width=270, columnAttach=('both', 0)) as advanced_tab:
-            self._build_advanced_frame()
+        # Build "Advanced" Tab
+        with pm.columnLayout(width=self.frame_width, columnAttach=('both', 0)) as advanced_tab:
+            self.__build_advanced_frame()
 
-
+        # Register tabs
         pm.tabLayout(tabs, edit=True, tabLabel=((general_tab, 'General'),
                                                 (postproc_tab, 'Post Processor'),
                                                 (hotkeys_tab, 'Hotkeys'),
                                                 (advanced_tab, 'Advanced')))
 
+        # Draw window
+        mimic_prefs_window.show()
         # Reset UI template
-        pm.setUITemplate(self.ui_template, popTemplate=True)
+        self._pop_ui_template()
+
         return mimic_prefs_window
 
-    def _build_general_settings_frame(self):
+    @staticmethod
+    def __build_general_settings_frame():
         # General Settings Frame
         with pm.frameLayout(label="General Settings"):
             with pm.columnLayout():
@@ -167,7 +235,6 @@ class MimicPreferencesWindow(object):
                     pm.text('Robot:')
                     pm.optionMenu(changeCommand=pm.CallbackWithArgs(Prefs.set_user_pref,
                                                                     'DEFAULT_ROBOT'))
-                    # TODO(Harry): get function to access file and user level list of robots
                     rigs = general_utils.get_rigs_dict()
                     default_rig = Prefs.get_user_pref('DEFAULT_ROBOT')
                     rig_names = general_utils.get_rigs_names(rigs, default_rig)
@@ -175,7 +242,8 @@ class MimicPreferencesWindow(object):
                         pm.menuItem(label=rig_name)
                 pm.separator()
 
-    def _build_motion_limits_frame(self):
+    @staticmethod
+    def __build_motion_limits_frame():
         # Motion Limits Frame
         with pm.frameLayout(label="Motion Limits"):
             with pm.columnLayout():
@@ -205,7 +273,8 @@ class MimicPreferencesWindow(object):
                                       'NOMINAL_JERK_LIMIT'))
                 pm.separator()
 
-    def _build_ui_settings_frame(self):
+    @staticmethod
+    def __build_ui_settings_frame():
         # UI Settings Frame
         with pm.frameLayout(label="UI Settings"):
             with pm.columnLayout():
@@ -222,7 +291,8 @@ class MimicPreferencesWindow(object):
                                       'SHADER_RANGE'))
                 pm.separator()
 
-    def _build_program_settings_frame(self):
+    @staticmethod
+    def __build_program_settings_frame():
         # Program Settings Frame
         with pm.frameLayout(label="Program Settings"):
             with pm.columnLayout():
@@ -325,7 +395,8 @@ class MimicPreferencesWindow(object):
                             changeCommand=pm.CallbackWithArgs(Prefs.set_user_pref,
                                                               'OPTS_REDUNDANT_SOLUTIONS_USER_PROMPT'))
 
-    def _build_postproc_settings_frame(self):
+    @staticmethod
+    def __build_postproc_settings_frame():
         # Post Processor Settings Frame
         with pm.frameLayout(label="Post Processor Settings"):
             with pm.columnLayout():
@@ -367,19 +438,19 @@ class MimicPreferencesWindow(object):
                                         mimic_config.USER,
                                         option_name))
 
-    def _build_buttons(self):
-        # Buttons
+    @staticmethod
+    def __build_save_prefs_button():
+        # "Save Preferences" Button
         with pm.columnLayout():
             pm.separator()
-            # TODO(Harry): Add pm.setFocus('something') to release focus
             pm.button('Save Preferences',
-                      command=pm.Callback(Prefs.save_to_json,
-                                          general_utils.get_mimic_dir()),
-                      height=25,
+                      command=pm.Callback(Prefs.save_user_prefs_to_json),
                       annotation='Save Preferences')
             pm.separator()
 
-    def _build_hotkeys_frame(self):
+    @staticmethod
+    def __build_hotkeys_frame():
+        # Hotkeys Frame
         with pm.frameLayout(label="Hotkeys"):
             with pm.columnLayout():
                 pm.separator()
@@ -430,13 +501,13 @@ class MimicPreferencesWindow(object):
                                   columnWidth=[(1, 72), (3, 45), (4, 50)]):
 
                     # Find hotkey assignment, if one exists, to populate the ui
-                    key_IkFk_hotkey_name = key_ik_fk_cmd_name + 'Hotkey'
-                    key_IkFk_key = mimic_utils.find_hotkey(key_IkFk_hotkey_name)
-                    if not key_IkFk_key:
-                        key_IkFk_key = ' key'
+                    key_ik_fk_hotkey_name = key_ik_fk_cmd_name + 'Hotkey'
+                    key_ik_fk_key = mimic_utils.find_hotkey(key_ik_fk_hotkey_name)
+                    if not key_ik_fk_key:
+                        key_ik_fk_key = ' key'
 
                     pm.text(label='Key IK/FK:')
-                    pm.textField("t_keyIkFk", placeholderText=key_IkFk_key)
+                    pm.textField("t_keyIkFk", placeholderText=key_ik_fk_key)
 
                     pm.button(label='Create',
                               width=45,
@@ -451,13 +522,107 @@ class MimicPreferencesWindow(object):
                               command=pm.Callback(mimic_utils.remove_hotkey,
                                                   key_ik_fk_cmd_name))
 
-    def _build_advanced_frame(self):
-        with pm.frameLayout(label="Advanced"):
+    def __build_advanced_frame(self):
+        # Advanced Frame
+        with pm.frameLayout(label='Advanced'):
             with pm.columnLayout():
                 pm.separator()
-                # TODO(Harry): Confirmation window. Does user REALLY want to reset??
-                pm.button('Reset to Defaults',
-                          command=self._confirm_reset_default_prefs,
-                          height=25,
-                          annotation='Reset Preferences to default values.')
-                pm.separator()
+                pm.text('User Preference Management:', align='left')
+                with pm.columnLayout(columnAttach=('both', 20)):
+                    pm.separator(height=10)
+                    pm.button('Reset to Mimic defaults',
+                              command=self.__reset_user_prefs_to_mimic_defaults)
+                    pm.separator()
+                    pm.button('Load from JSON file',
+                              command=self.__load_user_prefs_from_json_file)
+                    pm.separator()
+                    pm.button('Load from current Maya file',
+                              command=self.__load_user_prefs_from_current_maya_file)
+                    pm.separator(height=20)
+
+                pm.text('File Preference Management:', align='left')
+                with pm.columnLayout(columnAttach=('both', 20)):
+                    pm.separator(height=10)
+                    pm.button('Reset to Mimic defaults',
+                              command=self.__reset_file_prefs_to_mimic_defaults)
+                    pm.separator()
+                    pm.button('Load from User Preferences',
+                              command=self.__load_file_prefs_from_user_prefs)
+                    pm.separator()
+                    pm.button('Delete File Preferences',
+                              command=self.__delete_file_prefs_in_current_file)
+                    pm.separator()
+
+    def __reset_user_prefs_to_mimic_defaults(self, *_args):
+        confirmed = self.warning_window(
+            'Reset User Preferences to Mimic defaults',
+            'Are you sure you want to reset your user preferences to Mimic\'s default '
+            'preferences?  This will delete previously saved user preferences.')
+
+        if confirmed:
+            Prefs.reset_user_prefs_file()
+            Prefs.copy_prefs(mimic_config.DEFAULT, mimic_config.USER)
+            self.reload_window()
+
+    def __load_user_prefs_from_current_maya_file(self, *_args):
+        confirmed = self.warning_window(
+            'Load User Preferences from current Maya file',
+            'Are you sure you want to load user preferences from the opened Maya '
+            'file?  This will delete all previously saved user preferences.')
+
+        if confirmed:
+            Prefs.copy_prefs(mimic_config.FILE, mimic_config.USER)
+            Prefs.save_user_prefs_to_json()
+            self.reload_window()
+
+    def __load_user_prefs_from_json_file(self, *_args):
+        confirmed = self.warning_window(
+            'Load User Preferences from JSON file',
+            'Are you sure you want to load user preferences from a JSON file?  '
+            'This will delete all previously saved user preferences.')
+
+        if confirmed:
+            json_file = pm.fileDialog2(fileFilter='*.json', fileMode=1, dialogStyle=2)
+
+            if json_file:
+                Prefs.copy_prefs(mimic_config.EXTERNAL, mimic_config.USER,
+                                 source_file_path=json_file[0])
+                Prefs.save_user_prefs_to_json()
+                self.reload_window()
+
+    def __reset_file_prefs_to_mimic_defaults(self, *_args):
+        confirmed = self.warning_window(
+            'Reset File Preferences to Mimic defaults',
+            'Are you sure you want to reset preferences saved in the currently '
+            'open Maya file to Mimic default values?  '
+            'This will delete all previously saved file preferences.')
+
+        if confirmed:
+            Prefs.copy_prefs(mimic_config.DEFAULT, mimic_config.FILE)
+            pm.saveFile(force=True)
+            if pm.window("mimic_win", exists=True):
+                mimic_config.reload_mimic()
+
+    def __load_file_prefs_from_user_prefs(self, *_args):
+        confirmed = self.warning_window(
+            'Load File Preferences to User preferences',
+            'Are you sure you want to overwrite preferences saved in the '
+            'currently open Maya file with your user preferences?  '
+            'This will delete all previously saved file preferences.')
+
+        if confirmed:
+            Prefs.copy_prefs(mimic_config.USER_JSON, mimic_config.FILE)
+            pm.saveFile(force=True)
+            if pm.window("mimic_win", exists=True):
+                mimic_config.reload_mimic()
+
+    def __delete_file_prefs_in_current_file(self, *_args):
+        confirmed = self.warning_window(
+            'Delete File Preferences in current file',
+            'Are you sure you want to delete preferences saved in the currently '
+            'open Maya file?  '
+            'This will delete all previously saved file preferences.')
+
+        if confirmed:
+            Prefs.delete_prefs(mimic_config.FILE)
+            pm.saveFile(force=True)

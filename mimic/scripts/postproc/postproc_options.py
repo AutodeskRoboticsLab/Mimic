@@ -207,7 +207,6 @@ def create_options_dict(selected_options, supported_options):
     :param supported_options: Processor-supported options
     :return:    """
     # Begin creating the dictionary
-    print(selected_options)
     options_dict = OrderedDict()
     for i in range(len(selected_options)):
         field = _fields[i]  # name of the option
@@ -247,7 +246,6 @@ def build_options_columns(name, options_dict, parent_tab_layout):
                     parent=name,
                     adj=True,
                     width=200)
-    print(options_dict)
     for i, option in enumerate(options_dict):
         pm.checkBox(options_dict[option][__name],  # cb_...
                     label=option,  # _checkbox_name_pretty
@@ -278,21 +276,12 @@ def _overwrite_options(post_proc, postproc_list, field_namespace, pref_level, al
 
     :return:
     """
-    print('in _overwrite_options(): '
-          'post_proc:{}, '
-          'postproc_list:{}, '
-          'window_name:{}, '
-          'pref_level:{}, '
-          'all_visible:{}'
-          .format(post_proc, postproc_list, field_namespace, pref_level, all_visible))
-
     mimic_config.Prefs.set('DEFAULT_POST_PROCESSOR', post_proc, pref_level)
 
     # Get the new parameters from the Mimic UI
     try:
         selected_options = get_user_selected_options(field_namespace)
     except Exception:  # none configured
-        # TODO(Harry): When does this exception actually fire?
         selected_options = configure_user_options(
                                 mimic_config.Prefs.get_postproc_options(pref_level))
     supported_options = get_processor_supported_options(postproc_list)
@@ -301,8 +290,6 @@ def _overwrite_options(post_proc, postproc_list, field_namespace, pref_level, al
     # Fill both columns with User-Options
     for i, option in enumerate(options_dict):
 
-        print('i:{}, option:{}, value:{}'.format(i, option, options_dict[option][__value]))
-        print('options_dict:{}'.format(options_dict))
         pm.checkBox(field_namespace + options_dict[option][__name],  # cb_...
                     edit=True,
                     value=options_dict[option][__value],
@@ -310,7 +297,6 @@ def _overwrite_options(post_proc, postproc_list, field_namespace, pref_level, al
                     visible=True if all_visible else options_dict[option][__visible])
 
 
-# TODO(Harry): Verify Postproc options work!!!
 def overwrite_options(post_proc, *args):
     _overwrite_options(post_proc=post_proc,
                        postproc_list='postProcessorList',
@@ -320,7 +306,6 @@ def overwrite_options(post_proc, *args):
 
 
 def update_prefs_ui_postroc_options(post_proc, *args):
-    print('postproc:{}, args:{}'.format(post_proc, args))
     _overwrite_options(post_proc=post_proc,
                        postproc_list='prefs_postProcessorList',
                        field_namespace='prefs_',

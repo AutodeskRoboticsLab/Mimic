@@ -58,19 +58,18 @@ def get_processor_name(processor):
     return construct_processor_name(processor.type_robot, processor.type_processor)
 
 
-# TODO(Harry) Clean this up. Update markdown documentation that references this function
-def get_processor_names(pref_type=mimic_config.FILE):
+def get_processor_names(pref_level=mimic_config.FILE):
     """
     Get the names of all processors using existing POST_PROCESSORS dict.
     Sorts names alphabetically by default. User-accessible function.
-    :param pref_type: Preference level to query
+    :param pref_level: str - PREFERENCE LEVEL defined in mimic_config module
     :return: 'ROBOT_TYPE POSTPROCESSOR_TYPE'
     """
     names = POST_PROCESSORS.keys()
     names.sort()
 
-    # Get default from config
-    default = mimic_config.Prefs.get('DEFAULT_POST_PROCESSOR', pref_type)
+    # Get default from config. This is the processor that should appear first.
+    default = mimic_config.Prefs.get('DEFAULT_POST_PROCESSOR', pref_level)
 
     if default in names:
         names.remove(default)
