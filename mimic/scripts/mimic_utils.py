@@ -339,22 +339,35 @@ def clear_fk_pose_ui(*args):
         pm.textField('t_a{}'.format(i + 1), edit=True, text='')
 
 
-def set_program_dir(*args):
+def set_dir(text_field, pref_name, start_dir_callback, update_pref_callback, *args):
     """
     Creates a file dialog box that allows the user to select a directory to
     save program files.
+
+    :param text_field: str - Name of the text field that should be updated with
+        the directory path
+    :param pref_name: str - Preference name (key) in preference dict
+    :param start_dir_callback: callable - Accepts pref_name and returns path
+        to the starting directory of the file dialog box
+    :param update_pref_callback: callable - Affepts pref_name and str of the
+        selected directory. Updates the corresponding preference with the newly
+        selected directory. Returns None.
     :param args: Required for Maya to pass command from the UI.
     :return:
     """
+    start_dir = start_dir_callback(pref_name)
 
-    # Propt user with file dialog box.
+    # Prompt user with file dialog box.
     # If they don't provide any input, exit the function.
-    directory = pm.fileDialog2(fileMode=2, dialogStyle=2)
+    directory = pm.fileDialog2(fileMode=2, dialogStyle=2,
+                               startingDirectory=start_dir)
     if not directory:
         return
 
     # Assign user input to the Program Directory Text field in the Mimic UI.
-    pm.textField('t_programDirectoryText', edit=True, text=directory[0])
+    pm.textField(text_field, edit=True, text=directory[0])
+    if update_pref_callback:
+        update_pref_callback(pref_name, directory[0])
 
 
 def get_closest_fk_keyframe(robot):
@@ -2432,7 +2445,7 @@ def assign_hotkey(command_name, annotation_str, command_string):
         if pm.hotkeySet('Mimic_Hotkeys', exists=True):
             pm.hotkeySet('Mimic_Hotkeys', current=True, edit=True)
             print 'Hotkey Set changed to Mimic Hotkeys'
-        # If Mimic Hotkey set doesn't exist, propt the user to create a custom
+        # If Mimic Hotkey set doesn't exist, prompt the user to create a custom
         # Hotkey set and switch to it.
         else:
             hotkey_set_created = _create_hotkey_set()
@@ -2540,15 +2553,21 @@ def find_hotkey(hotkey_name):
 ### ---------------------------------------- ###
 
 
-def set_shader_range(*args):
+def set_shader_range_ui(*args):
     """
     Sets the range of angles within which the limit-shader will show up.
     :param args:
     :return:
     """
     shader_range = pm.floatField("f_shaderRange", value=True, query=True)
+    set_shader_range(shader_range)
 
-    robots = get_robot_roots()
+
+def set_shader_range(shader_range, most_recent=False):
+    if most_recent:
+        robots = [get_robot_roots(all_robots=True)[-1]]
+    else:
+        robots = get_robot_roots()
     if not robots:
         pm.warning('No robots selected')
         return
@@ -2765,7 +2784,10 @@ def add_limits_to_robot(robot, limit_type):
     target_ctrl_path = get_target_ctrl_path(robot)
 
     # Get nominal limits from mimic config file
-    nominal_limit = mimic_config.NOMINAL_LIMIT[limit_type]
+    limits = {'Velocity': 'NOMINAL_VELOCITY_LIMIT',
+              'Accel': 'NOMINAL_ACCELERATION_LIMIT',
+              'Jerk': 'NOMINAL_JERK_LIMIT'}
+    nominal_limit = mimic_config.Prefs.get(limits.get(limit_type, None))
 
     # Define Parent Attribute
     parent_attr_path = 'axis{}Limits'.format(limit_type)

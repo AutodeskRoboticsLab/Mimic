@@ -4,7 +4,6 @@
 """
 Creates the Mimic UI.
 """
-
 try:
     import pymel.core as pm
 
@@ -19,24 +18,22 @@ import mimic_program
 import mimic_utils
 import mimic_external_axes
 import mimic_io
-from postproc import postproc_config
 from postproc import postproc_setup
 from postproc import postproc_options
 from analysis import analysis
 
-reload(mimic_utils)
+reload(general_utils)
 reload(mimic_config)
 reload(mimic_program)
+reload(mimic_utils)
 reload(mimic_external_axes)
 reload(mimic_io)
-reload(general_utils)
 reload(postproc_setup)
-reload(postproc_config)
 reload(postproc_options)
 reload(analysis)
 
 FONT = 'smallObliqueLabelFont'
-
+Prefs = mimic_config.Prefs
 
 # MAIN FUNCTION
 def build_mimic_ui():
@@ -55,14 +52,11 @@ def build_mimic_ui():
     mimic_tab_layout = create_mimic_tabs()
     animate_tab_layout = build_animate_tab(mimic_tab_layout)
     program_tab_layout = build_program_tab(mimic_tab_layout)
-    setup_tab_layout = build_setup_tab(mimic_tab_layout)
-    prefs_tab_layout = build_prefs_tab(mimic_win)
+    setup_tab_layout = build_setup_tab(mimic_win)
 
     tabs = [(animate_tab_layout, "Animate"),
             (program_tab_layout, "Program"),
-            (setup_tab_layout, "Setup"),
-            (prefs_tab_layout, "Prefs")]
-
+            (setup_tab_layout, "Setup")]
     assign_tabs(tabs, mimic_tab_layout)
 
     # Create output column
@@ -98,6 +92,7 @@ def create_mimic_window(window_name):
     # Initialize window and Layout
     mimic_version = general_utils.get_mimic_version()
     mimic_win = pm.window("mimic_win",
+                          closeCommand=on_window_close,
                           width=245,
                           title='MIMIC {}'.format(mimic_version))  # + ' <dev 4.8.19>'))
     pm.rowLayout(numberOfColumns=3, adjustableColumn=2)
@@ -454,7 +449,7 @@ def _build_general_settings_tab(parent_layout):
                                (3, 'both', 0)])
     pm.text(label="Directory:")
     pm.textField('t_programDirectoryText',
-                 text='',
+                 text=Prefs.get('DEFAULT_PROGRAM_DIRECTORY'),
                  ed=False,
                  font=FONT)
 
@@ -462,7 +457,11 @@ def _build_general_settings_tab(parent_layout):
                     image="setDirectory_icon.png",
                     width=32,
                     height=20,
-                    command=mimic_utils.set_program_dir)
+                    command=pm.Callback(mimic_utils.set_dir,
+                                        't_programDirectoryText',
+                                        'DEFAULT_PROGRAM_DIRECTORY',
+                                        Prefs.get,
+                                        Prefs.set))
     pm.setParent('..')
 
     pm.rowLayout(numberOfColumns=2,
@@ -471,10 +470,11 @@ def _build_general_settings_tab(parent_layout):
                  columnWidth=[(1, 90), (2, 100)],
                  height=20)
     pm.text(label='Output name:')
-    pm.textField('t_outputFileName',
-                 text=postproc_config.DEFAULT_OUTPUT_NAME,
-                 font=FONT)
 
+    pm.textField('t_outputFileName',
+                 text=Prefs.get('DEFAULT_OUTPUT_NAME'),
+                 font=FONT,
+                 changeCommand=pm.CallbackWithArgs(Prefs.set, 'DEFAULT_OUTPUT_NAME'))
     pm.setParent('..')
 
     pm.rowLayout(numberOfColumns=2,
@@ -484,15 +484,16 @@ def _build_general_settings_tab(parent_layout):
                  height=20)
     pm.text(label='Template name:')
     pm.textField('t_templateFileName',
-                 text=postproc_config.DEFAULT_TEMPLATE_NAME,
-                 font=FONT)
+                 text=Prefs.get('DEFAULT_TEMPLATE_NAME'),
+                 font=FONT,
+                 changeCommand=pm.CallbackWithArgs(Prefs.set, 'DEFAULT_TEMPLATE_NAME'))
 
     pm.setParent('..')
 
     # Sample rate radio buttons
     pm.separator(height=3, style='none')
-    selected_units = postproc_config.DEFAULT_SAMPLE_RATE_UNITS
-    selected_value = postproc_config.DEFAULT_SAMPLE_RATE_VALUE
+    selected_units = Prefs.get('DEFAULT_SAMPLE_RATE_UNITS')
+    selected_value = Prefs.get('DEFAULT_SAMPLE_RATE_VALUE')
     radio_indent = 3
     pm.radioCollection('sample_rate_radio_collection')
     pm.rowLayout(numberOfColumns=3,
@@ -502,16 +503,23 @@ def _build_general_settings_tab(parent_layout):
                  height=20)
     pm.radioButton('rb_timeInterval',
                    label='Sample rate:',
-                   select=True)
+                   select=not Prefs.get('SAMPLE_KEYFRAMES_ONLY'))
     pm.textField('t_timeBetweenSamples',
                  text=selected_value,
-                 font=FONT)
+                 font=FONT,
+                 changeCommand=pm.CallbackWithArgs(Prefs.set, 'DEFAULT_SAMPLE_RATE_VALUE'))
     pm.radioButtonGrp('time_unit_radio_group',
                       labelArray2=['s', 'f'],
                       annotation='Sample rate units: seconds or frames',
                       numberOfRadioButtons=2,
                       columnWidth2=[32, 30],
-                      select=1 if selected_units == 'seconds' else 2)  # 1-based integer
+                      select=1 if selected_units == 'seconds' else 2,  # 1-based integer
+                      onCommand1 = pm.CallbackWithArgs(
+                          Prefs.set,
+                          'DEFAULT_SAMPLE_RATE_UNITS', 'seconds', mimic_config.FILE),
+                      onCommand2 = pm.CallbackWithArgs(
+                          Prefs.set,
+                          'DEFAULT_SAMPLE_RATE_UNITS', 'frames', mimic_config.FILE))
     pm.setParent('..')
 
     pm.rowLayout(numberOfColumns=1,
@@ -520,7 +528,14 @@ def _build_general_settings_tab(parent_layout):
                  height=20)
     pm.radioButton('rb_keyframesOnly',
                    label='Sample keyframes only',
-                   enable=True)
+                   enable=True,
+                   select=Prefs.get('SAMPLE_KEYFRAMES_ONLY'),
+                   onCommand=pm.CallbackWithArgs(
+                       Prefs.set,
+                       'SAMPLE_KEYFRAMES_ONLY', True, mimic_config.FILE),
+                   offCommand=pm.CallbackWithArgs(
+                       Prefs.set,
+                       'SAMPLE_KEYFRAMES_ONLY', False, mimic_config.FILE))
     pm.setParent('..')
 
     pm.rowLayout(numberOfColumns=3,
@@ -534,13 +549,16 @@ def _build_general_settings_tab(parent_layout):
                 value=pm.playbackOptions(animationStartTime=True, query=True),
                 minValue=-10,
                 maxValue=100000,
-                step=1)
+                step=1,
+                changeCommand=pm.CallbackWithArgs(Prefs.set, 'ANIMATION_RANGE_START'))
 
     pm.intField("i_programEndFrame",
                 value=pm.playbackOptions(animationEndTime=True, query=True),
                 minValue=-10,
                 maxValue=100000,
-                step=1)
+                step=1,
+                changeCommand=pm.CallbackWithArgs(Prefs.set, 'ANIMATION_RANGE_END'))
+
     pm.setParent('..')
 
     pm.separator(height=5, style='none')
@@ -549,10 +567,10 @@ def _build_general_settings_tab(parent_layout):
     pm.optionMenu('postProcessorList',
                   label='Processor:',
                   height=18,
-                  changeCommand=postproc_options.overwrite_options)
+                  changeCommand=pm.CallbackWithArgs(postproc_options.overwrite_options))
 
     # Get supported post-processors and fill option menu list
-    supported_post_processors = postproc_setup.get_processor_names()
+    supported_post_processors = postproc_setup.get_processor_names(mimic_config.FILE)
     for post in supported_post_processors:
         pm.menuItem(label=post)
     pm.separator(height=3, style='none')
@@ -572,7 +590,7 @@ def _build_proc_options_tab(parent_layout):
     pm.separator(height=3, style='none')
 
     # Get the options
-    selected_options = postproc_options.DEFAULT_USER_OPTIONS
+    selected_options = Prefs.get_postproc_options()
     supported_options = postproc_options.get_processor_supported_options()
 
     # Create the options dictionary and build the output
@@ -616,28 +634,35 @@ def _build_program_settings_frame(parent_layout):
     # Output options
     pm.checkBox('cb_overwriteFile',
                 label="Overwrite existing file",
-                value=postproc_config.OPTS_OVERWRITE_EXISTING_FILE,
+                value=Prefs.get('OPTS_OVERWRITE_EXISTING_FILE'),
                 annotation='If checked, an existing file with the input ' \
-                           'output name will be overwritten')
+                           'output name will be overwritten',
+                changeCommand=pm.CallbackWithArgs(Prefs.set, 'OPTS_OVERWRITE_EXISTING_FILE'))
     pm.checkBox('cb_ignoreWarnings',
                 label="Ignore warnings",
-                value=postproc_config.OPTS_IGNORE_WARNINGS,
+                value=Prefs.get('OPTS_IGNORE_WARNINGS'),
                 annotation='If checked, all warnings will be ignored and ' \
-                           'a program will be written')
+                           'a program will be written',
+                changeCommand=pm.CallbackWithArgs(Prefs.set, 'OPTS_IGNORE_WARNINGS'))
+
     pm.separator(height=3, style='none')
 
     # Preview Options
     pm.separator(height=11, style='out')
     pm.checkBox('cb_previewInViewport',
                 label="Preview in viewport",
-                value=postproc_config.OPTS_PREVIEW_IN_VIEWPORT,
+                value=Prefs.get('OPTS_PREVIEW_IN_VIEWPORT'),
                 annotation='If checked, program will play in viewport during ' \
-                           'post-process. Leave unchecked for faster results.')
+                           'post-process. Leave unchecked for faster results.',
+                changeCommand=pm.CallbackWithArgs(Prefs.set, 'OPTS_PREVIEW_IN_VIEWPORT'))
     pm.checkBox('cb_promptOnRedundantSolutions',
-            label="Prompt on redundant solutions",
-            value=postproc_config.OPTS_REDUNDANT_SOLUTIONS_USER_PROMPT,
-            annotation='If checked, Maya will as the user to select between ' \
-                       'redundant solutions on axes where they occur.')
+                label="Prompt on redundant solutions",
+                value=Prefs.get('OPTS_REDUNDANT_SOLUTIONS_USER_PROMPT'),
+                annotation='If checked, Maya will as the user to select between ' \
+                       'redundant solutions on axes where they occur.',
+                changeCommand=pm.CallbackWithArgs(Prefs.set,
+                                                  'OPTS_REDUNDANT_SOLUTIONS_USER_PROMPT'))
+
     pm.separator(height=6, style='none')
 
     pm.button('Analyze Program',
@@ -649,6 +674,12 @@ def _build_program_settings_frame(parent_layout):
               height=25,
               annotation='Saves robot control program with input parameters')
     pm.separator(height=3, style='none')
+
+    export_progress_bar = pm.progressBar('pb_exportProgress',
+                                         isInterruptable=True,
+                                         maxValue=100,
+                                         visible=0)
+
     pm.setParent(parent_layout)
 
 
@@ -678,10 +709,12 @@ def _build_add_robot_frame(parent_layout):
                  columnWidth=[(1, 158), (2, 45)],
                  height=20)
 
-    pm.optionMenu('robotImportList')
+    pm.optionMenu('robotImportList',
+                  changeCommand=pm.CallbackWithArgs(Prefs.set, 'DEFAULT_ROBOT'))
 
     rigs = general_utils.get_rigs_dict()
-    rig_names = general_utils.get_rigs_names(rigs)
+    default_rig = Prefs.get('DEFAULT_ROBOT')
+    rig_names = general_utils.get_rigs_names(rigs, default_rig)
     for rig_name in rig_names:
         pm.menuItem(label=rig_name)
 
@@ -934,6 +967,9 @@ def _build_general_setup_tab(parent_layout):
 
     # Add tool setup frame
     _build_tool_setup_frame(general_setup_tab_layout)
+
+    # UI frame
+    _build_ui_setup_frame(general_setup_tab_layout)
 
     # Axis Limits frame
     _build_axis_limits_frame(general_setup_tab_layout)
@@ -1317,92 +1353,10 @@ def build_setup_tab(parent_layout):
 
     return setup_tab_layout
 
-# PREFS TAB
-def _build_hotkeys_frame(parent_layout):
-    hotkeys_frame = pm.frameLayout(label="Hotkeys", collapsable=True)
-    hotkeys_column = pm.columnLayout(adj=True, columnAttach=('both', 5))
-    pm.separator(height=5, style='none')
 
-    # Toggle IK/FK mode Hotkey
-    toggle_mode_cmd_name = 'mimic_toggleIkFkMode'
-    toggle_mode_annotation_str = 'Toggles Mimic Robot plugin IK/FK mode'
-    toggle_mode_command_str = 'import mimic_utils; ' \
-                              'mimic_utils.toggle_ik_fk_ui()'
-
-    pm.rowLayout(numberOfColumns=4,
-                 adjustableColumn=2,
-                 columnAttach=(1, 'left', 0),
-                 columnWidth=[(1, 72), (3, 45), (4, 50)],
-                 height=20)
-
-    # Find hotkey assignment, if one exists, to populate the ui
-    toggle_mode_hotkey_name = toggle_mode_cmd_name + 'Hotkey'
-    toggle_mode_key = mimic_utils.find_hotkey(toggle_mode_hotkey_name)
-    if not toggle_mode_key:
-        toggle_mode_key = ' key'
-
-    pm.text(label='Toggle IK/FK:')
-    pm.textField("t_toggleIkFk", font=FONT, placeholderText=toggle_mode_key)
-
-    pm.button(label='Create',
-              width=45,
-              height=20,
-              command=pm.Callback(mimic_utils.assign_hotkey,
-                                  toggle_mode_cmd_name,
-                                  toggle_mode_annotation_str,
-                                  toggle_mode_command_str))
-
-    pm.button(label='Remove',
-              width=50,
-              height=20,
-              command=pm.Callback(mimic_utils.remove_hotkey,
-                                  toggle_mode_cmd_name))
-
-    pm.setParent('..')
-    pm.separator(height=3, style='none')
-
-    # Keyframe IK/FK Hotkey
-    key_ik_fk_cmd_name = 'mimic_keyIkFk'
-    key_ik_fk_annotation_str = 'Keys Mimic robot IK/FK attributes'
-    key_ik_fk_command_str = 'import mimic_utils; ' \
-                            'mimic_utils.key_ik_fk()'
-
-    pm.rowLayout(numberOfColumns=4,
-                 adjustableColumn=2,
-                 columnAttach=(1, 'left', 0),
-                 columnWidth=[(1, 72), (3, 45), (4, 50)],
-                 height=20)
-
-    # Find hotkey assignment, if one exists, to populate the ui
-    key_IkFk_hotkey_name = key_ik_fk_cmd_name + 'Hotkey'
-    key_IkFk_key = mimic_utils.find_hotkey(key_IkFk_hotkey_name)
-    if not key_IkFk_key:
-        key_IkFk_key = ' key'
-
-    pm.text(label='Key IK/FK:')
-    pm.textField("t_keyIkFk", font=FONT, placeholderText=key_IkFk_key)
-
-    pm.button(label='Create',
-              width=45,
-              height=20,
-              command=pm.Callback(mimic_utils.assign_hotkey,
-                                  key_ik_fk_cmd_name,
-                                  key_ik_fk_annotation_str,
-                                  key_ik_fk_command_str))
-    pm.button(label='Remove',
-              width=50,
-              height=20,
-              command=pm.Callback(mimic_utils.remove_hotkey,
-                                  key_ik_fk_cmd_name))
-
-    pm.setParent(hotkeys_column)
-    pm.separator(height=8, style='none')
-    pm.setParent(parent_layout)
-
-
-def _build_ui_prefs_frame(parent_layout):
-    pm.frameLayout(label="UI", collapsable=True)
-    ui_prefs_column = pm.columnLayout(adj=True, columnAttach=('both', 5))
+def _build_ui_setup_frame(parent_layout):
+    pm.frameLayout(label="UI Setup", collapsable=True)
+    ui_setup_column = pm.columnLayout(adj=True, columnAttach=('both', 5))
 
     pm.separator(height=2, style='none')
 
@@ -1419,33 +1373,19 @@ def _build_ui_prefs_frame(parent_layout):
     pm.floatField("f_shaderRange",
                   min=0,
                   pre=0,
-                  value=20,
-                  changeCommand=mimic_utils.set_shader_range)
+                  value=Prefs.get('SHADER_RANGE'),
+                  changeCommand=mimic_utils.set_shader_range_ui)
 
     # Set axis limit shader range button
     pm.button(label=' Set ',
               width=50,
               height=20,
-              command=mimic_utils.set_shader_range)
+              command=mimic_utils.set_shader_range_ui)
 
-    pm.setParent(ui_prefs_column)
+    pm.setParent(ui_setup_column)
     pm.separator(height=8, style='none')
     pm.setParent(parent_layout)
 
-
-def build_prefs_tab(parent_layout):
-    # Create preferences tab Layout
-    prefs_tab_layout = pm.columnLayout('prefs_tab_layout', height=525, adj=True, width=200)
-
-    # Hotkeys frame
-    _build_hotkeys_frame(prefs_tab_layout)
-
-    # UI frame
-    _build_ui_prefs_frame(prefs_tab_layout)
-
-    pm.setParent(parent_layout)
-
-    return prefs_tab_layout
 
 # UTILS
 def add_robot(*args):
@@ -1456,5 +1396,17 @@ def add_robot(*args):
     dir_rigs = dir_mimic + '/rigs'
 
     mimic_utils.import_robot(dir_rigs)
+    mimic_utils.set_shader_range(Prefs.get('SHADER_RANGE'), True)
     mimic_utils.add_hud_script_node()
     mimic_utils.add_mimic_script_node()
+
+
+def on_window_close(*args):
+    """
+    Executes when the main Mimic window is closed.
+    :return: None
+    """
+    # De-register callbacks that cause Mimic to restart and load new preferences
+    # when a file is opened or created
+    mimic_config.de_register_callbacks()
+
