@@ -547,14 +547,14 @@ def _build_general_settings_tab(parent_layout):
 
     pm.intField("i_programStartFrame",
                 value=pm.playbackOptions(animationStartTime=True, query=True),
-                minValue=-10,
+                minValue=-10000,
                 maxValue=100000,
                 step=1,
                 changeCommand=pm.CallbackWithArgs(Prefs.set, 'ANIMATION_RANGE_START'))
 
     pm.intField("i_programEndFrame",
                 value=pm.playbackOptions(animationEndTime=True, query=True),
-                minValue=-10,
+                minValue=-10000,
                 maxValue=100000,
                 step=1,
                 changeCommand=pm.CallbackWithArgs(Prefs.set, 'ANIMATION_RANGE_END'))
