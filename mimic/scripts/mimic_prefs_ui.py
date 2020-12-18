@@ -139,9 +139,9 @@ class MimicPreferencesWindow(Window):
     def __init__(self):
         super(MimicPreferencesWindow, self).__init__(title='Mimic Preferences',
                                                      name='mimic_preferences',
-                                                     width=310)
+                                                     width=325)
         # TODO(evanatherton): Replace this header
-        self.header_file = 'mimic_logo.png'
+        self.header_file = 'prefs_header.png'
         self.header_width = 244
         self.header_height = 60
 
@@ -182,11 +182,13 @@ class MimicPreferencesWindow(Window):
         self._push_ui_template()
 
         # Draw header/logo
-        with pm.columnLayout(width=self.window_width, columnAttach=('left', 0)):
-            header_padding = (self.window_width - self.header_width) / 2
-            with pm.rowLayout(numberOfColumns=1, height=self.header_height,
-                              columnAttach=(1, 'both', header_padding)):
-                pm.image(image=self.header_file)
+        # with pm.columnLayout(width=self.window_width, columnAttach=('left', 0)):
+        #     header_padding = (self.window_width - self.header_width) / 2
+        #     with pm.rowLayout(numberOfColumns=1, height=self.header_height,
+        #                       columnAttach=(1, 'both', header_padding)):
+        #         pm.image(image=self.header_file)
+        with pm.columnLayout():
+            self.__add_header_image(self.header_file)
 
         # Set up Tab Layout
         tabs = pm.tabLayout()
@@ -223,6 +225,24 @@ class MimicPreferencesWindow(Window):
         self._pop_ui_template()
 
         return mimic_prefs_window
+
+    @staticmethod
+    def __add_header_image(image_path):
+        """
+        """
+        # Create rowLayout to hold out header image. This is done to get the proper
+        #logo alignment and response to window size adjustments
+        pm.separator(height=8, style='none')
+        with pm.rowLayout(height=50,
+                          backgroundColor=[0.2, 0.2, 0.2],
+                          numberOfColumns=3,
+                          adjustableColumn=1,
+                          columnAttach=[(3, 'right', -3)],
+                          rowAttach=[(2, 'top', 15)]):
+            pm.text(label='')
+            pm.image(image=image_path)
+            pm.text(label='')
+
 
     @staticmethod
     def __build_general_settings_frame():

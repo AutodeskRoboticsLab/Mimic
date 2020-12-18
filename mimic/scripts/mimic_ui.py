@@ -504,9 +504,9 @@ def _build_general_settings_tab(parent_layout):
     pm.radioButton('rb_timeInterval',
                    label='Sample rate:',
                    select=not Prefs.get('SAMPLE_KEYFRAMES_ONLY'))
-    pm.textField('t_timeBetweenSamples',
-                 text=selected_value,
-                 font=FONT,
+    pm.floatField('f_timeBetweenSamples',
+                 value=selected_value,
+                 precision=3,
                  changeCommand=pm.CallbackWithArgs(Prefs.set, 'DEFAULT_SAMPLE_RATE_VALUE'))
     pm.radioButtonGrp('time_unit_radio_group',
                       labelArray2=['s', 'f'],

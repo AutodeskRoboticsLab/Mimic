@@ -287,7 +287,7 @@ def _get_settings_for_postproc(robot):
     # Get all important settings
     using_time_interval = pm.radioCollection('sample_rate_radio_collection', query=True, select=True) == 'rb_timeInterval'
     using_keyframes_only = not using_time_interval  # TODO: Clever, but not expandable
-    time_interval_value = pm.textField('t_timeBetweenSamples', query=True, text=True)
+    time_interval_value = pm.floatField('f_timeBetweenSamples', query=True, value=True)
     time_interval_units = 'seconds' \
         if pm.radioButtonGrp('time_unit_radio_group', query=True, sl=True) == 1 \
         else 'frames'
@@ -303,7 +303,6 @@ def _get_settings_for_postproc(robot):
     if using_time_interval:
         # Confirm that the time interval is valid
         try:
-            time_interval_value = float(time_interval_value)
             assert time_interval_value > 0
         except ValueError:
             if time_interval_units == 'seconds':
