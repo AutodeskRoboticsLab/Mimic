@@ -511,6 +511,10 @@ class Prefs(object):
         base_str = PREFIX + POSTPROC_NAMESPACE + 'DEFAULT' + DELIM
         prefs_dict = cls.get_prefs(pref_level, base_str)
 
+        # Fall back on default prefs if we can't access file prefs
+        if not prefs_dict and pref_level == FILE:
+            prefs_dict = cls.get_prefs(DEFAULT, base_str)
+
         options = {k.split(base_str)[1].lower(): cls._from_value_string(v)
                    for k, v in prefs_dict.items()}
         logging.debug('options={}'.format(options))
