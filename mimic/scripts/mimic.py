@@ -108,7 +108,7 @@ def confirm_requirements_exist():
             warning = 'Warning: We noticed that you don\'t have any robot rigs! ' \
                       'Download the latest rigs from out GitHub repository ' \
                       'and add them to mimic/rigs!'
-            raise Exception(warning)
+            pm.warning(warning)
 
 
 def run():
