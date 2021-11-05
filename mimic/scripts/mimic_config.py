@@ -25,8 +25,8 @@ reload(postproc)
 # Mimic Version Info
 MIMIC_MODULE_NAME = 'Mimic'
 MIMIC_VERSION_MAJOR = 1  # Must coincide with version in mimic.mod
-MIMIC_VERSION_MINOR = 4  # Must coincide with version in mimic.mod
-MIMIC_VERSION_PATCH = 1  # Must coincide with version in mimic.mod
+MIMIC_VERSION_MINOR = 5  # Must coincide with version in mimic.mod
+MIMIC_VERSION_PATCH = 0  # Must coincide with version in mimic.mod
 
 # Set logging level
 logging.getLogger().setLevel(logging.ERROR)

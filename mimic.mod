@@ -1,30 +1,35 @@
-+ MAYAVERSION:2016 mimic 1.4.1 ../modules/mimic
++ MAYAVERSION:2016 mimic 1.5.0 ../modules/mimic
 MAYA_SHELF_PATH +:= shelves/2016
 PYTHONPATH +:= scripts/extern
 PYTHONPATH +:= scripts/extern/pyqtgraph_0_11_0_dev0
 
-+ MAYAVERSION:2016.5 mimic 1.4.1 ../modules/mimic
++ MAYAVERSION:2016.5 mimic 1.5.0 ../modules/mimic
 MAYA_SHELF_PATH +:= shelves/2016
 PYTHONPATH +:= scripts/extern
 PYTHONPATH +:= scripts/extern/pyqtgraph_0_11_0_dev0
 
-+ MAYAVERSION:2017 mimic 1.4.1 ../modules/mimic
++ MAYAVERSION:2017 mimic 1.5.0 ../modules/mimic
 MAYA_SHELF_PATH +:= shelves/2017
 PYTHONPATH +:= scripts/extern
 PYTHONPATH +:= scripts/extern/pyqtgraph_0_11_0_dev0
 
-+ MAYAVERSION:2018 mimic 1.4.1 ../modules/mimic
++ MAYAVERSION:2018 mimic 1.5.0 ../modules/mimic
 MAYA_SHELF_PATH +:= shelves/2018
 PYTHONPATH +:= scripts/extern
 PYTHONPATH +:= scripts/extern/pyqtgraph_0_11_0_dev0
 
-+ MAYAVERSION:2019 mimic 1.4.1 ../modules/mimic
++ MAYAVERSION:2019 mimic 1.5.0 ../modules/mimic
 MAYA_SHELF_PATH +:= shelves/2019
 PYTHONPATH +:= scripts/extern
 PYTHONPATH +:= scripts/extern/pyqtgraph_0_11_0_dev0
 
-+ MAYAVERSION:2020 mimic 1.4.1 ../modules/mimic
++ MAYAVERSION:2020 mimic 1.5.0 ../modules/mimic
 MAYA_SHELF_PATH +:= shelves/2020
+PYTHONPATH +:= scripts/extern
+PYTHONPATH +:= scripts/extern/pyqtgraph_0_11_0
+
++ MAYAVERSION:2022 mimic 1.5.0 ../modules/mimic
+MAYA_SHELF_PATH +:= shelves/2022
 PYTHONPATH +:= scripts/extern
 PYTHONPATH +:= scripts/extern/pyqtgraph_0_11_0
 
