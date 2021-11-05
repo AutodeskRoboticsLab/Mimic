@@ -6,6 +6,7 @@ unittests.py
 
 ignore/
 releases/
+numpy/
 
 *.ma.swatches
 *.swatches

@@ -20,7 +20,7 @@ Windows ~/Documents/maya/modules
 ```
 _note: the only difference between the MAC and PC versions is the NumPy build that's included_
 
--We only include a small set of rigs with the main download to save download size. If you need a rig that is otherwise supported, download the manufacturer-specific rigs, grab the rig you need, and drop it into the appropriate[rigs](mimic/rigs) folder in your mimic directory
+-We only include a small set of rigs with the main download to save download size. If you need a rig that is otherwise supported, download the manufacturer-specific rigs, grab the rig you need, and drop it into the appropriate [rigs](mimic/rigs) folder in your mimic directory
 
 When you're done, open Maya, click on the Mimic shelf tab, and click on the Mimic icon; that's it!
 
@@ -41,24 +41,32 @@ You can find tutorials, videos, and other media on our [website](https://www.mim
 *Let us know if what you need isn't listed and we'll try to help!*
 (contact info provided below)
 
-Mimic currently supports the following robots for animation (see [rigs](mimic/rigs)):
+Mimic currently supports the following robots for animation (see [rigs](mimic/rigs)). You can download the Maya files for supported rigs [here](https://www.dropbox.com/sh/o9se8r87mii8glg/AACWWca7P0ccETUZrShZOtMqa?dl=0)
 
 ```
 |-- ABB
     |-- IRB 120-3-58
+    |-- IRB 140-6-81
+    |-- IRB 1100-4-58
+    |-- IRB 1200-5-90
+    |-- IRB 1200-7-70
     |-- IRB 1600-6-145
     |-- IRB 1600-10-145
     |-- IRB 2600-20-165
     |-- IRB 4400-45-196
     |-- IRB 4400-60-196
+    |-- IRB 4600-20-250
     |-- IRB 4600-40-255
     |-- IRB 6640-180-255
     |-- IRB 6640-235-255
     |-- IRB 6700-150-320
     |-- IRB 6700-205-280
     |-- IRB 6700-245-300
+    |-- IRB 8700-475-420
     |-- IRBT 4004-9000
 |-- Kawasaki
+    |-- RS010N-A
+    |-- RS010N-B
     |-- RS020N
 |-- KUKA
     |-- KL 100 6125
@@ -68,38 +76,63 @@ Mimic currently supports the following robots for animation (see [rigs](mimic/ri
     |-- KR 3 AGILUS
     |-- KR 5 R1400
     |-- KR 5-arc
+    |-- KR 6 R700 sixx AGILUS
     |-- KR 6 R900 sixx AGILUS
     |-- KR 10 R900 sixx AGILUS
     |-- KR 10 R1100 sixx AGILUS
+    |-- KR 10 R1100-2
     |-- KR 10 R1420
     |-- KR 12 R1800
     |-- KR 12 R1800-2
+    |-- KR 16-2
     |-- KR 16 L6-2
     |-- KR 16 R1610
     |-- KR 16 R2010
+    |-- KR 16 R2010-2
     |-- KR 16-arc HW
     |-- KR 20 R1810
     |-- KR 20 R1810-2
+    |-- KR 20 R3100
     |-- KR 22 R1610
     |-- KR 30-3
+    |-- KR 30 R2100
+    |-- KR 50 R2100
     |-- KR 60-3
+    |-- KR 60 L30-3
+    |-- KR 70 R2100
     |-- KR 120 R2500 Pro
     |-- KR 120 R2700 HA
+    |-- KR 120 R2700 press C
     |-- KR 150 R3100 Prime
+    |-- KR 150
     |-- KR 150-2
+    |-- KR 150 L110-2
+    |-- KR 150 R3100 Prime
+    |-- KR 180 R2900 Prime
     |-- KR 200 L140-2
-    |-- KR 210 R3100
     |-- KR 210-2
+    |-- KR 210-2 K
+    |-- KR 210 R2700 Prime
+    |-- KR 210 R3100
+    |-- KR 210 R3300 Ultra K-F
+    |-- KR 240-2
     |-- KR 240 L180-2
     |-- KR 240 R2900 Ultra
-    |-- KR 240-2
+    |-- KR 240 R2900 Ultra C
+    |-- KR 250 R2700-2
     |-- KR 300 R2500 Ultra
+    |-- KR 300 R2700-2
+    |-- KR 300 R2700-2 C
+    |-- KR 360-3
     |-- KR 500-2
     |-- KR 500-2 RC
+    |-- KR 500 L340-3
     |-- KR 600 R2830
     |-- KR 1000 TITAN
 |-- Motoman *
+    |-- GP20HL
     |-- MH6
+    |-- MH20 II-20
 |-- Staubli *
     |-- RX160
     |-- RX160L

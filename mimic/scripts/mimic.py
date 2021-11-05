@@ -108,7 +108,7 @@ def confirm_requirements_exist():
             warning = 'Warning: We noticed that you don\'t have any robot rigs! ' \
                       'Download the latest rigs from out GitHub repository ' \
                       'and add them to mimic/rigs!'
-            raise Exception(warning)
+            pm.warning(warning)
 
 
 def run():
@@ -119,5 +119,9 @@ def run():
     # Perform preliminary checks
     confirm_requirements_exist()
     load_mimic_plugins()
+    # Update file preferences with user current preferences
+    mimic_config.Prefs.save_prefs_in_maya_file()
     # Build the UI itself
     mimic_ui.build_mimic_ui()
+    # Register callbacks that reload mimic when a file is opened/created
+    mimic_config.register_config_callbacks()
