@@ -1,6 +1,6 @@
 
 
-![mFIZ_logo](mFIZ/icons/mFIZ_logo_web.png)
+![mFIZ_logo](icons/mFIZ_logo_web.png)
 
 #
 
