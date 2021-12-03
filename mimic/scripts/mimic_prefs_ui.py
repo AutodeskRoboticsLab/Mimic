@@ -353,7 +353,7 @@ class MimicPreferencesWindow(Window):
                     pm.radioButton('rb_timeInterval',
                                    label='Sample rate:',
                                    select=not Prefs.get_user_pref('SAMPLE_KEYFRAMES_ONLY'))
-                    pm.intField(minValue=0,
+                    pm.floatField(minValue=0,
                                 value=selected_value,
                                 changeCommand=pm.CallbackWithArgs(Prefs.set_user_pref,
                                                                   'DEFAULT_SAMPLE_RATE_VALUE'))
