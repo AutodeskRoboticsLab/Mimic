@@ -197,7 +197,7 @@ def _process_records_command(command, opts):
         params.extend(formatted_params)
 
     if command.digital_output is not None:
-        digital_output = [io for io in command.digital_output if io is not None]
+        digital_output = [io.value for io in command.digital_output if io is not None]
 
         formatted_params = [general_utils.num_to_str(io)
                             for io in digital_output]
