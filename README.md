@@ -1,6 +1,6 @@
 
 
-![mimic_logo](mimic/logos/mimic_logo_web.gif)
+![mimic_logo](mimic3/logos/mimic_logo_web.gif)
 
 #
 
@@ -8,7 +8,7 @@
 
 *An open-source Autodesk Maya plugin for controlling Industrial Robots.*
 
-[Mimic](https://www.mimicformaya.com/) is a free and open-source plugin for [Autodesk Maya](https://www.autodesk.com/products/maya/overview) that enables simulation, programming, and control of 6-axis, Industrial Robots. Use Mimic to generate programs without writing any code, or extend Mimic to suit your project's needs. Written in Python 2.7.
+[Mimic](https://www.mimicformaya.com/) is a free and open-source plugin for [Autodesk Maya](https://www.autodesk.com/products/maya/overview) that enables simulation, programming, and control of 6-axis, Industrial Robots. Use Mimic to generate programs without writing any code, or extend Mimic to suit your project's needs. Written in Python 3.
 
 
 ### Installation
@@ -18,9 +18,8 @@ Download the latest [release](https://github.com/AutodeskRoboticsLab/Mimic/relea
 macOS   ~/Library/Preferences/Autodesk/maya/modules
 Windows ~/Documents/maya/modules
 ```
-_note: the only difference between the MAC and PC versions is the NumPy build that's included_
 
--We only include a small set of rigs with the main download to save download size. If you need a rig that is otherwise supported, download the manufacturer-specific rigs, grab the rig you need, and drop it into the appropriate [rigs](mimic/rigs) folder in your mimic directory
+-We only include a small set of rigs with the main download to save download size. If you need a rig that is otherwise supported, download the manufacturer-specific rigs, grab the rig you need, and drop it into the appropriate [rigs](mimic3/rigs) folder in your mimic directory
 
 When you're done, open Maya, click on the Mimic shelf tab, and click on the Mimic icon; that's it!
 
@@ -30,10 +29,10 @@ When you're done, open Maya, click on the Mimic shelf tab, and click on the Mimi
 - If you're using Maya 2017 update 3 or earlier, you must [manually load the Mimic shelf](https://youtu.be/bc3SqEXcE5Q?t=1m46s).
 - If you're running Windows and downloaded a release and/or rigs archive,  confirm that it isn't "blocked" before unzipping and installing it (right click the archive, select Properties, check Unblock if necessary).
 - If you cloned this repository, download the latest robot rigs from  [releases](https://github.com/AutodeskRoboticsLab/Mimic/releases). 
-Replace the directory `mimic/rigs`  with the unzipped `rigs` folder.
-- See [troubleshooting](mimic/docs/troubleshooting.md) if you have trouble  using or installing Mimic.
+Replace the directory `mimic3/rigs`  with the unzipped `rigs` folder.
+- See [troubleshooting](mimic3/docs/troubleshooting.md) if you have trouble  using or installing Mimic.
 
-You can find tutorials, videos, and other media on our [website](https://www.mimicformaya.com/) and textual documentation in [docs](mimic/docs).
+You can find tutorials, videos, and other media on our [website](https://www.mimicformaya.com/) and textual documentation in [docs](mimic3/docs).
 
 
 ### Currently supported robots
@@ -41,7 +40,7 @@ You can find tutorials, videos, and other media on our [website](https://www.mim
 *Let us know if what you need isn't listed and we'll try to help!*
 (contact info provided below)
 
-Mimic currently supports the following robots for animation (see [rigs](mimic/rigs)). You can download the Maya files for supported rigs [here](https://www.dropbox.com/sh/o9se8r87mii8glg/AACWWca7P0ccETUZrShZOtMqa?dl=0)
+Mimic currently supports the following robots for animation (see [rigs](mimic3/rigs)). You can download the Maya files for supported rigs [here](https://www.dropbox.com/sh/o9se8r87mii8glg/AACWWca7P0ccETUZrShZOtMqa?dl=0)
 
 ```
 |-- ABB
@@ -153,7 +152,7 @@ Mimic currently supports the following robots for animation (see [rigs](mimic/ri
 \* *post processor not yet supported*
 
 Mimic currently supports the following post processors
-(see [postproc](mimic/scripts/postproc)):
+(see [postproc](mimic3/scripts/postproc)):
 
 ```
 |-- ABB
@@ -174,7 +173,7 @@ Mimic currently supports the following post processors
 
 Help us out and contribute to this repository!
 You may submit an issue or open a pull request for any bugs or improvements to
-this software. See [CONTRIBUTING](mimic/docs/CONTRIBUTING.md) for programming guidelines.
+this software. See [CONTRIBUTING](mimic3/docs/CONTRIBUTING.md) for programming guidelines.
 
 Join the our [slack channel](https://www.mimicformaya.com/#community-section)!
 You may also contact us at [mimic@autodesk.com](mailto:mimic@autodesk.com).
@@ -182,13 +181,13 @@ You may also contact us at [mimic@autodesk.com](mailto:mimic@autodesk.com).
 *Mimic was born at the Autodesk Robotics Lab 2018.* It is now developed
 and contributed to by a community of animators, designers, engineers, architects,
 programmers, and more.
-See [AUTHORS](mimic/docs/AUTHORS.md) for details.
+See [AUTHORS](mimic3/docs/AUTHORS.md) for details.
 
 
 ### License
 
 Mimic is licensed under the MIT license.
-See [LICENSE](mimic/docs/LICENSE.md) for details.
+See [LICENSE](mimic3/docs/LICENSE.md) for details.
 
 
 ### Notes
