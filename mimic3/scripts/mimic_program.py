@@ -1119,7 +1119,8 @@ def _sample_frame_get_pose(robot_name, frame):
     # Based on the orientation of the coordinate frame of the mounting flange
     # TODO: Integrate this with rigs, unclear and shouldn't be hardcoded
     robot_type = mimic_utils.get_robot_type(robot_name)
-    if robot_type == 'ABB':
+
+    if robot_type == 'ABB' or robot_type == 'Universal Robots':
         conversion_rotation = [
             [0, 0, -1],
             [0, 1, 0],

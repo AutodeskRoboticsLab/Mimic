@@ -30,7 +30,9 @@ __value = 'value'
 __move_target = 'target'
 __move_speed = 'speed'
 __move_acceleration = 'acceleration'
-__move_blend_radius = 'blend_radius'
+__move_blocking_time = 'blocking_time'
+__move_lookahead = 'lookahead'
+__move_gain = 'gain'
 
 # STRUCTURES
 AXIS = 'AXIS'
@@ -65,31 +67,20 @@ __set_standard_digital_out_structure = namedtuple(
     ]
 )
 
-MOVE_L = 'movel'
-__movel_structure = namedtuple(
-    MOVE_L, [
+SERVO_J = 'servoj'
+__servoj_structure = namedtuple(
+    SERVO_J, [
         __move_target,
-        __move_acceleration,
-        __move_speed,
-        __move_blend_radius
-    ]
-)
-
-MOVE_J = 'movej'
-__movej_structure = namedtuple(
-    MOVE_J, [
-        __move_target,
-        __move_acceleration,
-        __move_speed,
-        __move_blend_radius
+        __move_blocking_time,
+        __move_lookahead,
+        __move_gain
     ]
 )
 
 STRUCTURES = {
     AXIS: __axis_structure,
     POSE: __pose_structure,
-    MOVE_J: __movej_structure,
-    MOVE_L: __movel_structure,
+    SERVO_J: __servoj_structure,
     DIGITAL_OUT: __set_standard_digital_out_structure
 }
 
@@ -100,11 +91,8 @@ __axis_template = \
 __pose_template = \
     'p[{},{},{},{},{},{}]'
 
-__movej_template = \
-    'movej({}, {}, {}, 0, {})'
-
-__movel_template = \
-    'movel({}, {}, {}, 0, {})'
+__servoj_template = \
+    'servoj({}, 0, 0, {}, {}, {})'
 
 __set_standard_digital_out_template = \
     'set_standard_digital_out({}, {})'
@@ -112,8 +100,7 @@ __set_standard_digital_out_template = \
 TEMPLATES = {
     AXIS: __axis_template,
     POSE: __pose_template,
-    MOVE_J: __movej_template,
-    MOVE_L: __movel_template,
+    SERVO_J: __servoj_template,
     DIGITAL_OUT: __set_standard_digital_out_template
 }
 
@@ -139,7 +126,7 @@ IOCommand = namedtuple(
 )
 
 
-class SimpleURScriptProcessor(postproc.PostProcessor):
+class SimpleURScriptServoProcessor(postproc.PostProcessor):
     """
     Postprocessor subclass.
     """
@@ -149,9 +136,9 @@ class SimpleURScriptProcessor(postproc.PostProcessor):
         Initialize specific processor.
         """
         # Initialize superclass (generic processor)
-        super(SimpleURScriptProcessor, self).__init__(
+        super(SimpleURScriptServoProcessor, self).__init__(
             type_robot='Universal Robots',
-            type_processor='URScript',
+            type_processor='URScript Servo',
             program_file_extension=urscript_config.DEFAULT_FILE_EXTENSION,
             def_program_template=urscript_config.DEFAULT_PROGRAM)
 
@@ -164,13 +151,19 @@ class SimpleURScriptProcessor(postproc.PostProcessor):
         :param processed_commands: List of processed commands.
         :return:
         """
+
+        startAxis = processed_commands[0].split('[')[1]
+        startAxis = startAxis.split(']')[0]
+        print(startAxis)
+        start = 'movej([' + str(startAxis) + '],' + urscript_config.DEFAULT_JOINT_ACCELERATION + ',' + urscript_config.DEFAULT_JOINT_SPEED + ',0,0)'
+
         formatted_commands = '\n'.join(processed_commands)
         try:
             program_template = self._read_program_template()  # don't overwrite original
-            return program_template.format(formatted_commands)
+            return program_template.format(start, formatted_commands)
         except IndexError:
             message = 'To use motion parameters as commands, template requires ' \
-                        '1 placeholder for the motion variables.'
+                        '2 placeholder for the motion variables.'
             raise IndexError(message)
 
     @staticmethod
@@ -238,10 +231,7 @@ class SimpleURScriptProcessor(postproc.PostProcessor):
             ignore_motion=True,
             ignore_ios=True,
             use_nonlinear_motion=True,
-            use_linear_motion=True,
-            use_continuous_motion=True,
             include_axes=True,
-            include_pose=True,
             include_digital_outputs=True
         )
 
@@ -252,33 +242,13 @@ def _process_motion_command(command, opts):
     :param opts: UserOptions tuple
     :return:
     """
-    motion_type = None
-    target_data_type = None
+    motion_type = SERVO_J
+    target_data_type = AXIS
     target_data = []
-    target_speed = 0
-    target_acceleration = 0
-
-    # Interpret linear motion command
-    if opts.Use_linear_motion:
-        if command.pose is not None:
-            motion_type = MOVE_L
-            target_data_type = POSE
-            target_speed = urscript_config.DEFAULT_CARTESIAN_SPEED
-            target_acceleration = urscript_config.DEFAULT_CARTESIAN_ACCELERATION
-            pose = _convert_pose(command.pose)
-            params = [general_utils.num_to_str(p, include_sign=False, precision=3)
-                      for p in pose]
-            target_data.extend(params)
-        else:
-            raise ValueError('Invalid command')
 
     # Interpret nonlinear motion command
-    elif opts.Use_nonlinear_motion:
+    if opts.Use_nonlinear_motion:
         if command.axes is not None:
-            motion_type = MOVE_J
-            target_data_type = AXIS
-            target_speed = urscript_config.DEFAULT_JOINT_SPEED
-            target_acceleration = urscript_config.DEFAULT_JOINT_ACCELERATION
             axes = command.axes
             params = [general_utils.num_to_str(math.radians(p), include_sign=False, precision=3)
                       for p in axes]
@@ -294,16 +264,12 @@ def _process_motion_command(command, opts):
         target_data,
         STRUCTURES[target_data_type],
         TEMPLATES[target_data_type])
-
-    blend_radius = 0
-    if opts.Use_continuous_motion:
-        blend_radius = urscript_config.DEFAULT_BLEND # blend radius 1cm
     
     motion_data = [
         formatted_target_data,
-        target_speed,
-        target_acceleration,
-        blend_radius
+        urscript_config.DEFAULT_BLOCKING_TIME,
+        urscript_config.DEFAULT_LOOKAHEAD,
+        urscript_config.DEFAULT_GAIN
     ]
 
     formatted_motion = postproc.fill_template(
@@ -342,18 +308,3 @@ def _process_io_command(command, opts):
     if io_data:
         formatted_ios = '\n'.join(io_data)
         return formatted_ios
-
-
-def _convert_pose(pose):
-    """
-    Convert a Pose tuple to subclass conventions.
-    :param pose: Pose tuple
-    :return:
-    """
-    i_vector = [pose.pose_ix, pose.pose_iy, pose.pose_iz]
-    j_vector = [pose.pose_jx, pose.pose_jy, pose.pose_jz]
-    k_vector = [pose.pose_kx, pose.pose_ky, pose.pose_kz]
-    m = [i_vector, j_vector, k_vector]
-    a, b, c = transforms.euler_angles_by_matrix(m)
-    # convert mm to mm and degrees to radians
-    return [pose.pose_x/1000, pose.pose_y/1000, pose.pose_z/1000, math.radians(a), math.radians(b), math.radians(c)]

@@ -31,6 +31,9 @@ from .GENERAL.TSV.tab_separated_vals \
 from .UniversalRobots.URScript.urscript \
     import SimpleURScriptProcessor \
     as __SimpleURScriptProcessor
+from .UniversalRobots.URScriptServo.urscript \
+    import SimpleURScriptServoProcessor \
+    as __SimpleURScriptServoProcessor
 
 # Add your processor to private list here:
 __supported_processors = [
@@ -40,7 +43,8 @@ __supported_processors = [
     __SimpleEntertainTechProcessor,
     __SimpleCSVProcessor,
     __SimpleTSVProcessor,
-    __SimpleURScriptProcessor
+    __SimpleURScriptProcessor,
+    __SimpleURScriptServoProcessor
 ]
 
 
