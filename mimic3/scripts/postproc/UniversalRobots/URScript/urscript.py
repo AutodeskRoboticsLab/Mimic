@@ -181,7 +181,6 @@ class SimpleURScriptProcessor(postproc.PostProcessor):
         :return:
         """
         command_type = postproc.get_structure_type(command)
-        print(str(command_type))
         if not opts.Ignore_motion and command_type == MOTION_COMMAND:
             return _process_motion_command(command, opts)
         elif not opts.Ignore_IOs and command_type == IO_COMMAND:
@@ -205,8 +204,6 @@ class SimpleURScriptProcessor(postproc.PostProcessor):
         :return:
         """
         # Try to get a MotionCommand
-        
-        print(params_dict)
 
         params = []
         for field in _motion_command_fields:
@@ -234,10 +231,10 @@ class SimpleURScriptProcessor(postproc.PostProcessor):
             ignore_motion=True,
             ignore_ios=True,
             use_nonlinear_motion=True,
-            use_linear_motion=False,
+            use_linear_motion=True,
             use_continuous_motion=True,
             include_axes=True,
-            include_pose=False,
+            include_pose=True,
             include_digital_outputs=True
         )
 
@@ -253,8 +250,6 @@ def _process_motion_command(command, opts):
     target_data = []
     target_speed = 0
     target_acceleration = 0
-
-    print("processing motion")
 
     # Interpret linear motion command
     if opts.Use_linear_motion:
@@ -321,10 +316,8 @@ def _process_io_command(command, opts):
     """
     io_data = []  # empty data container
 
-    print("processing io")
-
     # Interpret digital output command
-    if opts.Include_digital_output:
+    if opts.Include_digital_outputs:
         print("doing IO")
         if command.digital_output is not None:
             print("IO not None")
@@ -335,14 +328,6 @@ def _process_io_command(command, opts):
                     STRUCTURES[io_type],
                     TEMPLATES[io_type])
                 io_data.append(formatted_io)
-        # if command.analog_outputs is not None:
-        #     io_type = ANALOG_OUT
-        #     for io in command.analog_outputs:
-        #         formatted_io = postproc.fill_template(
-        #             io,
-        #             STRUCTURES[io_type],
-        #             TEMPLATES[io_type])
-        #         io_data.append(formatted_io)
 
     if io_data:
         formatted_ios = '\n'.join(io_data)
