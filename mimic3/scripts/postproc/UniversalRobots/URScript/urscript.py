@@ -198,27 +198,33 @@ class SimpleURScriptProcessor(postproc.PostProcessor):
         For this processor:
         Can create a MotionCommand namedTuple from optional input parameters.
         Can create a IOCommand namedTuple from optional input parameters.
+        Returns a list of commands to allow possibly mutliple commands on separate
+        lines to be exported per frame.
 
         :param params_dict: Dictionary of namedtuple containing all command
         parameters (i.e. Axes, ExternalAxes, etc).
         :return:
         """
-        # Try to get a MotionCommand
+        
+        commands = []
 
+        # Try to get a MotionCommand
         params = []
         for field in _motion_command_fields:
             param = params_dict[field] if field in params_dict else None
             params.append(param)
         if params.count(None) != len(params):
-            return MotionCommand(*params)
-        else:
-            # Try to get an IO command
-            params = []
-            for field in _io_command_fields:
-                param = params_dict[field] if field in params_dict else None
-                params.append(param)
-            if params.count(None) != len(params):
-                return IOCommand(*params)
+            commands.append(MotionCommand(*params))
+        
+        # Try to get an IO command
+        params = []
+        for field in _io_command_fields:
+            param = params_dict[field] if field in params_dict else None
+            params.append(param)
+        if params.count(None) != len(params):
+            commands.append(IOCommand(*params))
+        
+        return commands
 
     @staticmethod
     def _set_supported_options():
@@ -324,7 +330,10 @@ def _process_io_command(command, opts):
             io_type = DIGITAL_OUT
             for io in command.digital_output:
                 formatted_io = postproc.fill_template(
-                    io,
+                    [
+                        io[0],
+                        True if io[1] else False
+                    ],
                     STRUCTURES[io_type],
                     TEMPLATES[io_type])
                 io_data.append(formatted_io)
