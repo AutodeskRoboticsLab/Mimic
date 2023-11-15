@@ -139,7 +139,10 @@ class SimpleCSVProcessor(postproc.PostProcessor):
         params flexibly and as needed.
 
         For this processor:
-        Can create a RecordsCommand namedTuple from optional input parameters.
+        Can create a MotionCommand namedTuple from optional input parameters.
+        Can create a IOCommand namedTuple from optional input parameters.
+        Returns a list of commands to allow possibly mutliple commands on separate
+        lines to be exported per frame.
 
         :param params_dict: Dictionary of namedtuple containing all command
         parameters (i.e. Axes, ExternalAxes, etc).
@@ -153,7 +156,7 @@ class SimpleCSVProcessor(postproc.PostProcessor):
         if params.count(None) != len(params):
             # params.insert(0, self.time_index)  # Include current time-index
             # self.time_index += self.time_step  # Increment to next time-index
-            return RecordsCommand(*params)
+            return [RecordsCommand(*params)]
 
     @staticmethod
     def _set_supported_options():
