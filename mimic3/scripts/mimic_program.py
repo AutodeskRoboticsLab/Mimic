@@ -937,6 +937,9 @@ def _get_frames_using_sample_rate(animation_settings, postproc_settings):
 def _get_frames_using_keyframes_only(robot, animation_settings):
     """
     Get frames from animation using a robot's keyframes only.
+    Historically Mimic looked for both simultaneous IK and FK keyframes set
+    on a frame to consider it part of the exported keyframes,
+    it was removed since general use tends to favorite IK-only keyframes.
     :param robot:
     :param animation_settings:
     :return:
@@ -946,7 +949,7 @@ def _get_frames_using_keyframes_only(robot, animation_settings):
     end_frame = animation_settings['End Frame']
     # Get list of keyframes on robots IK attribute for the given range
     target_ctrl_path = mimic_utils.get_target_ctrl_path(robot)
-    ik_keyframes = pm.keyframe(
+    frames = pm.keyframe(
         target_ctrl_path,
         attribute='ik',
         query=True,
@@ -955,11 +958,11 @@ def _get_frames_using_keyframes_only(robot, animation_settings):
     # attributes. If there's not, we remove it from the list
     # Note: we only need to check one controller as they are all keyframed
     # together
-    fk_test_handle_path = mimic_utils.format_path('{0}|{1}robot_GRP|{1}FK_CTRLS|{1}a1FK_CTRL.rotateY', robot)
-    frames = [frame for frame in ik_keyframes if pm.keyframe(
-        fk_test_handle_path,
-        query=True,
-        time=frame)]
+    # fk_test_handle_path = mimic_utils.format_path('{0}|{1}robot_GRP|{1}FK_CTRLS|{1}a1FK_CTRL.rotateY', robot)
+    # frames = [frame for frame in ik_keyframes if pm.keyframe(
+    #    fk_test_handle_path,
+    #    query=True,
+    #    time=frame)]
     return frames
 
 
