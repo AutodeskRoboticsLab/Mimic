@@ -938,7 +938,7 @@ def _get_frames_using_sample_rate(animation_settings, postproc_settings):
 def _get_frames_using_keyframes_only(robot, animation_settings):
     """
     Get frames from animation using a robot's keyframes only.
-    This will include ANY keyframe set on either IK tool_CTRL or any of the 6 FK_CTRL handles.
+    This will include ANY keyframe set on either IK target_CTRL / tool_CTRL or any of the 6 FK_CTRL handles.
     :param robot:
     :param animation_settings:
     :return:
@@ -947,11 +947,17 @@ def _get_frames_using_keyframes_only(robot, animation_settings):
     start_frame = animation_settings['Start Frame']
     end_frame = animation_settings['End Frame']
 
-    # Get list of keyframes on robots IK attribute for the given range
+    # Get list of keyframes on robots IK attribute for the given range on target_CTRL
     target_ctrl_path = mimic_utils.get_target_ctrl_path(robot)
-    ik_keyframes = pm.keyframe(
+    ik_keyframes_target = pm.keyframe(
         target_ctrl_path,
-        attribute='ik',
+        query=True,
+        time='{}:{}'.format(start_frame, end_frame))
+
+    # Get list of keyframes on robots IK attribute for the given range on tool_CTRL
+    tool_ctrl_path = mimic_utils.get_tool_ctrl_path(robot)
+    ik_keyframes_tool = pm.keyframe(
+        tool_ctrl_path,
         query=True,
         time='{}:{}'.format(start_frame, end_frame))
     
@@ -993,7 +999,7 @@ def _get_frames_using_keyframes_only(robot, animation_settings):
         time='{}:{}'.format(start_frame, end_frame))
 
     # combine all keyframe lists as one unique and deduplicated list
-    frames = list(np.unique(ik_keyframes + fk_1_keyframes + fk_2_keyframes + fk_3_keyframes + fk_4_keyframes + fk_5_keyframes + fk_6_keyframes))
+    frames = list(np.unique(ik_keyframes_target + ik_keyframes_tool + fk_1_keyframes + fk_2_keyframes + fk_3_keyframes + fk_4_keyframes + fk_5_keyframes + fk_6_keyframes))
 
     return frames
 
@@ -1161,10 +1167,16 @@ def _sample_frame_get_pose(robot_name, frame):
     # TODO: Integrate this with rigs, unclear and shouldn't be hardcoded
     robot_type = mimic_utils.get_robot_type(robot_name)
 
-    if robot_type == 'ABB' or robot_type == 'Universal Robots':
+    if robot_type == 'ABB':
         conversion_rotation = [
             [0, 0, -1],
             [0, 1, 0],
+            [1, 0, 0]
+        ]
+    elif robot_type == 'Universal Robots':
+        conversion_rotation = [
+            [0, -1, 0],
+            [0, 0, 1],
             [1, 0, 0]
         ]
     # elif robot_type == 'KUKA':
