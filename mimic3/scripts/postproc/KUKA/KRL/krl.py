@@ -304,26 +304,33 @@ class SimpleKRLProcessor(postproc.PostProcessor):
         For this processor:
         Can create a MotionCommand namedTuple from optional input parameters.
         Can create a IOCommand namedTuple from optional input parameters.
+        Returns a list of commands to allow possibly mutliple commands on separate
+        lines to be exported per frame.
 
         :param params_dict: Dictionary of namedtuple containing all command
         parameters (i.e. Axes, ExternalAxes, etc).
         :return:
         """
+        
+        commands = []
+
         # Try to get a MotionCommand
         params = []
         for field in _motion_command_fields:
             param = params_dict[field] if field in params_dict else None
             params.append(param)
         if params.count(None) != len(params):
-            return MotionCommand(*params)
-        else:
-            # Try to get an IO command
-            params = []
-            for field in _io_command_fields:
-                param = params_dict[field] if field in params_dict else None
-                params.append(param)
-            if params.count(None) != len(params):
-                return IOCommand(*params)
+            commands.append(MotionCommand(*params))
+        
+        # Try to get an IO command
+        params = []
+        for field in _io_command_fields:
+            param = params_dict[field] if field in params_dict else None
+            params.append(param)
+        if params.count(None) != len(params):
+            commands.append(IOCommand(*params))
+        
+        return commands
 
     @staticmethod
     def _set_supported_options():

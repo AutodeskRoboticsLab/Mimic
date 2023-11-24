@@ -329,8 +329,8 @@ class PostProcessor(object):
         """
         commands = []
         for params_dict in params_dicts:
-            command = self._format_command(params_dict)
-            commands.append(command)
+            command_list = self._format_command(params_dict)
+            commands.extend(command_list)
         return commands
 
     def set_program_directory(self, directory):

@@ -400,6 +400,12 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
     ignore_warnings = postproc_settings['Ignore Warnings']
     warning = ''  # Temporary holder
 
+    # declare and init to prevent reference before assignement
+    position_violations = False
+    velocity_violations = False
+    acceleration_violations = False
+    jerk_violations = False
+
     # Check if limits have been exceeded (i.e. velocity, acceleration)
     if user_options.Include_axes and not user_options.Ignore_motion:
         # TODO: Add UI options to select which violations, max/min/avg user wants to check
