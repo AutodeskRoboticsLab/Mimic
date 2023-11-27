@@ -156,18 +156,31 @@ def euler_angles_by_matrix(m):
     :param m:
     :return:
     """
-    sb = m[2][0]
+
+    # prevent errors due to Maya returning very small floats and atan2
+    # not playing nice with very small number, round to 0
+    
+    _m = [[0 for x in range(3)] for x in range(3)]
+
+    for i in range(3):
+        for j in range(3):
+            if abs(m[i][j]) < 1E-7:
+                _m[i][j] = 0
+            else:
+                _m[i][j] = m[i][j]
+
+    sb = _m[2][0]
     if 1 - sb * sb < 0:
         cb = 0
     else:
         cb = math.sqrt(1 - sb * sb)
-    ca = m[0][0]
-    sa = -m[1][0]
-    cc = m[2][2]
-    sc = -m[2][1]
-    if abs(m[0][0]) < 1E-7 and abs(m[1][0]) < 1E-7:
-        cc = m[1][1]
-        sc = m[1][2]
+    ca = _m[0][0]
+    sa = -_m[1][0]
+    cc = _m[2][2]
+    sc = -_m[2][1]
+    if abs(_m[0][0]) < 1E-7 and abs(_m[1][0]) < 1E-7:
+        cc = _m[1][1]
+        sc = _m[1][2]
     _a = math.atan2(sa, ca)
     _b = math.atan2(sb, cb)
     _c = math.atan2(sc, cc)
@@ -175,7 +188,6 @@ def euler_angles_by_matrix(m):
     b = _b * -180 / math.pi
     c = _c * -180 / math.pi
     return a, b, c
-
 
 def vector_normalize(v):
     """
