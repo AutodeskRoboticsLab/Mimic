@@ -1030,7 +1030,7 @@ def _build_add_external_axis_frame(parent_layout):
                   label='Axis Number:',
                   height=18)
 
-    axis_number_list = [i + 1 for i in range(6)]
+    axis_number_list = [i + 1 for i in range(16)]
     for axis_number in axis_number_list:
         cmds.menuItem(label=axis_number)
 

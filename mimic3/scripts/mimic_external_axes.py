@@ -622,7 +622,7 @@ def add_external_axis(*args):
                keyable=False,
                attributeType='long',
                minValue=1,
-               maxValue=6,
+               maxValue=16,
                defaultValue=1,
                parent=parent_attribute)
     pm.addAttr(target_CTRL,

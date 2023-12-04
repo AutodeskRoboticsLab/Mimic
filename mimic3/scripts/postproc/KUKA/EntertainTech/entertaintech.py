@@ -203,6 +203,7 @@ def _process_records_command(command, opts):
 
     if command.external_axes is not None:
         external_axes = [axis for axis in command.external_axes if axis is not None]
+        external_axes = external_axes[:6]
         formatted_params = [general_utils.num_to_str(axis, include_sign=True, padding=padding)
                             for axis in external_axes]
         params.extend(formatted_params)
