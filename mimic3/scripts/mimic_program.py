@@ -8,6 +8,7 @@ Check and save program functionality used by Mimic.
 try:
     import pymel.core as pm
     import maya.mel as mel
+    import numpy as np
 
     MAYA_IS_RUNNING = True
 except ImportError:  # Maya is not running
@@ -937,6 +938,7 @@ def _get_frames_using_sample_rate(animation_settings, postproc_settings):
 def _get_frames_using_keyframes_only(robot, animation_settings):
     """
     Get frames from animation using a robot's keyframes only.
+    This will include ANY keyframe set on either IK target_CTRL / tool_CTRL or any of the 6 FK_CTRL handles.
     :param robot:
     :param animation_settings:
     :return:
@@ -944,22 +946,61 @@ def _get_frames_using_keyframes_only(robot, animation_settings):
     # Get relevant animation parameters.
     start_frame = animation_settings['Start Frame']
     end_frame = animation_settings['End Frame']
-    # Get list of keyframes on robots IK attribute for the given range
+
+    # Get list of keyframes on robots IK attribute for the given range on target_CTRL
     target_ctrl_path = mimic_utils.get_target_ctrl_path(robot)
-    ik_keyframes = pm.keyframe(
+    ik_keyframes_target = pm.keyframe(
         target_ctrl_path,
-        attribute='ik',
         query=True,
         time='{}:{}'.format(start_frame, end_frame))
-    # Verify that there is also a keyframe set on the FK controls' rotate
-    # attributes. If there's not, we remove it from the list
-    # Note: we only need to check one controller as they are all keyframed
-    # together
-    fk_test_handle_path = mimic_utils.format_path('{0}|{1}robot_GRP|{1}FK_CTRLS|{1}a1FK_CTRL.rotateY', robot)
-    frames = [frame for frame in ik_keyframes if pm.keyframe(
-        fk_test_handle_path,
+
+    # Get list of keyframes on robots IK attribute for the given range on tool_CTRL
+    tool_ctrl_path = mimic_utils.get_tool_ctrl_path(robot)
+    ik_keyframes_tool = pm.keyframe(
+        tool_ctrl_path,
         query=True,
-        time=frame)]
+        time='{}:{}'.format(start_frame, end_frame))
+    
+    # Get all FK keyframes set per each individual joints
+    fk_1_path = mimic_utils.format_path('{0}|{1}robot_GRP|{1}FK_CTRLS|{1}a1FK_CTRL.rotateY', robot)
+    fk_1_keyframes = pm.keyframe(
+        fk_1_path,
+        query=True,
+        time='{}:{}'.format(start_frame, end_frame))
+    
+    fk_2_path = mimic_utils.format_path('{0}|{1}robot_GRP|{1}FK_CTRLS|{1}a2FK_CTRL.rotateX', robot)
+    fk_2_keyframes = pm.keyframe(
+        fk_2_path,
+        query=True,
+        time='{}:{}'.format(start_frame, end_frame))
+    
+    fk_3_path = mimic_utils.format_path('{0}|{1}robot_GRP|{1}FK_CTRLS|{1}a3FK_CTRL.rotateX', robot)
+    fk_3_keyframes = pm.keyframe(
+        fk_3_path,
+        query=True,
+        time='{}:{}'.format(start_frame, end_frame))
+    
+    fk_4_path = mimic_utils.format_path('{0}|{1}robot_GRP|{1}FK_CTRLS|{1}a4FK_CTRL.rotateY', robot)
+    fk_4_keyframes = pm.keyframe(
+        fk_4_path,
+        query=True,
+        time='{}:{}'.format(start_frame, end_frame))
+    
+    fk_5_path = mimic_utils.format_path('{0}|{1}robot_GRP|{1}FK_CTRLS|{1}a5FK_CTRL.rotateX', robot)
+    fk_5_keyframes = pm.keyframe(
+        fk_5_path,
+        query=True,
+        time='{}:{}'.format(start_frame, end_frame))
+    
+    fk_6_path = mimic_utils.format_path('{0}|{1}robot_GRP|{1}FK_CTRLS|{1}a6FK_CTRL.rotateZ', robot)
+    fk_6_keyframes = pm.keyframe(
+        fk_6_path,
+        query=True,
+        time='{}:{}'.format(start_frame, end_frame))
+
+    # combine all keyframe lists as one unique and deduplicated list
+    frames = list(np.unique(ik_keyframes_target + ik_keyframes_tool + fk_1_keyframes + fk_2_keyframes + fk_3_keyframes + fk_4_keyframes + fk_5_keyframes + fk_6_keyframes))
+
     return frames
 
 
@@ -1125,10 +1166,17 @@ def _sample_frame_get_pose(robot_name, frame):
     # Based on the orientation of the coordinate frame of the mounting flange
     # TODO: Integrate this with rigs, unclear and shouldn't be hardcoded
     robot_type = mimic_utils.get_robot_type(robot_name)
+
     if robot_type == 'ABB':
         conversion_rotation = [
             [0, 0, -1],
             [0, 1, 0],
+            [1, 0, 0]
+        ]
+    elif robot_type == 'Universal Robots':
+        conversion_rotation = [
+            [0, -1, 0],
+            [0, 0, 1],
             [1, 0, 0]
         ]
     # elif robot_type == 'KUKA':
