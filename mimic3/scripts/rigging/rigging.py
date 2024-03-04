@@ -9,7 +9,7 @@ except ImportError:  # Maya is not running
     pm = None
     MAYA_IS_RUNNING = False
 import os
-import rigging_utils
+from rigging import rigging_utils
 import importlib
 
 importlib.reload(rigging_utils)
