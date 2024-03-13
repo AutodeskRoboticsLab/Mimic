@@ -1163,7 +1163,7 @@ def _sample_frame_get_external_axes(robot_name, frame):
     key_axis_number = 'Axis Number'
     key_position = 'Position'
     # Create an list of Nones for initial external axes
-    external_axes = [None for _ in range(6)]
+    external_axes = [None for _ in range(16)]
     # Get all external axes for this robot
     external_axis_names = mimic_external_axes.get_external_axis_names(robot_name)
     # Get info dict for each of those external axes

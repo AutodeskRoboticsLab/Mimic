@@ -367,6 +367,7 @@ def _process_motion_command(command, opts):
                 if command.external_axes is not None:
                     motion_data_type = E6POS
                     external_axes = [axis if axis is not None else 0 for axis in command.external_axes]
+                    external_axes = external_axes[:6]
                     motion_data.extend(external_axes)
                 else:
                     motion_data_type = POS
@@ -387,6 +388,7 @@ def _process_motion_command(command, opts):
             if command.external_axes is not None:
                 motion_data_type = E6AXIS
                 external_axes = [axis if axis is not None else 0 for axis in command.external_axes]
+                external_axes = external_axes[:6]
                 motion_data.extend(external_axes)
             else:
                 motion_data_type = AXIS

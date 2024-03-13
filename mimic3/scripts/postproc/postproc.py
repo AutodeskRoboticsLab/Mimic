@@ -40,6 +40,16 @@ __external_axis_3 = 'external_axis_3'
 __external_axis_4 = 'external_axis_4'
 __external_axis_5 = 'external_axis_5'
 __external_axis_6 = 'external_axis_6'
+__external_axis_7 = 'external_axis_7'
+__external_axis_8 = 'external_axis_8'
+__external_axis_9 = 'external_axis_9'
+__external_axis_10 = 'external_axis_10'
+__external_axis_11 = 'external_axis_11'
+__external_axis_12 = 'external_axis_12'
+__external_axis_13 = 'external_axis_13'
+__external_axis_14 = 'external_axis_14'
+__external_axis_15 = 'external_axis_15'
+__external_axis_16 = 'external_axis_16'
 __configuration_1 = 'configuration_1'
 __configuration_2 = 'configuration_2'
 __configuration_3 = 'configuration_3'
@@ -88,6 +98,16 @@ ExternalAxes = namedtuple(
         __external_axis_4,  # float
         __external_axis_5,  # float
         __external_axis_6,  # float
+        __external_axis_7,  # float
+        __external_axis_8,  # float
+        __external_axis_9,  # float
+        __external_axis_10,  # float
+        __external_axis_11,  # float
+        __external_axis_12,  # float
+        __external_axis_13,  # float
+        __external_axis_14,  # float
+        __external_axis_15,  # float
+        __external_axis_16  # float
     ]
 )
 

@@ -334,6 +334,7 @@ def _process_motion_command(command, opts):  # Implement in base class!
             if command.external_axes is not None:
                 external_axes = [axis if axis is not None else '9E9'
                                  for axis in command.external_axes]
+                external_axes = external_axes[:6]
                 params = [general_utils.num_to_str(p, include_sign=False, precision=3)
                           for p in external_axes]
                 target_data.extend(params)
@@ -355,6 +356,7 @@ def _process_motion_command(command, opts):  # Implement in base class!
             if command.external_axes is not None:
                 external_axes = [axis if axis is not None else '9E9'
                                  for axis in command.external_axes]
+                external_axes = external_axes[:6]
                 params = [general_utils.num_to_str(p, include_sign=False, precision=3)
                           for p in external_axes]
                 target_data.extend(params)
@@ -379,6 +381,7 @@ def _process_motion_command(command, opts):  # Implement in base class!
             if command.external_axes is not None:
                 external_axes = [axis if axis is not None else '9E9'
                                  for axis in command.external_axes]
+                external_axes = external_axes[:6]
                 params = [general_utils.num_to_str(p, include_sign=False, precision=3)
                           for p in external_axes]
                 target_data.extend(params)
