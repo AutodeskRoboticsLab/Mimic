@@ -250,7 +250,7 @@ def _process_motion_command(command, opts):
     if opts.Use_nonlinear_motion:
         if command.axes is not None:
             axes = command.axes
-            params = [general_utils.num_to_str(math.radians(p), include_sign=False, precision=3)
+            params = [general_utils.num_to_str(math.radians(p), include_sign=False, precision=5)
                       for p in axes]
             target_data.extend(params)
         else:
