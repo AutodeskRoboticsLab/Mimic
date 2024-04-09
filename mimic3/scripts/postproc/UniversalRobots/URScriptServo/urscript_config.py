@@ -18,4 +18,5 @@ DEFAULT_PROGRAM = \
     'popup("go to start?", title="Go To Start",blocking=True)\n' \
     '{}\n' \
     'popup("play path?", title="Play Path",blocking=True)\n' \
-    '{}\n'
+    '{}\n' \
+    'stopj(0.5)\n'
