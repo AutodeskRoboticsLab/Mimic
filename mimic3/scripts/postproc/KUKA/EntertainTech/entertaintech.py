@@ -11,6 +11,7 @@ from . import entertaintech_config
 import general_utils
 from postproc import postproc
 from postproc import postproc_options
+from emily_crc import EmilyCrc32
 
 
 # PARAMS
@@ -230,6 +231,4 @@ def get_checksum(s):
     :param s: Input string
     :return:
     """
-    # TODO: Couldn't reproduce CRC32 checksum in documentation?
-    values = s.translate(None, string.whitespace)
-    return binascii.crc32(values) & 0xffffffff
+    return EmilyCrc32.calculate(s)
