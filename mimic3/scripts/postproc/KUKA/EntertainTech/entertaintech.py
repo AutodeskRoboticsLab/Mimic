@@ -11,7 +11,7 @@ from . import entertaintech_config
 import general_utils
 from postproc import postproc
 from postproc import postproc_options
-from emily_crc import EmilyCrc32
+from .emily_crc import EmilyCrc32
 
 
 # PARAMS
