@@ -6,18 +6,18 @@ Creates the mFIZ UI.
 """
 
 try:
-    import pymel.core as pm
     import maya.cmds as cmds
     from maya.api import OpenMaya
 
     MAYA_IS_RUNNING = True
 except ImportError:  # Maya is not running
-    pm = None
+    cmds = None
     MAYA_IS_RUNNING = False
 
 # General imports 
 import re
 from collections import namedtuple
+from functools import partial
 
 # mFIZ Imports
 import mFIZ_utils
@@ -95,12 +95,12 @@ class mFIZWin(object):
 
         ## UI Controls
         # These are assigned as the UI is built
-        self.win = None  # pymel.core.uitypes.Window
-        self.main_layout = None  # pymel.core.uitypes.PaneLayout
-        self.controls_tab_layout = None  # pymel.core.uitypes.TabLayout
-        self.connection_button_icon = None  # pymel.core.uitypes.SymbolButton
+        self.win = None
+        self.main_layout = None
+        self.controls_tab_layout = None
+        self.connection_button_icon = None
         self.outliner_selection_connection = None  # selectionConnection that controls the mFIZ Graph Editor panel Outliner
-        self.stop_playback_checkBox = None  # pymel.core.uitypes.CheckBox
+        self.stop_playback_checkBox = None
 
         ## Callback ID's
         # These are used to control the connection state of the mFIZ UI tabs
@@ -350,7 +350,7 @@ class mFIZWin(object):
         connection_icon = cmds.symbolButton(image=CONNECTION_ICON_NAMES[0],
                                           width=20,
                                           height=20,
-                                          command=pm.Callback(self.connect, tab_name))
+                                          command=partial(self.connect, tab_name))
         
         connection_indicator_field = cmds.textField('connection_indicator_field',
                                                    editable=False,
@@ -404,7 +404,7 @@ class mFIZWin(object):
                                   adjustableColumn=3,
                                   attribute='{}.{}'.format(ctrl, attr))
             cmds.symbolButton(image='set_keyframe_icon.png',
-                            command=pm.Callback(self._set_keyframe, [attr]))
+                            command=partial(self._set_keyframe, [attr]))
             cmds.setParent('..')
 
         cmds.setParent(fiz_controls_rowLayout)
@@ -418,7 +418,7 @@ class mFIZWin(object):
         cmds.symbolButton(image='keyframe_all_icon.png',
                         width=BUTTON_COL_WIDTH,
                         height=FIZ_CONTROL_COL_HEIGHT,
-                        command=self._set_keyframe)
+                        command=partial(self._set_keyframe, None))
 
         cmds.setParent(parent_layout)
 
@@ -586,7 +586,7 @@ class mFIZWin(object):
         stop_on_disconnect = cmds.checkBox(self.stop_playback_checkBox,
                                          query=True,
                                          value=True)
-        controller.node.setAttr('stopPlaybackOnDisconnect',
+        cmds.setAttr('{}.stopPlaybackOnDisconnect'.format(controller.node),
                                  stop_on_disconnect,
                                  lock=True)
 
@@ -607,7 +607,7 @@ class mFIZWin(object):
 
         cmds.tabLayout(tab_layout, edit=True, moveTab=[setup_tab_index, num_tabs])
 
-    def _set_keyframe(self, attrs=None):
+    def _set_keyframe(self, attrs=None, *args):
         """
         """
         ctrl = self._get_tab_ctrl()
@@ -820,7 +820,7 @@ class mFIZWin(object):
         if not cmds.layout(tab_layout, exists=True):
             # If the scriptJob still exists, delete the scriptJob   
             if self.time_change_scriptJob_id:
-                cmds.evalDeferred('import pymel.core as pm; cmds.scriptJob(kill={})'.format(self.time_change_scriptJob_id))
+                cmds.evalDeferred('import maya.cmds as cmds; cmds.scriptJob(kill={})'.format(self.time_change_scriptJob_id))
             return
 
         # If no tab is passed, set the state of every tab
@@ -874,7 +874,7 @@ class mFIZWin(object):
                 if not node_state:
                     self._refresh_port_optionMenus()
 
-    def connect(self, tab_name):
+    def connect(self, tab_name, *args):
         """
         """
         controller = self.controls_tab_data[tab_name]['tab_data'].controller
@@ -899,18 +899,18 @@ class mFIZWin(object):
 
             # Set the port name and api attributes on the mFIZ node
 
-            node.setAttr('portName', port_name)
-            node.setAttr('api', api)
+            cmds.setAttr('{}.portName'.format(node), port_name, type='string')
+            cmds.setAttr('{}.api'.format(node), api, type='string')
 
         ## Disconnect device
         else:
             # Remove the port name and api from the node attributes
             # Note: might end up leaving these and have the UI set to the last-used options
-            node.setAttr('portName', '')
-            node.setAttr('api', '')            
+            cmds.setAttr('{}.portName'.format(node), '', type='string')
+            cmds.setAttr('{}.api'.format(node), '', type='string')            
 
         # Set the 'live' attribute of the mFIZ node to establish connection
-        node.setAttr('live', connect)
+        cmds.setAttr('{}.live'.format(node), connect)
 
 # General utility functions
 def get_textField_input(field_name, filter=False):

@@ -6,11 +6,11 @@ Functions that actually make mFIZ work.
 """
 
 try:
-    import pymel.core as pm
+    import maya.cmds as cmds
 
     MAYA_IS_RUNNING = True
 except ImportError:  # Maya is not running
-    pm = None
+    cmds = None
     MAYA_IS_RUNNING = False
 
 # General Imports
@@ -44,15 +44,16 @@ def _create_mFIZ_controller(name):
     """
     """
     name += '_CTRL_0'
-    ctrl = pm.spaceLocator(name=name)
+    ctrl = cmds.spaceLocator(name=name)[0]
     
     # Lock and hide all default keyable attributes
-    keyable_attrs = ctrl.listAttr(keyable=True)
-    for attr in keyable_attrs:
-        pm.setAttr(attr, k=False, lock=True, channelBox=False)
+    keyable_attrs = cmds.listAttr(ctrl, keyable=True)
+    if keyable_attrs:
+        for attr in keyable_attrs:
+            cmds.setAttr('{}.{}'.format(ctrl, attr), keyable=False, lock=True, channelBox=False)
     
     # Unlock visibility so we can connect to it later
-    pm.setAttr(ctrl.visibility, lock=False)
+    cmds.setAttr('{}.visibility'.format(ctrl), lock=False)
     
     # Add FIZ attrs
     fiz_attrs = FIZ_ATTRS
@@ -61,13 +62,13 @@ def _create_mFIZ_controller(name):
     fiz_attr_max = 1
     
     for attr in fiz_attrs:
-        ctrl.addAttr(attr, attributeType=fiz_attr_type, minValue=fiz_attr_min, maxValue=fiz_attr_max, keyable=True)
+        cmds.addAttr(ctrl, longName=attr, attributeType=fiz_attr_type, minValue=fiz_attr_min, maxValue=fiz_attr_max, keyable=True)
         
     # Add a message(s) attribute to link it to the mFIZ node
     mssg_attr_name = 'mFIZ_node'
     mssg_attr_nice_name = 'mFIZ Node'
     
-    ctrl.addAttr(mssg_attr_name, niceName=mssg_attr_nice_name, attributeType='message')
+    cmds.addAttr(ctrl, longName=mssg_attr_name, niceName=mssg_attr_nice_name, attributeType='message')
     
     return ctrl
     
@@ -76,7 +77,7 @@ def _create_mFIZ_node(name):
     """
     """
     name += '_NODE_0'
-    node = pm.createNode('mFIZ', name=name)
+    node = cmds.createNode('mFIZ', name=name)
     
     return node
     
@@ -84,7 +85,7 @@ def _create_mFIZ_node(name):
 def _connect_controller_to_node(ctrl, node):
     """
     """    
-    pm.connectAttr(ctrl.mFIZ_node, node.controller, f=True)
+    cmds.connectAttr('{}.mFIZ_node'.format(ctrl), '{}.controller'.format(node), f=True)
 
     # Connect FIZ attrs from controller to node
     fiz_attrs = FIZ_ATTRS
@@ -93,12 +94,12 @@ def _connect_controller_to_node(ctrl, node):
         ctrl_attr = '{}.{}'.format(ctrl, attr)
         node_attr = '{}.{}'.format(node, attr)
         
-        pm.connectAttr(ctrl_attr, node_attr)
+        cmds.connectAttr(ctrl_attr, node_attr)
         
     # Connect node data sent signal to controller visibility
     # This ensures that the node is computed 
-    pm.connectAttr(node.dataSent, ctrl.visibility)
-    pm.setAttr(ctrl.visibility, lock=True)
+    cmds.connectAttr('{}.dataSent'.format(node), '{}.visibility'.format(ctrl))
+    cmds.setAttr('{}.visibility'.format(ctrl), lock=True)
 # --------------------------------------------------------- #
 
 
@@ -120,7 +121,7 @@ def get_anim_curve(attr_curve_name):
     anim_curve = None
 
     # Get a list of all animCurves
-    anim_curves = [curve for curve in pm.ls(type="animCurve")]
+    anim_curves = cmds.ls(type="animCurve") or []
  
     # Check if the attr curve name exists in any of the anim curves
     # We do this as a list comprehension to make sure it retruns true if the
@@ -142,8 +143,9 @@ def set_curve_color(attr_curve_name, attr):
     if not anim_curve:
         return
 
-    anim_curve.setAttr('useCurveColor', True)
-    anim_curve.setAttr('curveColor', mFIZ_config.ANIM_CURVE_COLORS[attr])
+    cmds.setAttr('{}.useCurveColor'.format(anim_curve), True)
+    color = mFIZ_config.ANIM_CURVE_COLORS[attr]
+    cmds.setAttr('{}.curveColor'.format(anim_curve), color[0], color[1], color[2], type='double3')
 # --------------------------------------------------------- #
 
 
@@ -161,11 +163,11 @@ def load_mFIZ_plugins():
     # Check to see if each plug-in is loaded
     for plugin in required_plugins:
         # If the plug-in is not loaded:
-        if not pm.pluginInfo(plugin, query=True, loaded=True):
+        if not cmds.pluginInfo(plugin, query=True, loaded=True):
             try:
                 # Try loading it (and turn on autoload)
-                pm.loadPlugin(plugin)
-                pm.pluginInfo(plugin, autoload=True)
+                cmds.loadPlugin(plugin)
+                cmds.pluginInfo(plugin, autoload=True)
                 print('{} Plug-in loaded'.format(plugin))
             except Exception:  # Unknown error
                 pass
@@ -176,7 +178,7 @@ def get_mFIZ_version():
     Returns mFIZ version from .mod file as a formatted string.
     :return:
     """
-    return pm.moduleInfo(version=True, moduleName='mFIZ')
+    return cmds.moduleInfo(version=True, moduleName='mFIZ')
 
 
 def get_mFIZ_module_dir():
@@ -184,7 +186,7 @@ def get_mFIZ_module_dir():
     Returns mFIZ module directory as a formatted string.
     :return:
     """
-    return pm.moduleInfo(path=True, moduleName='mFIZ')  
+    return cmds.moduleInfo(path=True, moduleName='mFIZ')  
 # --------------------------------------------------------- #
 
 
@@ -192,12 +194,15 @@ def get_mFIZ_module_dir():
 def get_all_controllers():
     """
     """
-    mFIZ_nodes = pm.ls(type='mFIZ')
+    mFIZ_nodes = cmds.ls(type='mFIZ') or []
 
     mFIZ_controllers = []
 
     for node in mFIZ_nodes:
-        ctrl = node.controller.get()
+        ctrl_connections = cmds.listConnections('{}.controller'.format(node))
+        if not ctrl_connections:
+            continue
+        ctrl = ctrl_connections[0]
 
         controller = mFIZ_controller(ctrl, node)
         mFIZ_controllers.append(controller)
@@ -209,7 +214,7 @@ def is_mFIZ_ctrl(node):
     """
     Checks if input argument is an mFIZ controller
     """
-    return pm.attributeQuery('mFIZ_node', node=node, exists=True)
+    return cmds.attributeQuery('mFIZ_node', node=node, exists=True)
 
 
 class mFIZError(Exception):
