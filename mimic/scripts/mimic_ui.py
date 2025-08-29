@@ -373,7 +373,7 @@ def _build_keyframing_tools_frame(parent_layout):
 
 
 def _build_general_frame(parent_layout):
-    general_frame = cmds.frameLayout(label="General", collapsable=True)
+    general_frame = cmds.frameLayout(label="General", collapsable=True, height=145)
     cmds.columnLayout(adj=True, columnAttach=('both', 5))
     cmds.separator(height=5, style='none')
 
@@ -414,7 +414,7 @@ def _build_general_frame(parent_layout):
               command=mimic_utils.axis_val_hud,
               annotation='Toggles the visibility of Mimic\'s Heads Up Display')
 
-    cmds.separator(height=10, style='none')
+    cmds.separator(height=5, style='none')
 
     cmds.setParent(parent_layout)
 
