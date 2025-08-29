@@ -373,15 +373,16 @@ def _build_keyframing_tools_frame(parent_layout):
 
 
 def _build_general_frame(parent_layout):
-    general_frame = cmds.frameLayout(label="General", collapsable=True, height=145)
+    general_frame = cmds.frameLayout(label="General", collapsable=True)
     cmds.columnLayout(adj=True, columnAttach=('both', 5))
-    cmds.separator(height=5, style='none')
+    cmds.separator(height=2, style='none')
 
     cmds.button(label='Save Pose',
               command=mimic_utils.save_pose_to_shelf,
+              height=20,
               annotation='Saves selected robot\'s current configuration\n' \
                          'to a button on the Mimic shelf')
-    cmds.separator(height=10, style='out')
+    cmds.separator(height=7, style='out')
 
     cmds.gridLayout(numberOfColumns=2,
                   cellWidth=109,
