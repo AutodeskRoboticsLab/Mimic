@@ -4,13 +4,13 @@
 """
 Creates the Mimic UI.
 """
+from functools import partial
+
 try:
-    import pymel.core as pm
     import maya.cmds as cmds
 
     MAYA_IS_RUNNING = True
 except ImportError:  # Maya is not running
-    pm = None
     MAYA_IS_RUNNING = False
 
 import general_utils
@@ -208,7 +208,7 @@ def _build_fk_tab(parent_layout):
                   cellWidth=72,
                   cellHeight=44)
 
-    cmd_str = ('import pymel.core as pm; ' \
+    cmd_str = ('import maya.cmds as cmds; ' \
                'import mimic_utils; ' \
                'cmds.setFocus("fkTab");')
 
@@ -237,20 +237,20 @@ def _build_fk_tab(parent_layout):
     cmds.text(label='A1:')
     cmds.textField("t_a1",
                  font=FONT,
-                 rfc=pm.Callback(mimic_utils.select_fk_axis_handle, 1),
-                 changeCommand=pm.Callback(mimic_utils.set_axis, 1))
+                 rfc=partial(mimic_utils.select_fk_axis_handle, 1),
+                 changeCommand=partial(mimic_utils.set_axis, 1))
 
     cmds.text(label='  A2:')
     cmds.textField("t_a2",
                  font=FONT,
-                 rfc=pm.Callback(mimic_utils.select_fk_axis_handle, 2),
-                 changeCommand=pm.Callback(mimic_utils.set_axis, 2))
+                 rfc=partial(mimic_utils.select_fk_axis_handle, 2),
+                 changeCommand=partial(mimic_utils.set_axis, 2))
 
     cmds.text(label='  A3:')
     cmds.textField("t_a3",
                  font=FONT,
-                 rfc=pm.Callback(mimic_utils.select_fk_axis_handle, 3),
-                 changeCommand=pm.Callback(mimic_utils.set_axis, 3))
+                 rfc=partial(mimic_utils.select_fk_axis_handle, 3),
+                 changeCommand=partial(mimic_utils.set_axis, 3))
 
     # UI spacing
     cmds.text(label='')
@@ -267,20 +267,20 @@ def _build_fk_tab(parent_layout):
     cmds.text(label='A4:')
     cmds.textField("t_a4",
                  font=FONT,
-                 rfc=pm.Callback(mimic_utils.select_fk_axis_handle, 4),
-                 changeCommand=pm.Callback(mimic_utils.set_axis, 4))
+                 rfc=partial(mimic_utils.select_fk_axis_handle, 4),
+                 changeCommand=partial(mimic_utils.set_axis, 4))
 
     cmds.text(label='  A5:')
     cmds.textField("t_a5",
                  font=FONT,
-                 rfc=pm.Callback(mimic_utils.select_fk_axis_handle, 5),
-                 changeCommand=pm.Callback(mimic_utils.set_axis, 5))
+                 rfc=partial(mimic_utils.select_fk_axis_handle, 5),
+                 changeCommand=partial(mimic_utils.set_axis, 5))
 
     cmds.text(label='  A6:')
     cmds.textField("t_a6",
                  font=FONT,
-                 rfc=pm.Callback(mimic_utils.select_fk_axis_handle, 6),
-                 changeCommand=pm.Callback(mimic_utils.set_axis, 6))
+                 rfc=partial(mimic_utils.select_fk_axis_handle, 6),
+                 changeCommand=partial(mimic_utils.set_axis, 6))
 
     # UI Spacing
     cmds.text(label='')
@@ -414,7 +414,7 @@ def _build_general_frame(parent_layout):
               command=mimic_utils.axis_val_hud,
               annotation='Toggles the visibility of Mimic\'s Heads Up Display')
 
-    cmds.separator(height=5, style='none')
+    cmds.separator(height=10, style='none')
 
     cmds.setParent(parent_layout)
 
@@ -460,7 +460,7 @@ def _build_general_settings_tab(parent_layout):
                     image="setDirectory_icon.png",
                     width=32,
                     height=20,
-                    command=pm.Callback(mimic_utils.set_dir,
+                    command=partial(mimic_utils.set_dir,
                                         't_programDirectoryText',
                                         'DEFAULT_PROGRAM_DIRECTORY',
                                         Prefs.get,
@@ -477,7 +477,7 @@ def _build_general_settings_tab(parent_layout):
     cmds.textField('t_outputFileName',
                  text=Prefs.get('DEFAULT_OUTPUT_NAME'),
                  font=FONT,
-                 changeCommand=pm.CallbackWithArgs(Prefs.set, 'DEFAULT_OUTPUT_NAME'))
+                 changeCommand=partial(Prefs.set, 'DEFAULT_OUTPUT_NAME'))
     cmds.setParent('..')
 
     cmds.rowLayout(numberOfColumns=2,
@@ -489,7 +489,7 @@ def _build_general_settings_tab(parent_layout):
     cmds.textField('t_templateFileName',
                  text=Prefs.get('DEFAULT_TEMPLATE_NAME'),
                  font=FONT,
-                 changeCommand=pm.CallbackWithArgs(Prefs.set, 'DEFAULT_TEMPLATE_NAME'))
+                 changeCommand=partial(Prefs.set, 'DEFAULT_TEMPLATE_NAME'))
 
     cmds.setParent('..')
 
@@ -510,17 +510,17 @@ def _build_general_settings_tab(parent_layout):
     cmds.floatField('f_timeBetweenSamples',
                  value=selected_value,
                  precision=3,
-                 changeCommand=pm.CallbackWithArgs(Prefs.set, 'DEFAULT_SAMPLE_RATE_VALUE'))
+                 changeCommand=partial(Prefs.set, 'DEFAULT_SAMPLE_RATE_VALUE'))
     cmds.radioButtonGrp('time_unit_radio_group',
                       labelArray2=['s', 'f'],
                       annotation='Sample rate units: seconds or frames',
                       numberOfRadioButtons=2,
                       columnWidth2=[32, 30],
                       select=1 if selected_units == 'seconds' else 2,  # 1-based integer
-                      onCommand1 = pm.CallbackWithArgs(
+                      onCommand1 = partial(
                           Prefs.set,
                           'DEFAULT_SAMPLE_RATE_UNITS', 'seconds', mimic_config.FILE),
-                      onCommand2 = pm.CallbackWithArgs(
+                      onCommand2 = partial(
                           Prefs.set,
                           'DEFAULT_SAMPLE_RATE_UNITS', 'frames', mimic_config.FILE))
     cmds.setParent('..')
@@ -533,10 +533,10 @@ def _build_general_settings_tab(parent_layout):
                    label='Sample keyframes only',
                    enable=True,
                    select=Prefs.get('SAMPLE_KEYFRAMES_ONLY'),
-                   onCommand=pm.CallbackWithArgs(
+                   onCommand=partial(
                        Prefs.set,
                        'SAMPLE_KEYFRAMES_ONLY', True, mimic_config.FILE),
-                   offCommand=pm.CallbackWithArgs(
+                   offCommand=partial(
                        Prefs.set,
                        'SAMPLE_KEYFRAMES_ONLY', False, mimic_config.FILE))
     cmds.setParent('..')
@@ -553,14 +553,14 @@ def _build_general_settings_tab(parent_layout):
                 minValue=-10000,
                 maxValue=100000,
                 step=1,
-                changeCommand=pm.CallbackWithArgs(Prefs.set, 'ANIMATION_RANGE_START'))
+                changeCommand=partial(Prefs.set, 'ANIMATION_RANGE_START'))
 
     cmds.intField("i_programEndFrame",
                 value=cmds.playbackOptions(animationEndTime=True, query=True),
                 minValue=-10000,
                 maxValue=100000,
                 step=1,
-                changeCommand=pm.CallbackWithArgs(Prefs.set, 'ANIMATION_RANGE_END'))
+                changeCommand=partial(Prefs.set, 'ANIMATION_RANGE_END'))
 
     cmds.setParent('..')
 
@@ -570,7 +570,7 @@ def _build_general_settings_tab(parent_layout):
     cmds.optionMenu('postProcessorList',
                   label='Processor:',
                   height=18,
-                  changeCommand=pm.CallbackWithArgs(postproc_options.overwrite_options))
+                  changeCommand=partial(postproc_options.overwrite_options))
 
     # Get supported post-processors and fill option menu list
     supported_post_processors = postproc_setup.get_processor_names(mimic_config.FILE)
@@ -640,13 +640,13 @@ def _build_program_settings_frame(parent_layout):
                 value=Prefs.get('OPTS_OVERWRITE_EXISTING_FILE'),
                 annotation='If checked, an existing file with the input ' \
                            'output name will be overwritten',
-                changeCommand=pm.CallbackWithArgs(Prefs.set, 'OPTS_OVERWRITE_EXISTING_FILE'))
+                changeCommand=partial(Prefs.set, 'OPTS_OVERWRITE_EXISTING_FILE'))
     cmds.checkBox('cb_ignoreWarnings',
                 label="Ignore warnings",
                 value=Prefs.get('OPTS_IGNORE_WARNINGS'),
                 annotation='If checked, all warnings will be ignored and ' \
                            'a program will be written',
-                changeCommand=pm.CallbackWithArgs(Prefs.set, 'OPTS_IGNORE_WARNINGS'))
+                changeCommand=partial(Prefs.set, 'OPTS_IGNORE_WARNINGS'))
 
     cmds.separator(height=3, style='none')
 
@@ -657,13 +657,13 @@ def _build_program_settings_frame(parent_layout):
                 value=Prefs.get('OPTS_PREVIEW_IN_VIEWPORT'),
                 annotation='If checked, program will play in viewport during ' \
                            'post-process. Leave unchecked for faster results.',
-                changeCommand=pm.CallbackWithArgs(Prefs.set, 'OPTS_PREVIEW_IN_VIEWPORT'))
+                changeCommand=partial(Prefs.set, 'OPTS_PREVIEW_IN_VIEWPORT'))
     cmds.checkBox('cb_promptOnRedundantSolutions',
                 label="Prompt on redundant solutions",
                 value=Prefs.get('OPTS_REDUNDANT_SOLUTIONS_USER_PROMPT'),
                 annotation='If checked, Maya will as the user to select between ' \
                        'redundant solutions on axes where they occur.',
-                changeCommand=pm.CallbackWithArgs(Prefs.set,
+                changeCommand=partial(Prefs.set,
                                                   'OPTS_REDUNDANT_SOLUTIONS_USER_PROMPT'))
 
     cmds.separator(height=6, style='none')
@@ -713,7 +713,7 @@ def _build_add_robot_frame(parent_layout):
                  height=20)
 
     cmds.optionMenu('robotImportList',
-                  changeCommand=pm.CallbackWithArgs(Prefs.set, 'DEFAULT_ROBOT'))
+                  changeCommand=partial(Prefs.set, 'DEFAULT_ROBOT'))
 
     rigs = general_utils.get_rigs_dict()
     default_rig = Prefs.get('DEFAULT_ROBOT')
@@ -807,7 +807,7 @@ def _build_position_limits_tab(parent_layout):
                      font=FONT,
                      pht='Min',
                      width=cell_width,
-                     changeCommand='import pymel.core as pm; ' \
+                     changeCommand='import maya.cmds as cmds; ' \
                                    'cmds.setFocus("t_A{}Max"); ' \
                                    .format(i + 1))
         # Axis 1 Max limit
@@ -816,7 +816,7 @@ def _build_position_limits_tab(parent_layout):
                      font=FONT,
                      pht='Max',
                      width=cell_width,
-                     changeCommand='import pymel.core as pm; ' \
+                     changeCommand='import maya.cmds as cmds; ' \
                                    'cmds.setFocus("t_A{}Min"); ' \
                                    .format(set_focus_count))
 
@@ -852,7 +852,7 @@ def _build_velocity_limits_tab(parent_layout):
                      font=FONT,
                      pht='deg/sec',
                      width=cell_width,
-                     changeCommand='import pymel.core as pm; ' \
+                     changeCommand='import maya.cmds as cmds; ' \
                                    'import mimic_utils; ' \
                                    'cmds.setFocus("t_A{}Velocity"); ' \
                      .format(set_focus_count))
@@ -888,7 +888,7 @@ def _build_accel_limits_tab(parent_layout):
                      font=FONT,
                      pht='deg/sec' + '\xb2',
                      width=cell_width,
-                     changeCommand='import pymel.core as pm; ' \
+                     changeCommand='import maya.cmds as cmds; ' \
                                    'import mimic_utils; ' \
                                    'cmds.setFocus("t_A{}Accel"); ' \
                      .format(set_focus_count))
@@ -923,7 +923,7 @@ def _build_jerk_limits_tab(parent_layout):
                      font=FONT,
                      pht='deg/sec' + '\xb3',
                      width=cell_width,
-                     changeCommand='import pymel.core as pm; ' \
+                     changeCommand='import maya.cmds as cmds; ' \
                                    'import mimic_utils; ' \
                                    'cmds.setFocus("t_A{}Jerk"); ' \
                      .format(set_focus_count))
@@ -936,7 +936,7 @@ def _build_jerk_limits_tab(parent_layout):
 
 def _build_axis_limits_frame(parent_layout):
     limits_frame = cmds.frameLayout(label="Axis Limits", collapsable=True)
-    limits_tab_layout = cmds.tabLayout('limits_tab_layout')
+    limits_tab_layout = cmds.tabLayout('limits_tab_layout', height=155)
 
     position_limits_tab = _build_position_limits_tab(limits_tab_layout)
     velocity_limits_tab = _build_velocity_limits_tab(limits_tab_layout)
@@ -1101,7 +1101,7 @@ def _build_add_external_axis_frame(parent_layout):
 def _build_axis_info_frame(parent_layout):
     # Axis Info
     cmds.frameLayout(label="Axis Info",
-                   # height=215,
+                   height=315,
                    collapsable=True)
     cmds.columnLayout(adj=True, columnAttach=('both', 5))
 
@@ -1225,7 +1225,7 @@ def _build_add_io_frame(parent_layout):
               label='Add IO',
               height=25,
               backgroundColor=[.361, .361, .361],
-              command=pm.Callback(mimic_io.add_io))
+              command=partial(mimic_io.add_io))
     cmds.separator(height=5, style='none')
 
     cmds.setParent(parent_layout)
@@ -1242,7 +1242,7 @@ def __update_enable_resolution(*args):
 def _build_io_info_frame(parent_layout):
     # IO Info
     cmds.frameLayout(label="IO Info",
-                   # height=215,
+                   height=315,
                    collapsable=True)
     cmds.columnLayout(adj=True, columnAttach=('both', 5))
 
@@ -1287,11 +1287,11 @@ def _build_io_tab(parent_layout):
 # SETUP - mFIZ
 def _build_add_mFIZ_node_frame(parent_layout):
     # Create frame layout with one column
-    add_mFIZ_node_frame = cmds.frameLayout(label="Add Robot", collapsable=True)
+    add_mFIZ_node_frame = cmds.frameLayout(label="mFIZ", collapsable=True)
     add_mFIZ_node_col = cmds.columnLayout(adj=True, columnAttach=('both', 5))
     cmds.separator(height=5, style='none')
 
-    cmds.button(label='Add mFIZ Node',
+    cmds.button(label='Attach mFIZ Node to Robot',
               command=mimic_io.add_mFIZ_node,
               height=20,
               annotation='Attaches selected mFIZ node to selected Robot')
@@ -1398,10 +1398,10 @@ def add_robot(*args):
     dir_mimic = general_utils.get_mimic_dir()
     dir_rigs = dir_mimic + '/rigs'
 
-    mimic_utils.import_robot(dir_rigs)
-    mimic_utils.set_shader_range(Prefs.get('SHADER_RANGE'), True)
-    mimic_utils.add_hud_script_node()
-    mimic_utils.add_mimic_script_node()
+    new_robot = mimic_utils.import_robot(dir_rigs)
+    if new_robot:
+        mimic_utils.set_shader_range(Prefs.get('SHADER_RANGE'), robot=new_robot)
+        mimic_utils.add_hud_script_node()
 
 
 def on_window_close(*args):

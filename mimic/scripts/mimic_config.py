@@ -4,14 +4,14 @@ Configuration parameters/preferences for Mimic.
 """
 
 try:
-    import pymel.core as pm
+    import maya.cmds as cmds
     from maya.api import OpenMaya
 
     maya_useNewAPI = True
 
     MAYA_IS_RUNNING = True
 except ImportError:  # Maya is not running
-    pm = None
+    cmds = None
     OpenMaya = None
     MAYA_IS_RUNNING = False
 
@@ -26,8 +26,8 @@ importlib.reload(postproc)
 # Mimic Version Info
 MIMIC_MODULE_NAME = 'Mimic'
 MIMIC_VERSION_MAJOR = 1  # Must coincide with version in mimic.mod
-MIMIC_VERSION_MINOR = 5  # Must coincide with version in mimic.mod
-MIMIC_VERSION_PATCH = 1  # Must coincide with version in mimic.mod
+MIMIC_VERSION_MINOR = 6  # Must coincide with version in mimic.mod
+MIMIC_VERSION_PATCH = 0  # Must coincide with version in mimic.mod
 
 # Set logging level
 logging.getLogger().setLevel(logging.ERROR)
@@ -66,7 +66,7 @@ class Prefs(object):
     are set. These preferences are persistent, and they are set automatically
     when a user interacts with the main Mimic window. They will override default
     preferences and user-level preferences. These preferences are saved in a
-    file's fileInfo object (accessible through pm.fileInfo), and the key names
+    file's fileInfo object (accessible through cmds.fileInfo), and the key names
     are prepended with "MIMIC_" to avoid any namespace collisions.
 
     This class is designed as a static class to encapsulate the related methods.
@@ -149,24 +149,43 @@ class Prefs(object):
                  of the default value (stored in self.defaults).
         """
         logging.debug('Prefs.get(), local_key={}, pref_level={}'.format(local_key, pref_level))
+        
         # Make sure the preference should exist.
-        assert local_key in cls.defaults, \
-            'Error retrieving preference {}. Preference does not exist'.format(local_key)
+        if pref_level != DEFAULT: # Avoid recursion issues with the fallback
+            assert local_key in cls.defaults, \
+                'Error retrieving preference {}. Preference does not exist'.format(local_key)
 
-        prefs = cls._get_prefs_dict(pref_level)
+        global_key = cls._get_global(local_key)
+        val_str = None
+
+        if pref_level == FILE:
+            # fileInfo -q returns a list of strings, with alternating key, value
+            all_file_info = cmds.fileInfo(q=True)
+            if all_file_info and global_key in all_file_info:
+                val_str = cmds.fileInfo(global_key, q=True)[0]
+        elif pref_level == USER:
+            if cmds.optionVar(exists=global_key):
+                val_str = cmds.optionVar(q=global_key)
+        else: # DEFAULT or USER_JSON
+            prefs = cls._get_prefs_dict(pref_level)
+            val_str = prefs.get(global_key)
 
         # Try to get the preference, but if we fail for any reason we should
         # try to get the default preference instead
         # noinspection PyBroadException
         try:
-            val_str = prefs.get(cls._get_global(local_key))
             # Cast preference to the inferred type
             val = cls._from_value_string(val_str)
         except:
             logging.warning('Unable to return preference {} in {} preferences.'
                             'Returning default value instead.'
                             .format(local_key, pref_level))
-            return cls.get(local_key, DEFAULT)
+            
+            # This is a bit of a hack to get postproc options to load properly
+            try:
+                val = cls.get(local_key, DEFAULT)
+            except:
+                val = cls._from_value_string(val_str)
 
         logging.debug('value={}'.format(val))
         return val
@@ -182,7 +201,7 @@ class Prefs(object):
     def get_prefs_from_json_file(cls, file_path):
         """
         Open a json file and return a stringified (flattened) version for
-        storing in a pymel optionVar or fileInfo object.
+        storing in a maya.cmds optionVar or fileInfo object.
 
         :param file_path: str - path to the json file
         :return: dictionary of user prefs with keys and values as type str
@@ -230,9 +249,18 @@ class Prefs(object):
             (fileInfo, optionVar) so that we only get a subset of all their values.
         :return: dict of preferences
         """
-        prefs = cls._get_prefs_dict(pref_level)
-        prefs = {k: v for k, v in list(prefs.items())
-                 if k.startswith(starts_with)}
+        prefs = {}
+        if pref_level == FILE:
+            all_info = cmds.fileInfo(q=True) or []
+            file_prefs = dict(zip(all_info[0::2], all_info[1::2]))
+            prefs = {k: v for k, v in file_prefs.items() if k.startswith(starts_with)}
+        elif pref_level == USER:
+            keys = cmds.optionVar(list=True) or []
+            user_prefs = {k: cmds.optionVar(q=k) for k in keys}
+            prefs = {k: v for k, v in user_prefs.items() if k.startswith(starts_with)}
+        else: # DEFAULT or USER_JSON
+            prefs_dict = cls._get_prefs_dict(pref_level)
+            prefs = {k: v for k, v in list(prefs_dict.items()) if k.startswith(starts_with)}
         return prefs
 
     @classmethod
@@ -259,13 +287,16 @@ class Prefs(object):
             return
 
         if dest_prefs in (USER, FILE):  # Can't override the other preferences
-            dest = cls._get_prefs_dict(dest_prefs)
+            if dest_prefs == USER:
+                for k, v in src.items():
+                    # All optionVars are stored as strings
+                    cmds.optionVar(stringValue=(k, v))
+            elif dest_prefs == FILE:
+                for k, v in src.items():
+                    cmds.fileInfo(k, v)
         else:
             logging.error('Error obtaining dest prefs dict')
             return
-
-        # Update preferences dict
-        dest.update(src)
 
     @classmethod
     def _to_stringval(cls, value):
@@ -406,8 +437,8 @@ class Prefs(object):
         prefs.update(cls.get_prefs(FILE))
 
         # Save all preferences in the current maya file
-        file_prefs = cls._get_prefs_dict(FILE)
-        file_prefs.update(prefs)
+        for key, value in prefs.items():
+            cmds.fileInfo(key, value)
 
     @staticmethod
     def _get_mimic_dir():
@@ -443,9 +474,9 @@ class Prefs(object):
         assert pref_level in (DEFAULT, USER, USER_JSON, FILE),\
             'Invalid pref_level passed'
         if pref_level == FILE:
-            return pm.fileInfo
+            return cmds.fileInfo
         elif pref_level == USER:
-            return pm.optionVar
+            return cmds.optionVar
         elif pref_level == USER_JSON:
             return cls._get_user_prefs_from_json_file()
         elif pref_level == DEFAULT:
@@ -466,8 +497,17 @@ class Prefs(object):
         logging.debug('Prefs.set(), local_key={}, val={}, pref_level={}'
                       .format(local_key, val, pref_level))
         global_key = cls._get_global(local_key)
-        prefs = cls._get_prefs_dict(pref_level)
-        prefs[global_key] = cls._to_stringval(val)
+        string_val = cls._to_stringval(val)
+
+        if pref_level == FILE:
+            cmds.fileInfo(global_key, string_val)
+        elif pref_level == USER:
+            # All optionVars are stored as strings
+            cmds.optionVar(stringValue=(global_key, string_val))
+        else:
+            # this path shouldn't be taken with current code
+            prefs = cls._get_prefs_dict(pref_level)
+            prefs[global_key] = string_val
 
     @classmethod
     def set_user_pref(cls, local_key, val, *_args):
@@ -477,7 +517,7 @@ class Prefs(object):
         cls.set(local_key, val, pref_level=USER)
 
     @classmethod
-    def save_user_prefs_to_json(cls):
+    def save_user_prefs_to_json(cls, *_args):
         """
         Save user preferences to the default json file.
 
@@ -487,11 +527,12 @@ class Prefs(object):
         user_prefs_path = '{}/{}'.format(cls._get_mimic_dir(), USER_PREFS_FILE)
 
         # Set focus to the Prefs window to force all ui callbacks to complete.
-        pm.setFocus('mimic_preferences')
+        cmds.setFocus('mimic_preferences')
 
         # Get user preferences saved in the current Maya environment
-        user_prefs = {k.split(PREFIX)[1]: v for k, v in list(pm.optionVar.items())
-                      if k.startswith(PREFIX)}
+        all_ov_keys = cmds.optionVar(list=True) or []
+        mimic_ov_keys = [k for k in all_ov_keys if k.startswith(PREFIX)]
+        user_prefs = {k.split(PREFIX)[1]: cmds.optionVar(q=k) for k in mimic_ov_keys}
 
         # Create a nested dictionary so the json output is easier to read
         user_prefs = cls._nest_pref_dict(user_prefs)
@@ -550,11 +591,17 @@ class Prefs(object):
         assert pref_level in (USER, FILE), \
             'Unable to delete preferences. Incorrect preference level specfied.'
 
-        prefs_dict = cls._get_prefs_dict(pref_level)
-        to_delete = \
-            [pref for pref in prefs_dict if pref.startswith(BASE_NAMESPACE)]
-        for pref in to_delete:
-            prefs_dict.pop(pref)
+        if pref_level == FILE:
+            all_info = cmds.fileInfo(q=True) or []
+            all_keys = all_info[0::2]
+            to_delete = [k for k in all_keys if k.startswith(BASE_NAMESPACE)]
+            for pref in to_delete:
+                cmds.fileInfo(remove=pref)
+        elif pref_level == USER:
+            all_keys = cmds.optionVar(list=True) or []
+            to_delete = [k for k in all_keys if k.startswith(BASE_NAMESPACE)]
+            for pref in to_delete:
+                cmds.optionVar(remove=pref)
 
 # -----------------------------------------------------------------------------
 #   Callback related functions
@@ -577,7 +624,7 @@ def reload_mimic(*_args):
               "import mimic\n" \
               "importlib.reload(mimic)\n" \
               "mimic.run()"
-    pm.evalDeferred(command)
+    cmds.evalDeferred(command)
 
 
 # noinspection PyUnresolvedReferences
@@ -598,7 +645,7 @@ def register_config_callbacks():
         str(OpenMaya.MSceneMessage.addCallback(
             OpenMaya.MSceneMessage.kAfterOpen, reload_mimic))]
 
-    pm.optionVar[CALLBACK_KEY] = ' '.join(callbacks)
+    cmds.optionVar(stringValue=(CALLBACK_KEY, ' '.join(callbacks)))
 
 
 # noinspection PyUnresolvedReferences
@@ -608,11 +655,12 @@ def de_register_callbacks():
 
     :return: None
     """
-    callbacks = pm.optionVar.get(CALLBACK_KEY)
-    pm.optionVar[CALLBACK_KEY] = ' '
+    callbacks = cmds.optionVar(q=CALLBACK_KEY) if cmds.optionVar(exists=CALLBACK_KEY) else None
+    cmds.optionVar(stringValue=(CALLBACK_KEY, ' '))
 
     if callbacks:
-        callback_ids = [int(callback_id) for callback_id in callbacks.split()]
+        # Filter out empty strings that can result from splitting ' '
+        callback_ids = [int(callback_id) for callback_id in callbacks.split() if callback_id]
         for callback_id in callback_ids:
             try:
                 OpenMaya.MMessage.removeCallback(callback_id)

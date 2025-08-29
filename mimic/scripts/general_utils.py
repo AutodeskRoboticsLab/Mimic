@@ -8,11 +8,11 @@ utilities are reusable throughout this project.
 """
 
 try:
-    import pymel.core as pm
+    import maya.cmds as cmds
 
     MAYA_IS_RUNNING = True
 except ImportError:  # Maya is not running
-    pm = None
+    cmds = None
     MAYA_IS_RUNNING = False
 
 import os
@@ -45,10 +45,10 @@ def get_mimic_dir():
     :return:
     """
     if MAYA_IS_RUNNING:
-        dir_mimic = pm.getModulePath(moduleName='mimic')
+        dir_mimic = cmds.moduleInfo(path=True, moduleName='mimic')
         # if RuntimeError raised then mimic is not on Module Path
         # Check version
-        installed_version = pm.moduleInfo(version=True, moduleName='mimic')
+        installed_version = cmds.moduleInfo(version=True, moduleName='mimic')
         if installed_version != get_mimic_version():
             raise Exception('Mimic version conflict')
     else:  # Maya not running

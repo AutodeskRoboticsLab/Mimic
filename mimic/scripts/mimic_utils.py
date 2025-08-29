@@ -4,14 +4,15 @@
 """
 Functions that actually make Mimic run.
 """
+from functools import partial
 
 try:
-    import pymel.core as pm
+    import maya.cmds as cmds
     import maya.mel as mel
 
     MAYA_IS_RUNNING = True
 except ImportError:  # Maya is not running
-    pm = None
+    cmds = None
     mel = None
     MAYA_IS_RUNNING = False
 
@@ -90,62 +91,53 @@ def get_robot_roots(all_robots=False, sel=[]):
     robot_root_names = []
 
     # If no robots exist, return empty array.
-    if not pm.objExists('*|robot_GRP|target_CTRL') and not pm.objExists('*:*|*:robot_GRP|*:target_CTRL'):
+    if not cmds.objExists('*|robot_GRP|target_CTRL') and not cmds.objExists('*:*|*:robot_GRP|*:target_CTRL'):
         return robot_root_names
 
     if all_robots:
         # All valid robot rigs will have this hierarchy
-        sel = []
-        
-        # Find robots with and without namespaces
-        robots_without_namespace = pm.ls('*|robot_GRP|target_CTRL')
-        robots_with_namespace = pm.ls('*:*|*:robot_GRP|*:target_CTRL')
-        
-        # Add each robot to the selection list
-        for robot in robots_without_namespace:
-            sel.append(robot)
-        for robot in robots_with_namespace:
-            sel.append(robot)        
-
+        robots_without_namespace = cmds.ls('*|robot_GRP|target_CTRL', long=True)
+        robots_with_namespace = cmds.ls('*:*|*:robot_GRP|*:target_CTRL', long=True)
+        all_robot_paths = robots_without_namespace + robots_with_namespace
+        for robot_path in all_robot_paths:
+            # The root is the second element after the initial pipe, e.g., ['', 'robot_1', ...]
+            root_name = robot_path.split('|')[1]
+            robot_root_names.append(root_name)
     else:
         # If no selection is passed, manually check for selections in Maya's
         # viewport.
         if not sel:
-            sel = pm.ls(selection=True, type='transform')
-            # If there is nothing selected in Maya's viewport,
-            # return an empty
+            sel = cmds.ls(selection=True, type='transform', long=True)
+        # If there is nothing selected in Maya's viewport, return an empty list
         if not sel:
             return robot_root_names
 
-    for selection in sel:
-        # For current selected object, traverse up its hierarchy to find the
-        # root robot transform node, if one exists.
-        loop = True
-        while loop:
-            # Check if the selection has a namespace
-            selection_namespace = selection.namespace()
-            # Check if the selected object is the root robot transform.
-            # e.g. 'KUKA_KR60_0'
-            # If so, append it to the list of robots.
-            if pm.objExists(format_path(__TARGET_CTRL_PATH, selection)):
-                robot_root_names.append(selection)
-                loop = False  # Continue to next selected object
-            else:
-                try:
+        for selection_path in sel:
+            # For current selected object, traverse up its hierarchy to find the
+            # root robot transform node, if one exists.
+            current_path = selection_path
+            loop = True
+            while loop:
+                # Get the short name of the current node in the hierarchy
+                short_name = current_path.split('|')[-1]
+                
+                # Check if this node is a robot root by seeing if the standard hierarchy exists beneath it
+                if cmds.objExists(format_path(__TARGET_CTRL_PATH, short_name)):
+                    robot_root_names.append(short_name)
+                    loop = False  # Found root, continue to next selected object
+                else:
+                    try:
+                        # Climb up the hierarchy. listRelatives on a root will return None.
+                        parents = cmds.listRelatives(current_path, allParents=True, type='transform', fullPath=True)
+                        if parents:
+                            current_path = parents[0]
+                        else: # No parents found, we are at the top of the hierarchy
+                            loop = False
+                    except (TypeError, IndexError, ValueError):
+                        # If listRelatives fails for any reason, stop traversing this path
+                        loop = False
 
-                    # Climb up the heirarchy one level to the selections
-                    # parent.
-                    selection = pm.listRelatives(selection, allParents=True,
-                                                 type='transform')[0]
-                except:
-                    # If selection has no parents, and is not a child of a
-                    # robot, omit it from the return array and skip to the next
-                    # selected object.
-                    loop = False
-
-    robot_root_names = list(set(robot_root_names))  # Eliminate duplicates
-    
-    return robot_root_names
+    return list(set(robot_root_names))
 
 
 def check_robot_selection(number_of_robots=None):
@@ -193,7 +185,7 @@ def format_path(path_string, selection):
     :param selection: selected robot transform
     :return:
     """
-    return path_string.format(selection, selection.namespace())
+    return path_string.format(selection, _get_namespace(selection))
 
 
 def get_robot_configuration(robot_name, frame):
@@ -289,9 +281,9 @@ def get_attribute_value(attribute_path, frame=None):
     :return:
     """
     if frame is None:
-        return pm.getAttr(attribute_path)
+        return cmds.getAttr(attribute_path)
     else:
-        return pm.getAttr(attribute_path, time=frame)
+        return cmds.getAttr(attribute_path, time=frame)
 
 
 def get_tool_path(robot_name):
@@ -302,7 +294,7 @@ def get_tool_path(robot_name):
     """
     tool_name = get_tool_ctrl_path(robot_name)
     try:  # Try to grab the named tool
-        tool_object = pm.ls(tool_name)[0]  # Try to get tool, may raise an exception
+        tool_object = cmds.ls(tool_name)[0]  # Try to get tool, may raise an exception
     except IndexError:  # No tool attached, use flange
         tool_name = format_path(__TCP_HDL_PATH, robot_name)
     return tool_name
@@ -314,20 +306,20 @@ def clear_limits_ui(*args):
     :param args: Required for Maya to pass command from the UI
     :return:
     """
-    current_tab = pm.tabLayout('limits_tab_layout',
+    current_tab = cmds.tabLayout('limits_tab_layout',
                                query=True,
                                selectTab=True)
 
     for i in range(6):
         if current_tab == 'position_limits_tab':
-            pm.textField('t_A{}Min'.format(i + 1), edit=True, text='')
-            pm.textField('t_A{}Max'.format(i + 1), edit=True, text='')
+            cmds.textField('t_A{}Min'.format(i + 1), edit=True, text='')
+            cmds.textField('t_A{}Max'.format(i + 1), edit=True, text='')
         elif current_tab == 'velocity_limits_tab':
-            pm.textField('t_A{}Velocity'.format(i + 1), edit=True, text='')
+            cmds.textField('t_A{}Velocity'.format(i + 1), edit=True, text='')
         elif current_tab == 'accel_limits_tab':
-            pm.textField('t_A{}Accel'.format(i + 1), edit=True, text='')
+            cmds.textField('t_A{}Accel'.format(i + 1), edit=True, text='')
         elif current_tab == 'jerk_limits_tab':
-            pm.textField('t_A{}Jerk'.format(i + 1), edit=True, text='')
+            cmds.textField('t_A{}Jerk'.format(i + 1), edit=True, text='')
 
 
 def clear_fk_pose_ui(*args):
@@ -337,7 +329,7 @@ def clear_fk_pose_ui(*args):
     :return:
     """
     for i in range(6):
-        pm.textField('t_a{}'.format(i + 1), edit=True, text='')
+        cmds.textField('t_a{}'.format(i + 1), edit=True, text='')
 
 
 def set_dir(text_field, pref_name, start_dir_callback, update_pref_callback, *args):
@@ -360,13 +352,13 @@ def set_dir(text_field, pref_name, start_dir_callback, update_pref_callback, *ar
 
     # Prompt user with file dialog box.
     # If they don't provide any input, exit the function.
-    directory = pm.fileDialog2(fileMode=2, dialogStyle=2,
+    directory = cmds.fileDialog2(fileMode=2, dialogStyle=2,
                                startingDirectory=start_dir)
     if not directory:
         return
 
     # Assign user input to the Program Directory Text field in the Mimic UI.
-    pm.textField(text_field, edit=True, text=directory[0])
+    cmds.textField(text_field, edit=True, text=directory[0])
     if update_pref_callback:
         update_pref_callback(pref_name, directory[0])
 
@@ -382,26 +374,29 @@ def get_closest_fk_keyframe(robot):
     :return closest_fk_key: int;
     """
 
-    current_frame = pm.currentTime()
+    current_frame = cmds.currentTime(query=True)
 
     # Get a list of all keyframes on robots IK attribute.
     target_ctrl_path = get_target_ctrl_path(robot)
 
-    ik_keys = pm.keyframe(target_ctrl_path,
+    ik_keys = cmds.keyframe(target_ctrl_path,
                           attribute='ik',
                           query=True,
-                          time='-10:')
+                          timeChange=True)
+
+    if not ik_keys:
+        return None
 
     # Verify that there is also a keyframe set on the FK controls' rotate
     # attributes. If there's not, we remove it from the list
     # Note: we only need to check one controller as they are all keyframed
     # together
-    ik_keys_filtered = [key for key in ik_keys if pm.keyframe(format_path(__A1_FK_CTRL_PATH, robot) + '.rotateY', query=True, time=key)]
+    ik_keys_filtered = [key for key in ik_keys if cmds.keyframe(format_path(__A1_FK_CTRL_PATH, robot) + '.rotateY', query=True, time=(key,key), keyframeCount=True)]
 
     fk_keys = []
     # FK keys are those where the IK attribute is keyed false
     for key in ik_keys_filtered:
-        state = pm.getAttr(target_ctrl_path + '.ik', time=key)
+        state = cmds.getAttr(target_ctrl_path + '.ik', time=key)
 
         if not state:  # Signifies an "FK Keyframe"
             fk_keys.append(key)
@@ -476,10 +471,10 @@ def axes_coupled(robot):
 
     attr_path = target_ctrl_path + '.' + attr_name
 
-    if not pm.objExists(attr_path):
+    if not cmds.attributeQuery(attr_name, node=target_ctrl_path, exists=True):
         return False
     else:
-        return pm.getAttr(attr_path)
+        return cmds.getAttr(attr_path)
 
 
 def accumulate_rotation(a_in, a_0):
@@ -521,16 +516,16 @@ def add_hud_script_node(*args):
     :param args: Required for Maya to pass command from the UI.
     :return:
     """
-    if pm.objExists('mimicHudScriptNode'):
+    if cmds.objExists('mimicHudScriptNode'):
         print('Script Node Already Exists')
         return
 
     # Define the command to be executed when the scriptNode is triggered
-    script_str = 'import pymel.core as pm; ' \
+    script_str = 'import maya.cmds as cmds; ' \
                  'import mimic_utils; ' \
                  'mimic_utils.close_hud()'
 
-    pm.scriptNode(sourceType="Python",
+    cmds.scriptNode(sourceType="Python",
                   scriptType=2,
                   afterScript=script_str,
                   name='mimicHudScriptNode')
@@ -545,15 +540,15 @@ def add_mimic_script_node(*args):
     :param args: Required for Maya to pass command from the UI.
     :return:
     """
-    if pm.objExists('mimicScriptNode'):
+    if cmds.objExists('mimicScriptNode'):
         print('Script Node Already Exists')
         return
 
     # Define the command to be executed when the scriptNode is triggered
-    script_str = 'import pymel.core as pm; ' \
-                 'pm.cycleCheck(evaluation=0); ' \
+    script_str = 'import maya.cmds as cmds; ' \
+                 'cmds.cycleCheck(evaluation=0); ' \
 
-    pm.scriptNode(sourceType="Python",
+    cmds.scriptNode(sourceType="Python",
                   scriptType=2,
                   beforeScript=script_str,
                   name='mimicScriptNode')
@@ -561,7 +556,7 @@ def add_mimic_script_node(*args):
     # The scriptNode only works after the scene has been saved, closed, and
     # reopened. So we have to run the code manually for the initial
     # scene session.
-    pm.cycleCheck(evaluation=0)
+    cmds.cycleCheck(evaluation=0)
 
     print('Robot Script Node Added')
     print('cycleCheck OFF')
@@ -576,13 +571,13 @@ def flip_robot_base(*args):
     """
     robots = get_robot_roots()
     if not robots:
-        pm.warning('Nothing Selected; Select a valid robot')
+        cmds.warning('Nothing Selected; Select a valid robot')
         return
 
     for robot in robots:
         target_ctrl_attr = get_target_ctrl_path(robot) + '.ikSolution1'
-        ik_sol = pm.getAttr(target_ctrl_attr)
-        pm.setAttr(target_ctrl_attr, not ik_sol)
+        ik_sol = cmds.getAttr(target_ctrl_attr)
+        cmds.setAttr(target_ctrl_attr, not ik_sol)
 
 
 def flip_robot_elbow(*args):
@@ -594,13 +589,13 @@ def flip_robot_elbow(*args):
 
     robots = get_robot_roots()
     if not robots:
-        pm.warning('Nothing Selected; Select a valid robot')
+        cmds.warning('Nothing Selected; Select a valid robot')
         return
 
     for robot in robots:
         target_ctrl_attr = get_target_ctrl_path(robot) + '.ikSolution2'
-        ik_sol = pm.getAttr(target_ctrl_attr)
-        pm.setAttr(target_ctrl_attr, not ik_sol)
+        ik_sol = cmds.getAttr(target_ctrl_attr)
+        cmds.setAttr(target_ctrl_attr, not ik_sol)
 
 
 def flip_robot_wrist(*args):
@@ -611,13 +606,13 @@ def flip_robot_wrist(*args):
     """
     robots = get_robot_roots()
     if not robots:
-        pm.warning('Nothing Selected; Select a valid robot')
+        cmds.warning('Nothing Selected; Select a valid robot')
         return
 
     for robot in robots:
         target_ctrl_attr = get_target_ctrl_path(robot) + '.ikSolution3'
-        ik_sol = pm.getAttr(target_ctrl_attr)
-        pm.setAttr(target_ctrl_attr, not ik_sol)
+        ik_sol = cmds.getAttr(target_ctrl_attr)
+        cmds.setAttr(target_ctrl_attr, not ik_sol)
 ### ---------------------------------------- ###
 
 
@@ -631,7 +626,7 @@ def zero_target(*args):
     """
     robots = get_robot_roots()
     if not robots:
-        pm.warning('Nothing Selected; Select a valid robot')
+        cmds.warning('Nothing Selected; Select a valid robot')
         return
 
     try:
@@ -639,15 +634,15 @@ def zero_target(*args):
             target_ctrl_path = get_target_ctrl_path(robot)
             tool_ctrl_path = get_tool_ctrl_path(robot)
 
-            ik_mode = pm.getAttr(target_ctrl_path + '.ik')
+            ik_mode = cmds.getAttr(target_ctrl_path + '.ik')
 
             if ik_mode:
-                if pm.objExists(tool_ctrl_path):
-                    pm.setAttr(tool_ctrl_path + '.translate', 0, 0, 0)
-                    pm.setAttr(tool_ctrl_path + '.rotate', 0, 0, 0)
+                if cmds.objExists(tool_ctrl_path):
+                    cmds.setAttr(tool_ctrl_path + '.translate', 0, 0, 0)
+                    cmds.setAttr(tool_ctrl_path + '.rotate', 0, 0, 0)
                 else:
-                    pm.setAttr(target_ctrl_path + '.translate', 0, 0, 0)
-                    pm.setAttr(target_ctrl_path + '.rotate', 0, 0, 0)
+                    cmds.setAttr(target_ctrl_path + '.translate', 0, 0, 0)
+                    cmds.setAttr(target_ctrl_path + '.rotate', 0, 0, 0)
             else:
                 a1_fk_ctrl_path = format_path(__A1_FK_CTRL_PATH, robot)
                 a2_fk_ctrl_path = format_path(__A2_FK_CTRL_PATH, robot)
@@ -656,14 +651,14 @@ def zero_target(*args):
                 a5_fk_ctrl_path = format_path(__A5_FK_CTRL_PATH, robot)
                 a6_fk_ctrl_path = format_path(__A6_FK_CTRL_PATH, robot)
 
-                pm.setAttr(a1_fk_ctrl_path + '.rotateY', 0)
-                pm.setAttr(a2_fk_ctrl_path + '.rotateX', 0)
-                pm.setAttr(a3_fk_ctrl_path + '.rotateX', 0)
-                pm.setAttr(a4_fk_ctrl_path + '.rotateZ', 0)
-                pm.setAttr(a5_fk_ctrl_path + '.rotateX', 0)
-                pm.setAttr(a6_fk_ctrl_path + '.rotateZ', 0)
+                cmds.setAttr(a1_fk_ctrl_path + '.rotateY', 0)
+                cmds.setAttr(a2_fk_ctrl_path + '.rotateX', 0)
+                cmds.setAttr(a3_fk_ctrl_path + '.rotateX', 0)
+                cmds.setAttr(a4_fk_ctrl_path + '.rotateZ', 0)
+                cmds.setAttr(a5_fk_ctrl_path + '.rotateX', 0)
+                cmds.setAttr(a6_fk_ctrl_path + '.rotateZ', 0)
     except:
-        pm.warning('Cannot zero target')
+        cmds.warning('Cannot zero target')
 
 
 def zero_base_world(*args):
@@ -675,16 +670,16 @@ def zero_base_world(*args):
     """
     robots = get_robot_roots()
     if not robots:
-        pm.warning('Nothing Selected; Select a valid robot')
+        cmds.warning('Nothing Selected; Select a valid robot')
         return
 
     try:
         for robot in robots:
             world_ctrl_path = format_path(__WORLD_CTRL_PATH, robot)
-            pm.setAttr(world_ctrl_path + '.translate', 0, 0, 0)
-            pm.setAttr(world_ctrl_path + '.rotate', 0, 0, 0)
+            cmds.setAttr(world_ctrl_path + '.translate', 0, 0, 0)
+            cmds.setAttr(world_ctrl_path + '.rotate', 0, 0, 0)
     except:
-        pm.warning('Cannot zero base (world)')
+        cmds.warning('Cannot zero base (world)')
 
 
 def zero_base_local(*args):
@@ -696,16 +691,16 @@ def zero_base_local(*args):
     """
     robots = get_robot_roots()
     if not robots:
-        pm.warning('Nothing Selected; Select a valid robot')
+        cmds.warning('Nothing Selected; Select a valid robot')
         return
 
     try:
         for robot in robots:
             local_ctrl_path = get_local_ctrl_path(robot)
-            pm.setAttr(local_ctrl_path + '.translate', 0, 0, 0)
-            pm.setAttr(local_ctrl_path + '.rotate', 0, 0, 0)
+            cmds.setAttr(local_ctrl_path + '.translate', 0, 0, 0)
+            cmds.setAttr(local_ctrl_path + '.rotate', 0, 0, 0)
     except:
-        pm.warning('Cannot zero base (local)')
+        cmds.warning('Cannot zero base (local)')
 
 
 def zero_all(*args):
@@ -737,10 +732,10 @@ def get_axis_val(axis_number, round_val=True):
         target_ctrl_path = get_target_ctrl_path(robot)
 
         if round_val:
-            axis_val.append(round(pm.getAttr(target_ctrl_path
+            axis_val.append(round(cmds.getAttr(target_ctrl_path
                                 + '.axis{}'.format(axis_number))))
         else:
-            axis_val.append(pm.getAttr(target_ctrl_path
+            axis_val.append(cmds.getAttr(target_ctrl_path
                                      + '.axis{}'.format(axis_number)))
     return axis_val
 
@@ -755,41 +750,41 @@ def axis_val_hud(*args):
 
     if not robots:
         print('No Robots in Scene')
-        if pm.headsUpDisplay('a1_hud', exists=True):
+        if cmds.headsUpDisplay('a1_hud', exists=True):
             for i in range(6):
-                pm.headsUpDisplay('a{}_hud'.format(i + 1), remove=True)
+                cmds.headsUpDisplay('a{}_hud'.format(i + 1), remove=True)
         return
 
     # Check if the HUD exists already
-    if pm.headsUpDisplay('a1_hud', exists=True):
+    if cmds.headsUpDisplay('a1_hud', exists=True):
         # If so, remove it
         for i in range(6):
-            pm.headsUpDisplay('a{}_hud'.format(i + 1), remove=True)
+            cmds.headsUpDisplay('a{}_hud'.format(i + 1), remove=True)
         # Turn Limit Meter off
         for robot in robots:
             limit_meter_ctrl_path = format_path('{0}|{1}robot_GRP|{1}limitMeter_CTRL', robot)
             limit_meter_grp_path = format_path('{0}|{1}robot_GRP|{1}limitMeter_GRP', robot)
-            pm.setAttr(limit_meter_ctrl_path + '.v', 0)
-            pm.setAttr(limit_meter_grp_path + '.v', 0)
+            cmds.setAttr(limit_meter_ctrl_path + '.v', 0)
+            cmds.setAttr(limit_meter_grp_path + '.v', 0)
         return
     else:  # If not, create it
         for i in range(6):
-            pm.headsUpDisplay('a{}_hud'.format(i + 1),
+            cmds.headsUpDisplay('a{}_hud'.format(i + 1),
                               section=5,
                               block=7 - i,
                               blockSize='small',
                               label='A{}'.format(i + 1),
                               labelFontSize='large',
                               dataWidth=30,
-                              command=pm.Callback(get_axis_val, i + 1),
+                              command=partial(get_axis_val, i + 1),
                               # event='timeChanged')
                               attachToRefresh=True)
         # Turn Limit Meter on
         for robot in robots:
             limit_meter_ctrl_path = format_path('{0}|{1}robot_GRP|{1}limitMeter_CTRL', robot)
             limit_meter_grp_path = format_path('{0}|{1}robot_GRP|{1}limitMeter_GRP', robot)
-            pm.setAttr(limit_meter_ctrl_path + '.v', 1)
-            pm.setAttr(limit_meter_grp_path + '.v', 1)
+            cmds.setAttr(limit_meter_ctrl_path + '.v', 1)
+            cmds.setAttr(limit_meter_grp_path + '.v', 1)
 
 
 def close_hud():
@@ -798,9 +793,9 @@ def close_hud():
     that executes when the Maya scene is closed.
     :return:
     """
-    if pm.headsUpDisplay('a1_hud', exists=True):
+    if cmds.headsUpDisplay('a1_hud', exists=True):
         for i in range(6):
-            pm.headsUpDisplay('a{}_hud'.format(i + 1), remove=True)
+            cmds.headsUpDisplay('a{}_hud'.format(i + 1), remove=True)
 
 
 def attach_tool_controller(*args):
@@ -811,37 +806,37 @@ def attach_tool_controller(*args):
     :return:
     """
 
-    sel = pm.ls(selection=True, type='transform')
+    sel = cmds.ls(selection=True, type='transform')
     robot = get_robot_roots()
 
     # Exception handling
     if not sel:
-        pm.warning('Nothing selected; ' \
+        cmds.warning('Nothing selected; ' \
                    'select a valid robot control and tool controller')
         return
     if not robot:
-        pm.warning('No robot selected; ' \
+        cmds.warning('No robot selected; ' \
                    'select a valid robot')
         return
     if len(robot) > 1:
-        pm.warning('Too many robots selected; ' \
+        cmds.warning('Too many robots selected; ' \
                    'select a single robot')
         return
     if len(sel) > 2:
-        pm.warning('Too many selections; ' \
+        cmds.warning('Too many selections; ' \
                    'select a single robot control, and single tool controller')
         return
     if len(sel) == 1:
-        pm.warning('Not enough selections; ' \
+        cmds.warning('Not enough selections; ' \
                    'select a single robot control, and single tool control')
         return
-    if pm.objExists(get_tool_ctrl_path(robot[0])):
-        pm.warning('Robot already has an assigned tool controller')
+    if cmds.objExists(get_tool_ctrl_path(robot[0])):
+        cmds.warning('Robot already has an assigned tool controller')
         return
 
     robot = robot[0] 
 
-    ns = robot.namespace()
+    ns = _get_namespace(robot)
     robot_grp_path = format_path(__ROBOT_GRP_PATH, robot)
 
     # find which selected object is the tool controller
@@ -855,40 +850,41 @@ def attach_tool_controller(*args):
     tool_ctrl_fk_path = get_tool_ctrl_fk_path(robot)
 
     try:
-        pm.parent(tool_ctrl, robot_grp_path, absolute=True)
-        pm.rename(robot_grp_path + '|' + tool_ctrl, '{}tool_CTRL'.format(ns))
+        ns = _get_namespace(robot)
+        cmds.parent(tool_ctrl, robot_grp_path, absolute=True)
+        cmds.rename(robot_grp_path + '|' + tool_ctrl, '{}tool_CTRL'.format(ns))
       
-        pm.parentConstraint(tool_ctrl_path,
+        cmds.parentConstraint(tool_ctrl_path,
                             target_ctrl_path,
                             name='targetToToolCtrl_pCnst',
                             maintainOffset=True)
 
         # Duplicate and add to FK parent chain
-        tool_ctrl_dup = pm.duplicate(tool_ctrl_path)
-        pm.rename(tool_ctrl_dup, '{}tool_CTRL_FK'.format(ns))
-        pm.parent('{0}|{1}robot_GRP|{1}tool_CTRL_FK'.format(robot, ns),
+        tool_ctrl_dup = cmds.duplicate(tool_ctrl_path)
+        cmds.rename(tool_ctrl_dup, '{}tool_CTRL_FK'.format(ns))
+        cmds.parent('{0}|{1}robot_GRP|{1}tool_CTRL_FK'.format(robot, ns),
                   format_path(__TCP_HDL_PATH, robot),
                   absolute=True)
-        pm.setAttr(tool_ctrl_fk_path + '.v', 0)
+        cmds.setAttr(tool_ctrl_fk_path + '.v', 0)
 
         # Lock rotation/translation of IK/FK CTRL (only works if prefs | file
         # references | edits on references is checked)
 
         try:
             
-            pm.setAttr(target_ctrl_path + '.translate', lock=True)
-            pm.setAttr(target_ctrl_path + '.rotate', lock=True)
+            cmds.setAttr(target_ctrl_path + '.translate', lock=True)
+            cmds.setAttr(target_ctrl_path + '.rotate', lock=True)
 
-            pm.setAttr(tool_ctrl_fk_path + '.translate', lock=True)
-            pm.setAttr(tool_ctrl_fk_path + '.rotate', lock=True)
+            cmds.setAttr(tool_ctrl_fk_path + '.translate', lock=True)
+            cmds.setAttr(tool_ctrl_fk_path + '.rotate', lock=True)
 
         except:
             pass
 
-        pm.select(tool_ctrl_path)
-        pm.headsUpMessage('Tool Controller attatched successfuly!')
+        cmds.select(tool_ctrl_path)
+        cmds.headsUpMessage('Tool Controller attatched successfuly!')
     except:
-        pm.warning('Error attaching tool controller')
+        cmds.warning('Error attaching tool controller')
 
 
 def attach_tool_model(*args):
@@ -898,24 +894,24 @@ def attach_tool_model(*args):
     :param args:
     :return:
     """
-    sel = pm.ls(selection=True, type='transform')
+    sel = cmds.ls(selection=True, type='transform')
     robot = get_robot_roots()
 
     # Exception handling
     if not sel:
-        pm.warning('Nothing selected; ' \
+        cmds.warning('Nothing selected; ' \
                    'select a valid robot control and tool controller')
         return
     if not robot:
-        pm.warning('No tool controller selected; ' \
+        cmds.warning('No tool controller selected; ' \
                    'select a valid tool controller')
         return
     if len(robot) > 1:
-        pm.warning('Too many robot controllers selected; ' \
+        cmds.warning('Too many robot controllers selected; ' \
                    'select a single controller')
         return
     if len(sel) == 1:
-        pm.warning('Not enough selections; ' \
+        cmds.warning('Not enough selections; ' \
                    'select a single robot control, and single tool model')
         return
 
@@ -929,33 +925,33 @@ def attach_tool_model(*args):
         else:
             pass
 
-    ns = robot.namespace()
+    ns = _get_namespace(robot)
     tcp_hdl_path = format_path(__TCP_HDL_PATH, robot)
     tool_mdl_path = format_path(__TOOL_MDL_PATH, robot)
     tool_ctrl_path = get_tool_ctrl_path(robot)
 
     for tool_model in tools:
         try:
-            pm.parent(tool_model, tcp_hdl_path, absolute=True)
+            cmds.parent(tool_model, tcp_hdl_path, absolute=True)
 
             try:
-                pm.rename(tcp_hdl_path + '|{}'.format(tool_model),
+                cmds.rename(tcp_hdl_path + '|{}'.format(tool_model),
                           '{}tool_MDL'.format(ns))
             except:
                 pass
 
             # Lock rotation/translation of Tool Model
-            pm.setAttr(tool_mdl_path + '*.translate', lock=True)
-            pm.setAttr(tool_mdl_path + '*.rotate', lock=True)
+            cmds.setAttr(tool_mdl_path + '*.translate', lock=True)
+            cmds.setAttr(tool_mdl_path + '*.rotate', lock=True)
 
-            if pm.objExists(tool_ctrl_path):
-                pm.select(tool_ctrl_path)
+            if cmds.objExists(tool_ctrl_path):
+                cmds.select(tool_ctrl_path)
             else:
-                pm.select(get_target_ctrl_path(robot))
-            pm.headsUpMessage('Tool Model attached successfuly!')
+                cmds.select(get_target_ctrl_path(robot))
+            cmds.headsUpMessage('Tool Model attached successfuly!')
 
         except:
-            pm.warning('Error attaching tool model {}'.format(tool_model))
+            cmds.warning('Error attaching tool model {}'.format(tool_model))
 
 
 def detach_tool_controller(*args):
@@ -966,7 +962,7 @@ def detach_tool_controller(*args):
     :param args:
     :return
     """
-    selection = pm.ls(selection=True)
+    selection = cmds.ls(selection=True)
 
     tools = 0  # Keep track of whether or not we have any tools
     for sel in selection:
@@ -980,22 +976,22 @@ def detach_tool_controller(*args):
                 target_ctrl_path = get_target_ctrl_path(robot)
                 tool_ctrl_fk_path = get_tool_ctrl_fk_path(robot)
 
-                pm.delete(target_ctrl_path + '|targetToToolCtrl_pCnst')
-                pm.delete(tool_ctrl_fk_path)
+                cmds.delete(target_ctrl_path + '|targetToToolCtrl_pCnst')
+                cmds.delete(tool_ctrl_fk_path)
 
                 try: 
-                    pm.setAttr(target_ctrl_path + '.translate', lock=False)
-                    pm.setAttr(target_ctrl_path + '.rotate', lock=False)
+                    cmds.setAttr(target_ctrl_path + '.translate', lock=False)
+                    cmds.setAttr(target_ctrl_path + '.rotate', lock=False)
                 except:
-                    pm.warning('Mimic: target_CTRL.translate is from a referenced file, and cannot be unlocked.')
+                    cmds.warning('Mimic: target_CTRL.translate is from a referenced file, and cannot be unlocked.')
 
-                pm.parent(sel, world=True, absolute=True)
+                cmds.parent(sel, world=True, absolute=True)
                 tools = 1  # Our selection is a tool controller
-                pm.headsUpMessage('Tool Controller detached successfuly!')
+                cmds.headsUpMessage('Tool Controller detached successfuly!')
 
     # If there were no tools in our selection, alert the user
     if not tools:
-        pm.warning('No tool controllers selected')
+        cmds.warning('No tool controllers selected')
         return
 
 
@@ -1006,7 +1002,7 @@ def detach_tool_model(*args):
     :param args:
     :return
     """
-    selection = pm.ls(selection=True)
+    selection = cmds.ls(selection=True)
 
     tools = 0  # Keep track of whether or not we have any tools
     for sel in selection:
@@ -1017,24 +1013,24 @@ def detach_tool_model(*args):
                 # If so unlock the model's translate and rotate attributes
                 # and parent the object to the world
                 try:
-                    pm.setAttr(sel.translate, lock=False)
-                    pm.setAttr(sel.rotate, lock=False)
-                    pm.parent(sel, world=True, absolute=True)
+                    cmds.setAttr(sel + '.translate', lock=False)
+                    cmds.setAttr(sel + '.rotate', lock=False)
+                    cmds.parent(sel, world=True, absolute=True)
                 except:
-                    pm.warning('Couldn\'t remove tool model from robot')
+                    cmds.warning('Couldn\'t remove tool model from robot')
                 tools = 1  # Our selection is a tool controller
-                pm.headsUpMessage('Tool Model detached successfuly!')
+                cmds.headsUpMessage('Tool Model detached successfuly!')
 
     # If there were no tools in our selection, alert the user
     if not tools:
-        pm.warning('No tool models selected')
+        cmds.warning('No tool models selected')
         return
 
 
 def write_limits_to_ui(*args):
     """
     """
-    current_tab = pm.tabLayout('limits_tab_layout',
+    current_tab = cmds.tabLayout('limits_tab_layout',
                                query=True,
                                selectTab=True)
 
@@ -1064,8 +1060,8 @@ def write_position_limits_to_ui():
         val_min = axis_position_limits[axis_name]['Min Limit']
         val_max = axis_position_limits[axis_name]['Max Limit']
 
-        pm.textField('t_A{}Min'.format(axis_number), edit=True, text=val_min)
-        pm.textField('t_A{}Max'.format(axis_number), edit=True, text=val_max)
+        cmds.textField('t_A{}Min'.format(axis_number), edit=True, text=val_min)
+        cmds.textField('t_A{}Max'.format(axis_number), edit=True, text=val_max)
 
 
 def write_deriv_limits_to_ui(limit_type):
@@ -1092,7 +1088,7 @@ def write_deriv_limits_to_ui(limit_type):
 
         val = axis_deriv_limits[axis_name]['Max Limit']
 
-        pm.textField('t_A{}{}'.format(axis_number, limit_type),
+        cmds.textField('t_A{}{}'.format(axis_number, limit_type),
                      edit=True,
                      text=round(val,3))
 
@@ -1126,8 +1122,8 @@ def get_axis_limits(robot=None):
     for i in range(num_axes):
         axis_number = i + 1  # Axis numbers are 1-indexed
         axis_name = 'Axis {}'.format(axis_number)
-        val_min = int(pm.getAttr(target_ctrl_path + '.axis{}Min'.format(axis_number)))
-        val_max = int(pm.getAttr(target_ctrl_path + '.axis{}Max'.format(axis_number)))
+        val_min = int(cmds.getAttr(target_ctrl_path + '.axis{}Min'.format(axis_number)))
+        val_max = int(cmds.getAttr(target_ctrl_path + '.axis{}Max'.format(axis_number)))
 
         # Save value to dictionary
         axis_position_limits[axis_name] = {'Min Limit': val_min,
@@ -1148,7 +1144,7 @@ def set_axis_limits(*args):
         raise MimicError('Nothing Selected; Select a valid robot')
         return
 
-    current_tab = pm.tabLayout('limits_tab_layout',
+    current_tab = cmds.tabLayout('limits_tab_layout',
                                query=True,
                                selectTab=True)
 
@@ -1191,19 +1187,19 @@ def set_axis_limit(axis_number, min_max):
         return
 
     try:
-        val = float(pm.textField('t_A{}{}'.format(axis_number, min_max),
+        val = float(cmds.textField('t_A{}{}'.format(axis_number, min_max),
                                  query=True,
                                  text=True))
         robot_list_str = ''
         for robot in robots:
-            pm.setAttr(get_target_ctrl_path(robot)
+            cmds.setAttr(get_target_ctrl_path(robot)
                      + '.axis{}{}'.format(axis_number, min_max),
                        val)
             robot_list_str += robot + ' '
     except:
         pass
 
-    pm.headsUpMessage('Axis Position Limits for {} set successfuly!'.format(robot_list_str))
+    cmds.headsUpMessage('Axis Position Limits for {} set successfuly!'.format(robot_list_str))
 
 
 def set_deriv_limits(limit_type):
@@ -1216,7 +1212,7 @@ def set_deriv_limits(limit_type):
     except:
         pass
 
-    pm.headsUpMessage('Axis {} Limits set successfuly!'.format(limit_type))
+    cmds.headsUpMessage('Axis {} Limits set successfuly!'.format(limit_type))
 
 
 def set_deriv_limit(axis_number, limit_type):
@@ -1234,7 +1230,7 @@ def set_deriv_limit(axis_number, limit_type):
         return
 
     try:  # If there is not a float input in the UI box, do nothing
-        val = float(pm.textField('t_A{}{}'.format(axis_number, limit_type),
+        val = float(cmds.textField('t_A{}{}'.format(axis_number, limit_type),
                                  query=True,
                                  text=True))
         robot_list_str = ''
@@ -1244,12 +1240,12 @@ def set_deriv_limit(axis_number, limit_type):
             # Check if the rig has attributes for the input limit type
             # If not, add the corresponding limit attributes
             # This is mostly used for backwards-compatibility
-            if not pm.attributeQuery('axis{}Limits'.format(limit_type),
+            if not cmds.attributeQuery('axis{}Limits'.format(limit_type),
                                      n=target_ctrl_path, ex=True):
                 add_limits_to_robot(robot, limit_type)
 
             # Set the axis' limit to the user-input value
-            pm.setAttr(target_ctrl_path + '.axis{}{}Limit'.format(axis_number, limit_type), val)
+            cmds.setAttr(target_ctrl_path + '.axis{}{}Limit'.format(axis_number, limit_type), val)
 
             robot_list_str += robot + ' '
     except:
@@ -1299,7 +1295,7 @@ def _get_limits(robot, limit_type):
     # If not, add the corresponding limit attributes
     # This is mostly used for backwards-compatibility
 
-    if not pm.attributeQuery('axis{}Limits'.format(limit_type),
+    if not cmds.attributeQuery('axis{}Limits'.format(limit_type),
                              n=target_ctrl_path, ex=True):
         add_limits_to_robot(robot, limit_type)
 
@@ -1313,7 +1309,7 @@ def _get_limits(robot, limit_type):
         limits[axis_name] = {'Min Limit': None, 'Max Limit': None}
 
         try:
-            limit = pm.getAttr(target_ctrl_path + '.axis{}' \
+            limit = cmds.getAttr(target_ctrl_path + '.axis{}' \
                                '{}Limit'.format(axis_number, limit_type))
         except AttributeError:
             limit = None
@@ -1379,23 +1375,23 @@ def get_fk_pose(*args):
     """
     robots = get_robot_roots()
     if not robots:
-        pm.warning('Nothing Selected; Select a valid robot')
+        cmds.warning('Nothing Selected; Select a valid robot')
         return
 
     if len(robots) > 1:
-        pm.warning('Too many selections; Select a single robot')
+        cmds.warning('Too many selections; Select a single robot')
         return
 
     robot = robots[0]
     axes = find_fk_config(robot)
 
     for i in range(len(axes)):
-        pm.textField('t_a{}'.format(i + 1),
+        cmds.textField('t_a{}'.format(i + 1),
                      edit=True,
                      text=round(axes[i], 2))
 
 
-def select_fk_axis_handle(axis_number):
+def select_fk_axis_handle(axis_number, *args):
     """
     Selects FK Axis Control
     :param axis_number:
@@ -1411,15 +1407,15 @@ def select_fk_axis_handle(axis_number):
 
     selection = []
     for robot in robots:
-        ns = robot.namespace()
+        ns = _get_namespace(robot)
         fk_ctrl_path = '{0}|{1}robot_GRP|{1}FK_CTRLS|{1}a{2}FK_CTRL'.format(robot, ns, axis_number)
         selection.append(fk_ctrl_path)
 
-    pm.select(selection)
-    pm.setToolTo('RotateSuperContext')
+    cmds.select(selection)
+    cmds.setToolTo('RotateSuperContext')
 
 
-def set_axis(axis_number):
+def set_axis(axis_number, *args):
     """
     Set the rotation value (degrees) of a selected robot and axis using
     Mimic UI fields.
@@ -1428,7 +1424,7 @@ def set_axis(axis_number):
     """
     robots = get_robot_roots()
     if not robots:
-        pm.warning('Nothing Selected; Select a valid robot')
+        cmds.warning('Nothing Selected; Select a valid robot')
         return
 
     # These are specific to how the robots are rigged in relation to Maya's
@@ -1437,13 +1433,13 @@ def set_axis(axis_number):
 
     try:  # if the text field is empty, or not a float value, skip it
         rotation_axis = rotation_axes[axis_number - 1]
-        val = float(pm.textField('t_a{}'.format(axis_number),
+        val = float(cmds.textField('t_a{}'.format(axis_number),
                                  query=True,
                                  text=True))
 
         for robot in robots:
-            ns = robot.namespace()
-            pm.setAttr('{0}|{1}robot_GRP|{1}FK_CTRLS|{1}a{2}FK_CTRL.rotate{3}'.format(robot, ns, axis_number, rotation_axis), val)
+            ns = _get_namespace(robot)
+            cmds.setAttr('{0}|{1}robot_GRP|{1}FK_CTRLS|{1}a{2}FK_CTRL.rotate{3}'.format(robot, ns, axis_number, rotation_axis), val)
     except:
         pass
 
@@ -1461,7 +1457,7 @@ def set_fk_pose(*args):
         for i in range(num_axes):
             set_axis(i + 1)
     except:
-        pm.warning('Error setting FK pose')
+        cmds.warning('Error setting FK pose')
 
 
 ### ---------------------------------------- ###
@@ -1488,28 +1484,27 @@ def get_solver_params(robot_name):
     solver_type
     """
     tcp_path = format_path(__TCP_HDL_PATH, robot_name)
-    tcp_ctrl = pm.ls(tcp_path)[0]
-    tcp = tcp_ctrl.getTranslation()
-    tcp_mat = pm.xform(tcp_ctrl, query=True, os=True, m=True)
+    tcp_ctrl = cmds.ls(tcp_path)[0]
+    tcp = cmds.xform(tcp_ctrl, q=True, t=True, os=True)
+    tcp_mat = cmds.xform(tcp_ctrl, query=True, os=True, m=True)
 
 
     lcs_path = format_path(__LOCAL_CTRL_PATH, robot_name)
-    lcs_ctrl = pm.ls(lcs_path)[0]
-    lcs = lcs_ctrl.getTranslation()
-    lcs_mat = pm.xform(lcs_ctrl, query=True, os=True, m=True)
+    lcs_ctrl = cmds.ls(lcs_path)[0]
+    lcs = cmds.xform(lcs_ctrl, q=True, t=True, ws=True)
+    lcs_mat = cmds.xform(lcs_ctrl, query=True, ws=True, m=True)
 
 
     target_path = format_path(__TARGET_HDL_PATH, robot_name)
-    target_ctrl = pm.ls(target_path)[0]
-    target = target_ctrl.getTranslation()
-    target_mat = pm.xform(target_ctrl, query=True, os=True, m=True)
+    target_ctrl = cmds.ls(target_path)[0]
+    target = cmds.xform(target_ctrl, q=True, t=True, ws=True)
+    target_mat = cmds.xform(target_ctrl, query=True, ws=True, m=True)
 
 
     robot_definition = get_robot_definition(robot_name)
     axis_offsets = get_axis_offsets(robot_name)
     rot_directions = get_rot_directions(robot_name)
     solver_type = get_solver_type(robot_name)
-
 
     solver_params = namedtuple('solver_params', [
                         'tcp',
@@ -1537,9 +1532,8 @@ def get_solver_type(robot_name):
     # Defaults to 0 if attr doesn't exist, representing the standard
     # spherical wrist solver
     try:
-        target_ctrl = pm.ls(target_ctrl_path, type='transform')[0]
-        solver_type = target_ctrl.getAttr('solverType')
-    except:
+        solver_type = cmds.getAttr(target_ctrl_path + '.solverType')
+    except (ValueError, RuntimeError):
         solver_type = 0
     
     return solver_type
@@ -1551,13 +1545,13 @@ def get_robot_definition(robot_name):
     target_ctrl_path = get_target_ctrl_path(robot_name)
 
     # Get the robot geometry from robot definition attributes on the rig.
-    a1 = pm.getAttr(target_ctrl_path + '.a1')
-    a2 = pm.getAttr(target_ctrl_path + '.a2')
-    b = pm.getAttr(target_ctrl_path + '.b')
-    c1 = pm.getAttr(target_ctrl_path + '.c1')
-    c2 = pm.getAttr(target_ctrl_path + '.c2')
-    c3 = pm.getAttr(target_ctrl_path + '.c3')
-    c4 = pm.getAttr(target_ctrl_path + '.c4')
+    a1 = cmds.getAttr(target_ctrl_path + '.a1')
+    a2 = cmds.getAttr(target_ctrl_path + '.a2')
+    b = cmds.getAttr(target_ctrl_path + '.b')
+    c1 = cmds.getAttr(target_ctrl_path + '.c1')
+    c2 = cmds.getAttr(target_ctrl_path + '.c2')
+    c3 = cmds.getAttr(target_ctrl_path + '.c3')
+    c4 = cmds.getAttr(target_ctrl_path + '.c4')
 
     robot_definition = [a1, a2, b, c1, c2, c3, c4]
 
@@ -1577,8 +1571,8 @@ def get_axis_offsets(robot_name):
         # We use objExists here because most robot rigs don't have
         # offsets defined for every axis
         offset_attr_name = target_ctrl_path + '.axis{}Offset'.format(axis_number)
-        if pm.objExists(offset_attr_name):
-            offset = pm.getAttr(offset_attr_name)
+        if cmds.objExists(offset_attr_name):
+            offset = cmds.getAttr(offset_attr_name)
             axis_offsets[i] = offset
 
     return axis_offsets
@@ -1599,8 +1593,8 @@ def get_rot_directions(robot_name):
         # We use objExists here because most robot rigs don't have
         # offsets defined for every axis
         offset_attr_name = target_ctrl_path + '.flipAxis{}direction'.format(axis_number)
-        if pm.objExists(offset_attr_name):
-            rot_direction = pm.getAttr(offset_attr_name)
+        if cmds.objExists(offset_attr_name):
+            rot_direction = cmds.getAttr(offset_attr_name)
             rot_directions[i] = rot_direction
 
     return rot_directions
@@ -1619,12 +1613,12 @@ def find_fk_config(robot):
     a5_path = format_path(__A5_PATH, robot)
     a6_path = format_path(__A6_PATH, robot)
 
-    a1 = pm.getAttr(a1_path + '.rotateY')
-    a2 = pm.getAttr(a2_path + '.rotateX')
-    a3 = pm.getAttr(a3_path + '.rotateX')
-    a4 = pm.getAttr(a4_path + '.rotateZ')
-    a5 = pm.getAttr(a5_path + '.rotateX')
-    a6 = pm.getAttr(a6_path + '.rotateZ')
+    a1 = cmds.getAttr(a1_path + '.rotateY')
+    a2 = cmds.getAttr(a2_path + '.rotateX')
+    a3 = cmds.getAttr(a3_path + '.rotateX')
+    a4 = cmds.getAttr(a4_path + '.rotateZ')
+    a5 = cmds.getAttr(a5_path + '.rotateX')
+    a6 = cmds.getAttr(a6_path + '.rotateZ')
 
     fk_config = [a1, a2, a3, a4, a5, a6]
 
@@ -1709,7 +1703,7 @@ def _snap_ik_target_to_fk(robot):
     tool_ctrl_fk_path = get_tool_ctrl_fk_path(robot)
     tcp_hdl_path = format_path(__TCP_HDL_PATH, robot)
 
-    if pm.objExists(tool_ctrl_path):
+    if cmds.objExists(tool_ctrl_path):
         ctrl_ik = tool_ctrl_path
         ctrl_fk = tool_ctrl_fk_path
 
@@ -1720,10 +1714,9 @@ def _snap_ik_target_to_fk(robot):
 
     # Snap tool_CTRL to tool_CTRL_FK.
     try:
-        pm.snapTransforms(s=ctrl_fk, d=ctrl_ik)
+        cmds.snapTransforms(s=ctrl_fk, d=ctrl_ik)
     except:
-        pm.warning('Coundn\'t snap {} tool_CTRL handle to FK' \
-                   .format(robot))
+        cmds.warning('Coundn\'t snap {} tool_CTRL handle to FK'.format(robot))
 
 
 def _ik_and_fk_aligned(ik_ctrl, tcp_handle):
@@ -1745,8 +1738,8 @@ def _ik_and_fk_aligned(ik_ctrl, tcp_handle):
     ik_fk_are_aligned = False
 
     # Find the translation of each object and compare them
-    ik_trans = pm.xform(ik_ctrl, q=True, rp=True, ws=True)
-    tcp_trans = pm.xform(tcp_handle, q=True, rp=True, ws=True)
+    ik_trans = cmds.xform(ik_ctrl, q=True, rp=True, ws=True)
+    tcp_trans = cmds.xform(tcp_handle, q=True, rp=True, ws=True)
 
     # Find the distance between the ik controller and the tcp handle
     trans_diff = math.sqrt((ik_trans[0] - tcp_trans[0]) ** 2
@@ -1789,7 +1782,7 @@ def _normalize_fk_pose(fk_config, axis_offsets, rot_directions):
 
 def _reconcile_fk_pose(robot_name, fk_config):
     """
-    Finds an FK control value that's closes to adjacent values during IK to
+    Finds an FK control value that's closest to adjacent values during IK to
     FK switch, due to the fact that IK solver only solves between +/- 180
     """
     # Find the closest FK keyframe
@@ -1811,7 +1804,7 @@ def _reconcile_fk_pose(robot_name, fk_config):
             axis_fk_ctrl_path = __FK_CTRLS_PATH + '|{1}' + 'a{}FK_CTRL'.format(axis_number)
             attr_path = format_path(axis_fk_ctrl_path, robot_name) + '.rotate{}'.format(__ROTATION_AXES[i])
             
-            ref_val = pm.getAttr(attr_path, time=closets_fk_key)
+            ref_val = cmds.getAttr(attr_path, time=closets_fk_key)
             ctrl_val = fk_config[i]
 
             try:
@@ -1841,15 +1834,15 @@ def switch_to_ik(robot):
 
     try:
         # Turn FK control visibility off
-        pm.setAttr(fk_ctrls_path + '.v', 0)
+        cmds.setAttr(fk_ctrls_path + '.v', 0)
 
         # Turn IK control visibility on
-        pm.setAttr(target_ctrl_path + '.v', 1)
-        pm.setAttr(format_path(__TARGET_CTRL_PATH + '|{1}target_CTRLShape',
+        cmds.setAttr(target_ctrl_path + '.v', 1)
+        cmds.setAttr(format_path(__TARGET_CTRL_PATH + '|{1}target_CTRLShape',
                                robot) + '.visibility', 1)
 
-        if pm.objExists(tool_ctrl_path):
-            pm.setAttr(tool_ctrl_path + '.v'.format(robot), 1)
+        if cmds.objExists(tool_ctrl_path):
+            cmds.setAttr(tool_ctrl_path + '.v'.format(robot), 1)
     except:
         # These aren't crucial to the switch as they're just visual, and 
         # a connection or locking of any of these attributes might throw
@@ -1878,12 +1871,12 @@ def switch_to_ik(robot):
     ik_config = find_closest_config(fk_config_norm, ik_sols)
 
     # Match IK config to FK pose
-    pm.setAttr(target_ctrl_path + '.ikSolution1', ik_config[0])
-    pm.setAttr(target_ctrl_path + '.ikSolution2', ik_config[1])
-    pm.setAttr(target_ctrl_path + '.ikSolution3', ik_config[2])
+    cmds.setAttr(target_ctrl_path + '.ikSolution1', ik_config[0])
+    cmds.setAttr(target_ctrl_path + '.ikSolution2', ik_config[1])
+    cmds.setAttr(target_ctrl_path + '.ikSolution3', ik_config[2])
 
     # turn ik solve back on
-    pm.setAttr(target_ctrl_path + '.ik', 1)
+    cmds.setAttr(target_ctrl_path + '.ik', 1)
 
 
 def switch_to_fk(robot):
@@ -1897,32 +1890,32 @@ def switch_to_fk(robot):
     fk_ctrls_path = format_path(__FK_CTRLS_PATH, robot)
 
     # Turn IK control visibility off
-    pm.setAttr(get_target_ctrl_path(robot) + '.v', 0)
+    cmds.setAttr(get_target_ctrl_path(robot) + '.v', 0)
 
-    if pm.objExists(tool_ctrl_path):
-        pm.setAttr(tool_ctrl_path + '.v'.format(robot), 0)
+    if cmds.objExists(tool_ctrl_path):
+        cmds.setAttr(tool_ctrl_path + '.v'.format(robot), 0)
 
     # Turn FK control visibility on
-    pm.setAttr(fk_ctrls_path + '.v'.format(robot), 1)
+    cmds.setAttr(fk_ctrls_path + '.v'.format(robot), 1)
 
     # Find axis angles from IK pose, and match FK control handles
     fk_config = find_fk_config(robot)
     fk_config = _reconcile_fk_pose(robot, fk_config)
 
-    pm.setAttr(format_path(__A1_FK_CTRL_PATH, robot) + '.rotateY',
+    cmds.setAttr(format_path(__A1_FK_CTRL_PATH, robot) + '.rotateY',
                fk_config[0])
-    pm.setAttr(format_path(__A2_FK_CTRL_PATH, robot) + '.rotateX',
+    cmds.setAttr(format_path(__A2_FK_CTRL_PATH, robot) + '.rotateX',
                fk_config[1])
-    pm.setAttr(format_path(__A3_FK_CTRL_PATH, robot) + '.rotateX',
+    cmds.setAttr(format_path(__A3_FK_CTRL_PATH, robot) + '.rotateX',
                fk_config[2])
-    pm.setAttr(format_path(__A4_FK_CTRL_PATH, robot) + '.rotateZ',
+    cmds.setAttr(format_path(__A4_FK_CTRL_PATH, robot) + '.rotateZ',
                fk_config[3])
-    pm.setAttr(format_path(__A5_FK_CTRL_PATH, robot) + '.rotateX',
+    cmds.setAttr(format_path(__A5_FK_CTRL_PATH, robot) + '.rotateX',
                fk_config[4])
-    pm.setAttr(format_path(__A6_FK_CTRL_PATH, robot) + '.rotateZ',
+    cmds.setAttr(format_path(__A6_FK_CTRL_PATH, robot) + '.rotateZ',
                fk_config[5])
 
-    pm.setAttr(target_ctrl_path + '.ik', 0)
+    cmds.setAttr(target_ctrl_path + '.ik', 0)
 
 
 def toggle_ik_fk(*args):
@@ -1932,7 +1925,7 @@ def toggle_ik_fk(*args):
     :return:
     """
 
-    current_tab = pm.tabLayout('switcher_tab_layout',
+    current_tab = cmds.tabLayout('switcher_tab_layout',
                                query=True,
                                selectTab=True)
 
@@ -1949,13 +1942,13 @@ def toggle_ik_fk(*args):
         target_ctrl_path = get_target_ctrl_path(robot)
         
         if ik_tab:
-            if pm.getAttr(target_ctrl_path + '.ik'):
+            if cmds.getAttr(target_ctrl_path + '.ik'):
                 continue
 
             switch_to_ik(robot)
 
         else:
-            if not pm.getAttr(target_ctrl_path  + '.ik'):
+            if not cmds.getAttr(target_ctrl_path  + '.ik'):
                 continue
 
             switch_to_fk(robot)
@@ -1970,7 +1963,7 @@ def toggle_ik_fk(*args):
                     target_ctrl_path = get_target_ctrl_path(robot)
                     tool_ctrl_path = get_tool_ctrl_path(robot)
 
-                    if pm.objExists(tool_ctrl_path):
+                    if cmds.objExists(tool_ctrl_path):
                         selection.append(tool_ctrl_path)
                     else:
                         selection.append(target_ctrl_path)
@@ -1978,12 +1971,12 @@ def toggle_ik_fk(*args):
                 for robot in active_robots:
                     selection.append(format_path(__A6_FK_CTRL_PATH, robot))
                     
-            pm.select(selection)
+            cmds.select(selection)
         else:
             pass
 
     except:
-        pm.warning('Error selecting after IK/FK switch')
+        cmds.warning('Error selecting after IK/FK switch')
 ### ---------------------------------------- ###
 
 
@@ -1997,7 +1990,7 @@ def key_ik(*args):
 
     robots = get_robot_roots()
     if not robots:
-        pm.warning('No robots selected')
+        cmds.warning('No robots selected')
         return
 
     for robot in robots:
@@ -2005,7 +1998,7 @@ def key_ik(*args):
         tool_ctrl_path = get_tool_ctrl_path(robot)
         fk_ctrls_path = format_path(__FK_CTRLS_PATH, robot)
 
-        if not pm.getAttr(target_ctrl_path + '.ik'):
+        if not cmds.getAttr(target_ctrl_path + '.ik'):
             switch_to_ik(robot)
 
         ik_attributes = ['ik',
@@ -2016,44 +2009,44 @@ def key_ik(*args):
 
         # Key all IK elements
         for attr in ik_attributes:
-            pm.setKeyframe(target_ctrl_path, attribute=attr)
+            cmds.setKeyframe(target_ctrl_path, attribute=attr)
 
-        if pm.objExists(tool_ctrl_path):
-            pm.setKeyframe(tool_ctrl_path, attribute='v')
+        if cmds.objExists(tool_ctrl_path):
+            cmds.setKeyframe(tool_ctrl_path, attribute='v')
 
         fk_pose = find_fk_config(robot)
 
         # Key all FK elements
-        pm.setKeyframe(format_path(__A1_FK_CTRL_PATH, robot),
+        cmds.setKeyframe(format_path(__A1_FK_CTRL_PATH, robot),
                        attribute='rotateY',
                        value=fk_pose[0])
-        pm.setKeyframe(format_path(__A2_FK_CTRL_PATH, robot),
+        cmds.setKeyframe(format_path(__A2_FK_CTRL_PATH, robot),
                        attribute='rotateX',
                        value=fk_pose[1])
-        pm.setKeyframe(format_path(__A3_FK_CTRL_PATH, robot),
+        cmds.setKeyframe(format_path(__A3_FK_CTRL_PATH, robot),
                        attribute='rotateX',
                        value=fk_pose[2])
-        pm.setKeyframe(format_path(__A4_FK_CTRL_PATH, robot),
+        cmds.setKeyframe(format_path(__A4_FK_CTRL_PATH, robot),
                        attribute='rotateZ',
                        value=fk_pose[3])
-        pm.setKeyframe(format_path(__A5_FK_CTRL_PATH, robot),
+        cmds.setKeyframe(format_path(__A5_FK_CTRL_PATH, robot),
                        attribute='rotateX',
                        value=fk_pose[4])
-        pm.setKeyframe(format_path(__A6_FK_CTRL_PATH, robot),
+        cmds.setKeyframe(format_path(__A6_FK_CTRL_PATH, robot),
                        attribute='rotateZ',
                        value=fk_pose[5])
 
         # Key visibility of FK controllers
-        pm.setKeyframe(fk_ctrls_path, attribute='visibility')
+        cmds.setKeyframe(fk_ctrls_path, attribute='visibility')
 
         # Key tool controllers
-        if pm.checkBox('cb_keyToolCtrl', query=True, value=True):
-            if pm.objExists(tool_ctrl_path):
-                pm.setKeyframe(tool_ctrl_path, attribute='translate')
-                pm.setKeyframe(tool_ctrl_path, attribute='rotate')
+        if cmds.checkBox('cb_keyToolCtrl', query=True, value=True):
+            if cmds.objExists(tool_ctrl_path):
+                cmds.setKeyframe(tool_ctrl_path, attribute='translate')
+                cmds.setKeyframe(tool_ctrl_path, attribute='rotate')
             else:
-                pm.setKeyframe(target_ctrl_path, attribute='translate')
-                pm.setKeyframe(target_ctrl_path, attribute='rotate')
+                cmds.setKeyframe(target_ctrl_path, attribute='translate')
+                cmds.setKeyframe(target_ctrl_path, attribute='rotate')
 
 
 def key_fk(*args):
@@ -2065,7 +2058,7 @@ def key_fk(*args):
 
     robots = get_robot_roots()
     if not robots:
-        pm.warning('No robots selected')
+        cmds.warning('No robots selected')
         return
 
     for robot in robots:
@@ -2074,7 +2067,7 @@ def key_fk(*args):
         target_ctrl_path = get_target_ctrl_path(robot)
         tool_ctrl_path = get_tool_ctrl_path(robot)
 
-        if pm.getAttr(target_ctrl_path + '.ik'):
+        if cmds.getAttr(target_ctrl_path + '.ik'):
             switch_to_fk(robot)
 
         # We first check if the target/tool controller transformation and
@@ -2085,7 +2078,7 @@ def key_fk(*args):
         # unneccessarily changing the controllers Euler Angle rotation
         # representation that can cause unpredictable behavior between frames
 
-        if pm.objExists(tool_ctrl_path):
+        if cmds.objExists(tool_ctrl_path):
             ctrl_ik = tool_ctrl_path
             ctrl_fk = format_path(__TOOL_CTRL_FK_PATH, robot)
 
@@ -2099,45 +2092,45 @@ def key_fk(*args):
 
         # Key all FK elements
         try:
-            pm.setKeyframe(format_path(__A1_FK_CTRL_PATH, robot),
+            cmds.setKeyframe(format_path(__A1_FK_CTRL_PATH, robot),
                            attribute='rotateY')
-            pm.setKeyframe(format_path(__A2_FK_CTRL_PATH, robot),
+            cmds.setKeyframe(format_path(__A2_FK_CTRL_PATH, robot),
                            attribute='rotateX')
-            pm.setKeyframe(format_path(__A3_FK_CTRL_PATH, robot),
+            cmds.setKeyframe(format_path(__A3_FK_CTRL_PATH, robot),
                            attribute='rotateX')
-            pm.setKeyframe(format_path(__A4_FK_CTRL_PATH, robot),
+            cmds.setKeyframe(format_path(__A4_FK_CTRL_PATH, robot),
                            attribute='rotateZ')
-            pm.setKeyframe(format_path(__A5_FK_CTRL_PATH, robot),
+            cmds.setKeyframe(format_path(__A5_FK_CTRL_PATH, robot),
                            attribute='rotateX')
-            pm.setKeyframe(format_path(__A6_FK_CTRL_PATH, robot),
+            cmds.setKeyframe(format_path(__A6_FK_CTRL_PATH, robot),
                            attribute='rotateZ')
 
             # Key visibility of FK controllers
             for i in range(6):
-                pm.setKeyframe(format_path(__FK_CTRLS_PATH, robot),
+                cmds.setKeyframe(format_path(__FK_CTRLS_PATH, robot),
                                attribute='visibility')
         except:
-            pm.warning('Error setting FK keys in FK mode')
+            cmds.warning('Error setting FK keys in FK mode')
 
         # Key all IK elements
         try:
-            pm.setKeyframe(target_ctrl_path, attribute='ik')
-            pm.setKeyframe(target_ctrl_path, attribute='v', value=0)
+            cmds.setKeyframe(target_ctrl_path, attribute='ik')
+            cmds.setKeyframe(target_ctrl_path, attribute='v', value=0)
 
-            if pm.objExists(tool_ctrl_path):
-                pm.setKeyframe(tool_ctrl_path, attribute='v')
+            if cmds.objExists(tool_ctrl_path):
+                cmds.setKeyframe(tool_ctrl_path, attribute='v')
 
             # Key tool controllers
-            if pm.checkBox('cb_keyToolCtrl', query=True, value=True):
-                if pm.objExists(tool_ctrl_path):
-                    pm.setKeyframe(tool_ctrl_path, attribute='translate')
-                    pm.setKeyframe(tool_ctrl_path, attribute='rotate')
+            if cmds.checkBox('cb_keyToolCtrl', query=True, value=True):
+                if cmds.objExists(tool_ctrl_path):
+                    cmds.setKeyframe(tool_ctrl_path, attribute='translate')
+                    cmds.setKeyframe(tool_ctrl_path, attribute='rotate')
                 else:
-                    pm.setKeyframe(target_ctrl_path, attribute='translate')
-                    pm.setKeyframe(target_ctrl_path, attribute='rotate')
+                    cmds.setKeyframe(target_ctrl_path, attribute='translate')
+                    cmds.setKeyframe(target_ctrl_path, attribute='rotate')
 
         except:
-            pm.warning('Error setting IK keys in FK mode')
+            cmds.warning('Error setting IK keys in FK mode')
 
 
 def select_keyframe_hierarchy(*args):
@@ -2147,7 +2140,7 @@ def select_keyframe_hierarchy(*args):
     :return:
     """
     if not check_robot_selection():
-        pm.warning('No robot\'s selected; ' \
+        cmds.warning('No robot\'s selected; ' \
                    'select at least one robot')
         return
 
@@ -2169,10 +2162,10 @@ def select_keyframe_hierarchy(*args):
             keyable_robot_objects.append(obj_path)
 
         tool_ctrl_path = get_tool_ctrl_path(robot)
-        if pm.objExists(tool_ctrl_path):
+        if cmds.objExists(tool_ctrl_path):
             keyable_robot_objects.append(tool_ctrl_path)
 
-    pm.select(keyable_robot_objects)
+    cmds.select(keyable_robot_objects)
 
 
 def delete_ik_fk_keys(*args):
@@ -2182,7 +2175,7 @@ def delete_ik_fk_keys(*args):
     :return:
     """
     if not check_robot_selection():
-        pm.warning('No robots selected; ' \
+        cmds.warning('No robots selected; ' \
                    'Select at least one robot.')
 
     keyed_attrs = {__TARGET_CTRL_PATH: ['ik',
@@ -2200,20 +2193,21 @@ def delete_ik_fk_keys(*args):
 
     robots = get_robot_roots()
 
-    current_frame = pm.currentTime()
+    current_frame = cmds.currentTime(query=True)
     for robot in robots:
         target_ctrl_path = get_target_ctrl_path(robot)
         tool_ctrl_path = get_tool_ctrl_path(robot)
         # Check if there's a keyframe set on the target_CTRL.ik attribute
-        key = pm.keyframe(target_ctrl_path,
-                          attribute='ik',
-                          query=True,
-                          time=current_frame)
+        key_count = cmds.keyframe(target_ctrl_path,
+                                 attribute='ik',
+                                 query=True,
+                                 time=(current_frame, current_frame),
+                                 keyframeCount=True)
 
         # If there is no keyframe set on the IK attribute, continue to the
         # next robot
-        if not key:
-            pm.warning('{} has no IK|FK keyframe at frame {}' \
+        if not key_count:
+            cmds.warning('{} has no IK|FK keyframe at frame {}' \
                        .format(robot, current_frame))
             continue
 
@@ -2223,48 +2217,52 @@ def delete_ik_fk_keys(*args):
         # Note, we only need to check a single FK controller as they should all
         # be keyframed (or not) together
         fk_test_handle_path = format_path(__A1_FK_CTRL_PATH + '.rotateY', robot)
-        fk_key = pm.keyframe(fk_test_handle_path,
-                             query=True,
-                             time=current_frame)
+        fk_key_count = cmds.keyframe(fk_test_handle_path,
+                                     query=True,
+                                     time=(current_frame, current_frame),
+                                     keyframeCount=True)
         # If there is no keyframe set on the FK controller attribute,
         # continue to the next robot
-        if not fk_key:
-            pm.warning('{} has no IK|FK keyframe at frame {}' \
+        if not fk_key_count:
+            cmds.warning('{} has no IK|FK keyframe at frame {}' \
                        .format(robot, current_frame))
             continue        
 
         for obj in keyed_attrs:
             for attr in keyed_attrs[obj]:
-                pm.cutKey(format_path(obj, robot),
-                          time=current_frame,
-                          attribute=attr,
-                          option="keys")
+                if attr:
+                    cmds.cutKey(format_path(obj, robot),
+                                time=(current_frame, current_frame),
+                                attribute=attr,
+                                option='keys')
 
-        if pm.objExists(tool_ctrl_path):
-            pm.cutKey(tool_ctrl_path,
-                      time=current_frame,
+        if cmds.objExists(tool_ctrl_path):
+            cmds.cutKey(tool_ctrl_path,
+                      time=(current_frame, current_frame),
                       attribute='visibility',
                       option="keys")
 
-        if pm.checkBox('cb_keyToolCtrl', query=True, value=True):
-            if pm.objExists(tool_ctrl_path):
-                pm.cutKey(tool_ctrl_path,
-                          time=current_frame,
+        if cmds.checkBox('cb_keyToolCtrl', query=True, value=True):
+            if cmds.objExists(tool_ctrl_path):
+                cmds.cutKey(tool_ctrl_path,
+                          time=(current_frame, current_frame),
                           attribute='translate',
                           option="keys")
-                pm.cutKey(tool_ctrl_path,
-                          time=current_frame,
+                cmds.cutKey(tool_ctrl_path,
+                          time=(current_frame, current_frame),
                           attribute='rotate',
                           option="keys")
             else:
-                pm.cutKey(target_ctrl_path,
-                          time=current_frame,
+                cmds.cutKey(target_ctrl_path,
+                          time=(current_frame, current_frame),
                           attribute='translate',
                           option="keys")
-                pm.cutKey(target_ctrl_path,
-                          time=current_frame,
+                cmds.cutKey(target_ctrl_path,
+                          time=(current_frame, current_frame),
                           attribute='rotate',
                           option="keys")
+
+        cmds.warning('{} IK|FK keyframe deleted at frame {}'.format(robot, current_frame))
 
 
 def toggle_ik_fk_ui(*args):
@@ -2274,19 +2272,19 @@ def toggle_ik_fk_ui(*args):
     :param args:
     :return:
     """
-    if not pm.window("mimic_win", exists=True):
+    if not cmds.window("mimic_win", exists=True):
         return
 
-    current_tab = pm.tabLayout('switcher_tab_layout',
+    current_tab = cmds.tabLayout('switcher_tab_layout',
                                query=True,
                                selectTabIndex=True)
 
     if current_tab == 1:
-        pm.tabLayout('switcher_tab_layout', edit=True, selectTabIndex=2)
+        cmds.tabLayout('switcher_tab_layout', edit=True, selectTabIndex=2)
     elif current_tab == 2:
-        pm.tabLayout('switcher_tab_layout', edit=True, selectTabIndex=1)
+        cmds.tabLayout('switcher_tab_layout', edit=True, selectTabIndex=1)
     else:
-        pm.warning('Error toggling IK/FK tabs')
+        cmds.warning('Error toggling IK/FK tabs')
 
 
 def get_ui_ik_fk_state(*args):
@@ -2296,10 +2294,10 @@ def get_ui_ik_fk_state(*args):
     :param args:
     :return: either None, 'ik' or 'fk'
     """
-    if not pm.window("mimic_win", exists=True):
+    if not cmds.window("mimic_win", exists=True):
         return None
 
-    current_tab = pm.tabLayout('switcher_tab_layout',
+    current_tab = cmds.tabLayout('switcher_tab_layout',
                                query=True,
                                selectTabIndex=True)
 
@@ -2308,7 +2306,7 @@ def get_ui_ik_fk_state(*args):
     elif current_tab == 2:
         return 'fk'
     else:
-        pm.warning('Error getting IK/FK tabs status')
+        cmds.warning('Error getting IK/FK tabs status')
         return None
 
 
@@ -2319,10 +2317,10 @@ def key_ik_fk(*args):
     :param args:
     :return:
     """
-    if not pm.window("mimic_win", exists=True):
+    if not cmds.window("mimic_win", exists=True):
         return
 
-    current_tab = pm.tabLayout('switcher_tab_layout',
+    current_tab = cmds.tabLayout('switcher_tab_layout',
                                query=True,
                                selectTabIndex=True)
 
@@ -2332,7 +2330,7 @@ def key_ik_fk(*args):
         elif current_tab == 2:
             key_fk()
     except:
-        pm.warning('Error keying IK/FK')
+        cmds.warning('Error keying IK/FK')
 
 
 def set_pose(pose, robots=None, require_selection=True):
@@ -2353,7 +2351,7 @@ def set_pose(pose, robots=None, require_selection=True):
         target_ctrl_path = get_target_ctrl_path(robot)
 
         # Check if the robot is in IK-mode
-        in_ik_mode = pm.getAttr(target_ctrl_path + '.ik')
+        in_ik_mode = cmds.getAttr(target_ctrl_path + '.ik')
         
         # If the robot is in IK-mode, we have to switch to FK mode to set the 
         # pose, then we switch back
@@ -2368,8 +2366,8 @@ def set_pose(pose, robots=None, require_selection=True):
 
             val = pose[i]
 
-            ns = robot.namespace()
-            pm.setAttr('{0}|{1}robot_GRP|{1}FK_CTRLS|{1}a{2}FK_CTRL.rotate{3}'
+            ns = _get_namespace(robot)
+            cmds.setAttr('{0}|{1}robot_GRP|{1}FK_CTRLS|{1}a{2}FK_CTRL.rotate{3}'
                        .format(robot, ns, axis_number, rotation_axis), val)
 
         # Switch back to IK-mode if necessary
@@ -2402,7 +2400,7 @@ def _create_hotkey_set():
                   'to a custom hotkey set in the Hotkey Editor\n' \
                   'or create a new profile below. \n'
 
-    user_input = pm.promptDialog(
+    user_input = cmds.promptDialog(
         title='New Hotkey Profile',
         message=message_str,
         messageAlign='center',
@@ -2414,37 +2412,36 @@ def _create_hotkey_set():
         dismissString='Cancel')
 
     if user_input == 'Create':
-        hotkey_set_name = pm.promptDialog(query=True, text=True)
+        hotkey_set_name = cmds.promptDialog(query=True, text=True)
         hotkey_set_name_filtered = _filter_hotkey_set_name(hotkey_set_name)
-        pm.hotkeySet(hotkey_set_name_filtered, current=True)
+        cmds.hotkeySet(hotkey_set_name_filtered, current=True)
         print('New Hotkey Set created: {}'.format(hotkey_set_name_filtered))
         return True
 
 
-def assign_hotkey(command_name, annotation_str, command_string):
+def assign_hotkey(command_name, annotation_str, command_string, *args):
     """
     Assigns hotkeys using a user's character input and a command.
     :param command_name: Name of the Mimic command for hotkey
-                        (acquired from Mimic)
     :param annotation_str: Comment or description of hotkey
     :param command_string: String-form of the actual command to execute
     :return:
     """
     key_str = None
     if command_name == 'mimic_toggleIkFkMode':
-        key_str = pm.textField('t_toggleIkFk', query=True, text=True)
+        key_str = cmds.textField('t_toggleIkFk', query=True, text=True)
     elif command_name == 'mimic_keyIkFk':
-        key_str = pm.textField('t_keyIkFk', query=True, text=True)
+        key_str = cmds.textField('t_keyIkFk', query=True, text=True)
 
     if len(key_str) > 1:
-        pm.warning('Hotkey must be a single character; no hotkey set')
+        cmds.warning('Hotkey must be a single character; no hotkey set')
         return
 
     # Check if the user is in Maya's locked default hotkey set.
-    if pm.hotkeySet(query=True, current=True) == 'Maya_Default':
+    if cmds.hotkeySet(query=True, current=True) == 'Maya_Default':
         # If so, try switching to the default Mimic Hotkey Set
-        if pm.hotkeySet('Mimic_Hotkeys', exists=True):
-            pm.hotkeySet('Mimic_Hotkeys', current=True, edit=True)
+        if cmds.hotkeySet('Mimic_Hotkeys', exists=True):
+            cmds.hotkeySet('Mimic_Hotkeys', current=True, edit=True)
             print('Hotkey Set changed to Mimic Hotkeys')
         # If Mimic Hotkey set doesn't exist, prompt the user to create a custom
         # Hotkey set and switch to it.
@@ -2452,15 +2449,15 @@ def assign_hotkey(command_name, annotation_str, command_string):
             hotkey_set_created = _create_hotkey_set()
             # If the user does not create a new hotkey set, exit the function
             if not hotkey_set_created:
-                pm.warning('No custom hotkey profile created; ' \
+                cmds.warning('No custom hotkey profile created; ' \
                            'No Mimic Hotkey set')
                 return
 
     if key_str:
-        if pm.runTimeCommand(command_name, exists=True):
+        if cmds.runTimeCommand(command_name, exists=True):
             pass
         else:
-            pm.runTimeCommand(command_name,
+            cmds.runTimeCommand(command_name,
                               category='Custom Scripts',
                               annotation=annotation_str,
                               command=command_string,
@@ -2468,61 +2465,61 @@ def assign_hotkey(command_name, annotation_str, command_string):
 
         hotkey_name = command_name + 'Hotkey'
 
-        if pm.hotkey(key_str, query=True):
-            if pm.hotkey(key_str, query=True, name=True) == hotkey_name:
+        if cmds.hotkey(key_str, query=True):
+            if cmds.hotkey(key_str, query=True, name=True) == hotkey_name:
                 print('Hotkey ' \
                       '\'{}\' ' \
                       'already set to ' \
                       '\'{}\''.format(key_str, hotkey_name))
 
             else:
-                pm.warning('Hotkey ' \
+                cmds.warning('Hotkey ' \
                            '\'{}\' ' \
                            'already in use by another function' \
                            .format(key_str))
         else:
-            pm.nameCommand(hotkey_name,
+            cmds.nameCommand(hotkey_name,
                            command=command_name,
                            annotation=annotation_str)
 
-            pm.hotkey(keyShortcut=key_str,
+            cmds.hotkey(keyShortcut=key_str,
                       name=hotkey_name)
 
             print('{} hotkey set to \'{}\' key'.format(command_name, key_str))
     else:
-        pm.warning('No key string input; ' \
+        cmds.warning('No key string input; ' \
                    'input a key string in Mimic UI')
 
-    pm.setFocus('prefs_tab_layout')
+    cmds.setFocus('prefs_tab_layout')
 
 
-def remove_hotkey(command_name):
+def remove_hotkey(command_name, *args):
     """
     Removes hotkey from the user hotkey-set.
     :param command_name: Name of the Mimic command for hotkey (acquired from Mimic)
     :return:
     """
     if command_name == 'mimic_toggleIkFkMode':
-        key_str = pm.textField('t_toggleIkFk', query=True, text=True)
+        key_str = cmds.textField('t_toggleIkFk', query=True, text=True)
     elif command_name == 'mimic_keyIkFk':
-        key_str = pm.textField('t_keyIkFk', query=True, text=True)
+        key_str = cmds.textField('t_keyIkFk', query=True, text=True)
 
     if len(key_str) > 1:
-        pm.warning('Hotkey must be a single character')
+        cmds.warning('Hotkey must be a single character')
         return
 
     # Check if key_str is assigned as a hotkey to cmd_name runtimeCommand
     if key_str:
-        if pm.hotkey(key_str, query=True, name=True) == command_name + 'Hotkey':
-            pm.runTimeCommand(command_name, edit=True, delete=True)
-            pm.hotkey(keyShortcut=key_str, name=None)
+        if cmds.hotkey(key_str, query=True, name=True) == command_name + 'Hotkey':
+            cmds.runTimeCommand(command_name, edit=True, delete=True)
+            cmds.hotkey(keyShortcut=key_str, name=None)
             print('Hotkey {} removed from \'{}\' key'.format(command_name, key_str))
         else:
-            pm.warning('\'{}\' key is not assigned to the {} function in ' \
+            cmds.warning('\'{}\' key is not assigned to the {} function in ' \
                        'the current Hotkey Set; no hotkey was removed' \
                        .format(key_str, command_name))
     else:
-        pm.warning('No key input; ' \
+        cmds.warning('No key input; ' \
                    'input the key you\'d like to remove in Mimic UI')
 
 
@@ -2534,18 +2531,18 @@ def find_hotkey(hotkey_name):
     :return:
     """
     # Check if the user is in Maya's locked default hotkey set.
-    if pm.hotkeySet(query=True, current=True) == 'Maya_Default':
+    if cmds.hotkeySet(query=True, current=True) == 'Maya_Default':
         # If so, try switching to the default Mimic Hotkey Set
-        if pm.hotkeySet('Mimic_Hotkeys', exists=True):
-            pm.hotkeySet('Mimic_Hotkeys', current=True, edit=True)
+        if cmds.hotkeySet('Mimic_Hotkeys', exists=True):
+            cmds.hotkeySet('Mimic_Hotkeys', current=True, edit=True)
             print('Hotkey Set changed to Mimic Hotkeys')
 
-    count = pm.assignCommand(query=True, numElements=True)
+    count = cmds.assignCommand(query=True, numElements=True)
 
     key = ''
     for index in range(1, count + 1):
-        if pm.assignCommand(index, query=True, name=True) == hotkey_name:
-            key = pm.assignCommand(index, query=True, keyString=True)[0]
+        if cmds.assignCommand(index, query=True, name=True) == hotkey_name:
+            key = cmds.assignCommand(index, query=True, keyString=True)[0]
 
     if key == 'NONE':
         return None
@@ -2560,52 +2557,82 @@ def set_shader_range_ui(*args):
     :param args:
     :return:
     """
-    shader_range = pm.floatField("f_shaderRange", value=True, query=True)
+    shader_range = cmds.floatField("f_shaderRange", value=True, query=True)
     set_shader_range(shader_range)
 
 
-def set_shader_range(shader_range, most_recent=False):
+def set_shader_range(shader_range, most_recent=False, robot=None):
     if most_recent:
+        # This is a bit of a hack to get the most recently added robot
+        # It's only used when adding a robot to the scene
         robots = [get_robot_roots(all_robots=True)[-1]]
+    elif robot:
+        robots = [robot]
     else:
         robots = get_robot_roots()
     if not robots:
-        pm.warning('No robots selected')
+        cmds.warning('No robots selected')
         return
 
     for robot in robots:
-        pm.setAttr(get_target_ctrl_path(robot) + '.shaderRange', shader_range)
+        cmds.setAttr(get_target_ctrl_path(robot) + '.shaderRange', shader_range)
 
 
 def import_robot(rigs_dir):
     """
     Imports selected robot from Mimic UI dropdown menu into the scene
-    :return:
+    :return: The root node of the imported robot, or None if it fails
     """
 
     # If the scene is in IK mode, switch to FK before importing the robot
-    current_tab = pm.tabLayout('switcher_tab_layout',
+    current_tab = cmds.tabLayout('switcher_tab_layout',
                                query=True,
                                selectTabIndex=True)
     if current_tab == 2:
-        pm.tabLayout('switcher_tab_layout', edit=True, selectTabIndex=1)
+        cmds.tabLayout('switcher_tab_layout', edit=True, selectTabIndex=1)
 
     rigs = general_utils.get_rigs_dict()
     rig_names = general_utils.get_rigs_names(rigs)
     for rig_name in rig_names:
         try:
-            if pm.optionMenu('robotImportList',
+            if cmds.optionMenu('robotImportList',
                              query=True,
                              value=True) == rig_name:
                 try:
                     rig_path = rigs[rig_name]
-                    pm.importFile(rig_path,
-                                  defaultNamespace=True,
-                                  returnNewNodes=True)
-                except:
-                    pm.warning('Error Loading ' + rig_name)
+                    
+                    # Get all top-level transforms before import
+                    pre_import_nodes = set(cmds.ls(assemblies=True))
+
+                    cmds.file(rig_path, i=True, defaultNamespace=True)
+
+                    # Get all top-level transforms after import
+                    post_import_nodes = set(cmds.ls(assemblies=True))
+
+                    # Find the new root node(s)
+                    new_nodes = post_import_nodes - pre_import_nodes
+
+                    if not new_nodes:
+                        cmds.warning('Imported file {} did not contain a new root assembly.'.format(rig_path))
+                        return None
+                    
+                    # It's possible to import a file with multiple root nodes.
+                    # We need to find the one that is a robot rig.
+                    for node in new_nodes:
+                        if cmds.objExists(format_path(__TARGET_CTRL_PATH, node)):
+                             return node # Found it
+
+                    cmds.warning('Could not identify a valid robot root in the imported file.')
+                    return None
+                    
+                except Exception as e:
+                    cmds.warning('Error Loading {}: {}'.format(rig_name, e))
+                    return None
         except:
-            pm.warning('No robots found; check rig directory')
+            cmds.warning('No robots found; check rig directory')
+            return None
+    
+    return None
 
 
 def save_pose_to_shelf(*args):
@@ -2615,9 +2642,10 @@ def save_pose_to_shelf(*args):
     :return:
     """
     target_shelf = mel.eval('tabLayout -q -selectTab $gShelfTopLevel;')
-    store_cmds = 'import pymel.core as pm \n' \
+    store_cmds = 'import maya.cmds as cmds \n' \
                  'import mimic_utils \n' \
-                 'reload(mimic_utils) \n\n' \
+                 'import importlib \n' \
+                 'importlib.reload(mimic_utils) \n\n' \
         # 'if not check_robot_selection(1): \n' \
     # '    robot = \'\' \n\n'
 
@@ -2625,12 +2653,12 @@ def save_pose_to_shelf(*args):
     end_line_code = "],\n"
 
     if not check_robot_selection(1):
-        pm.warning("Must select exactly one robot")
+        cmds.warning("Must select exactly one robot")
         return
 
     robot = get_robot_roots()[0]
     # Check which mode we're in
-    current_tab = pm.tabLayout('switcher_tab_layout', query=True, st=True)
+    current_tab = cmds.tabLayout('switcher_tab_layout', query=True, st=True)
 
     # IK MODE
     if current_tab == 'ikTab':
@@ -2643,7 +2671,7 @@ def save_pose_to_shelf(*args):
 
         config_attrs = ['ik', 'v', 'ikSolution1', 'ikSolution2', 'ikSolution3']
         for each in config_attrs:
-            find_val = pm.getAttr(target_ctrl_path + "." + each)
+            find_val = cmds.getAttr(target_ctrl_path + "." + each)
             save_to_shelf = (start_line_code
                              + "'"
                              + (target_ctrl_str + "." + each)
@@ -2653,14 +2681,14 @@ def save_pose_to_shelf(*args):
 
         # If a tool controller exists, use that to keyframe transformation
         # attributes
-        if pm.objExists(tool_ctrl_path):
+        if cmds.objExists(tool_ctrl_path):
             target_ctrl = tool_ctrl_path
             target_ctrl_str = __TOOL_CTRL_PATH
         else:
             target_ctrl = target_ctrl_path
             target_ctrl_str = __TARGET_CTRL_PATH
 
-        keyable = pm.listAttr(target_ctrl,
+        keyable = cmds.listAttr(target_ctrl,
                               k=True,
                               r=True,
                               w=True,
@@ -2673,7 +2701,7 @@ def save_pose_to_shelf(*args):
             keyable.remove('robotSubtype')
 
         for each in keyable:
-            find_val = pm.getAttr(target_ctrl + "." + each)
+            find_val = cmds.getAttr(target_ctrl + "." + each)
             save_to_shelf = (start_line_code + "'" + (
                 target_ctrl_str + "." + each) + "', " + " {}".format(find_val) + end_line_code)
             store_cmds += save_to_shelf
@@ -2689,7 +2717,7 @@ def save_pose_to_shelf(*args):
 
         config_attrs = ['ik', 'v']
         for each in config_attrs:
-            find_val = pm.getAttr(target_ctrl_path + "." + each)
+            find_val = cmds.getAttr(target_ctrl_path + "." + each)
             save_to_shelf = (start_line_code + "'" + (
                 target_ctrl_str + "." + each) + "', " + " %f" + end_line_code) % find_val
             store_cmds += save_to_shelf
@@ -2705,24 +2733,24 @@ def save_pose_to_shelf(*args):
         for i, each in enumerate(joint_vals):
             attrs = format_path(each + "." + joint_val_attr[i], robot)
             attr_str = each + "." + joint_val_attr[i]
-            find_val = pm.getAttr(attrs)
+            find_val = cmds.getAttr(attrs)
             save_to_shelf = (start_line_code + "'" + attr_str + "', " + " %f" + end_line_code) % find_val
             store_cmds += save_to_shelf
 
     store_cmds += '] \n\n' \
                   'mimic_utils.assign_saved_pose(attrs, tab) \n'
 
-    prompt_dialog = pm.promptDialog(t="Robot Pose", m="Pose Name:", b="Save")
+    prompt_dialog = cmds.promptDialog(t="Robot Pose", m="Pose Name:", b="Save")
 
     # Condition statement that checks if our button gets clicked.
     # If this condition is met, then run the following commands
     if prompt_dialog == "Save":
         # This variable stores the Name we add to our Prompt Dialog
-        prompt_dialog_name = pm.promptDialog(query=True, text=True)
+        prompt_dialog_name = cmds.promptDialog(query=True, text=True)
         # This line creates our Shelf Button that uses MEL as the source type
         # for the commands stored in "store_cmds", and adds the Shelf Button
         # under our custom tab named "Body Poses"
-        pm.shelfButton(l=prompt_dialog_name,
+        cmds.shelfButton(l=prompt_dialog_name,
                        annotation=prompt_dialog_name,
                        imageOverlayLabel=prompt_dialog_name,
                        i='commandButton.png',
@@ -2740,12 +2768,12 @@ def assign_saved_pose(attributes, tab):
     :return:
     """
     if not check_robot_selection(1):
-        pm.warning('Must have single robot selected')
+        cmds.warning('Must have single robot selected')
         return
-    pm.tabLayout('switcher_tab_layout', edit=True, sti=tab)
+    cmds.tabLayout('switcher_tab_layout', edit=True, sti=tab)
     robot = get_robot_roots()[0]
     for attr in attributes:
-        pm.setAttr(format_path(attr[0], robot), attr[1])
+        cmds.setAttr(format_path(attr[0], robot), attr[1])
     return
 
 
@@ -2754,7 +2782,7 @@ def get_maya_framerate():
     Get the animation framerate setting used in the Maya scene.
     :return:
     """
-    current_unit = pm.currentUnit(time=True, query=True)
+    current_unit = cmds.currentUnit(time=True, query=True)
     if current_unit == 'game':
         framerate = 15.
     elif current_unit == 'film':
@@ -2772,7 +2800,7 @@ def get_maya_framerate():
     elif 'fps' in current_unit:
     	framerate = float(current_unit.split('fps')[0])
     else:
-        pm.currentUnit(time='film')
+        cmds.currentUnit(time='film')
         framerate = 24.
 
     return framerate
@@ -2792,7 +2820,7 @@ def add_limits_to_robot(robot, limit_type):
 
     # Define Parent Attribute
     parent_attr_path = 'axis{}Limits'.format(limit_type)
-    pm.addAttr(target_ctrl_path,
+    cmds.addAttr(target_ctrl_path,
                longName=parent_attr_path,
                nc=6,
                at='compound')
@@ -2801,7 +2829,7 @@ def add_limits_to_robot(robot, limit_type):
     num_axes = 6
     for i in range(num_axes):
         axis_number = i + 1
-        pm.addAttr(target_ctrl_path,
+        cmds.addAttr(target_ctrl_path,
                    longName='axis{}{}Limit'.format(axis_number, limit_type),
                    at='float',
                    nn='Axis {}'.format(axis_number),
@@ -2812,3 +2840,15 @@ def add_limits_to_robot(robot, limit_type):
 ### ---------------------------------------- ###
 class MimicError(Exception):
     pass
+
+
+def _get_namespace(node_name):
+    """
+    Gets the namespace from a node name string.
+    :param node_name: str, The name of the node.
+    :return: str, The namespace, or an empty string if there is no namespace.
+    """
+    if ':' in node_name:
+        # To handle nested namespaces, we want everything before the last colon
+        return node_name.rpartition(':')[0] + ':'
+    return ''

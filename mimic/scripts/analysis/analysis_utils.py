@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 
 try:
-    import pymel.core as pm
+    import maya.cmds as cmds
     import maya.mel as mel
 
     MAYA_IS_RUNNING = True
 except ImportError:  # Maya is not running
-    pm = None
+    cmds = None
     mel = None
     MAYA_IS_RUNNING = False
 import math
@@ -273,7 +273,7 @@ def _generate_derivative_dicts(command_dicts, order):
         try:
             derivative_dicts[i][postproc.AXES] = postproc.Axes(*[0] * num_axes)
         except IndexError:
-            pm.warning('Insufficient number of sample points to generate derivatives. ' \
+            cmds.warning('Insufficient number of sample points to generate derivatives. ' \
                        'Increase sample rate or add additional IK/FK keys for proper ' \
                        'analysis if using time-based post-processor')
 

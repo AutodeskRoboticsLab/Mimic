@@ -6,11 +6,11 @@ IO Utility Functions.
 """
 
 try:
-    import pymel.core as pm
+    import maya.cmds as cmds
 
     MAYA_IS_RUNNING = True
 except ImportError:  # Maya is not running
-    pm = None
+    cmds = None
     MAYA_IS_RUNNING = False
 import re
 
@@ -39,7 +39,9 @@ def get_io_names(robot_name, only_active=False):
     target_ctrl_path = mimic_utils.get_target_ctrl_path(robot_name)
 
     # Find all attributes on the target_CTRL categorized as 'io'
-    robot_io_names = pm.listAttr(target_ctrl_path, category='io')
+    robot_io_names = cmds.listAttr(target_ctrl_path, category='io')
+    if not robot_io_names:
+        robot_io_names = []
 
     # Remove parent attribute designation 'io_' from each IO name
     for i, io_name in enumerate(robot_io_names):
@@ -47,7 +49,7 @@ def get_io_names(robot_name, only_active=False):
 
     # If only_active is True, remove IOs marked as "Ignore"
     if only_active:
-        active_ios = [x for x in robot_io_names if not pm.getAttr(target_ctrl_path + '.' + x + '_ignore')]
+        active_ios = [x for x in robot_io_names if not cmds.getAttr(target_ctrl_path + '.' + x + '_ignore')]
 
         robot_io_names = active_ios
 
@@ -112,7 +114,7 @@ def _get_io_type(io_path):
     """
 
     attribute_path = io_path + '_ioType'
-    io_type = pm.getAttr(attribute_path)
+    io_type = cmds.getAttr(attribute_path)
 
     return io_type
 
@@ -138,7 +140,7 @@ def _get_postproc_id(io_path):
     """
     attribute_path = io_path + '_postprocID'
 
-    return pm.getAttr(attribute_path)
+    return cmds.getAttr(attribute_path)
 
 
 def _get_io_number(io_path):
@@ -193,7 +195,7 @@ def _check_io_number(robot_name, io_number):
 
     target_ctrl_path = mimic_utils.get_target_ctrl_path(robot_name)
     for io_name in robots_ios:
-        current_io_number = pm.getAttr('{}.{}_ioNumber'.format(target_ctrl_path, io_name))
+        current_io_number = cmds.getAttr('{}.{}_ioNumber'.format(target_ctrl_path, io_name))
         if current_io_number == io_number:
             raise MimicError('IO number {} is taken; ' \
                              'io number must be unique'.format(io_number))
@@ -248,27 +250,27 @@ def _get_io_params():
 
     io_param_dict = {}
 
-    io_param_dict['IO Name'] = pm.textField(
+    io_param_dict['IO Name'] = cmds.textField(
         't_ioNameText',
         query=True,
         text=True)
-    io_param_dict['Postproc ID'] = pm.textField(
+    io_param_dict['Postproc ID'] = cmds.textField(
         't_ioPostprocIDText',
         query=True,
         text=True)
-    io_param_dict['IO Number'] = int(pm.optionMenu(
+    io_param_dict['IO Number'] = int(cmds.optionMenu(
         'ioNumberMenu',
         query=True,
         value=True))
-    io_param_dict['Type'] = pm.optionMenu(
+    io_param_dict['Type'] = cmds.optionMenu(
         'ioTypeMenu',
         query=True,
         value=True)
-    io_param_dict['Resolution'] = pm.optionMenu(
+    io_param_dict['Resolution'] = cmds.optionMenu(
         'ioResolutionMenu',
         query=True,
         value=True)
-    io_param_dict['Ignore'] = pm.checkBox(
+    io_param_dict['Ignore'] = cmds.checkBox(
         'cb_ignoreIO',
         query=True,
         value=True)
@@ -277,10 +279,10 @@ def _get_io_params():
     # If the dropdown isn't enabled, default to None
     io_param_dict['Resolution'] = None
 
-    res_enabled = pm.optionMenu( 'ioResolutionMenu', query=True, enable=True)
+    res_enabled = cmds.optionMenu( 'ioResolutionMenu', query=True, enable=True)
 
     if res_enabled:
-        io_param_dict['Resolution'] = pm.optionMenu(
+        io_param_dict['Resolution'] = cmds.optionMenu(
             'ioResolutionMenu',
             query=True,
             value=True)
@@ -301,7 +303,7 @@ def _get_selection_input():
     Raises exception of selection criteria is not met
     :return robot: str, root node of robot in Maya viewport selection
     """
-    sel = pm.ls(selection=True, type='transform')
+    sel = cmds.ls(selection=True, type='transform')
     robots = mimic_utils.get_robot_roots()
 
     # Exception handling
@@ -317,7 +319,7 @@ def _get_selection_input():
     return robot
 
 
-def add_io(io_params=None):
+def add_io(io_params=None, *args):
     """
     Adds an IO to a robot based on user inputs in Mimic UI.
     :param args: required by Maya to call a function from UI button
@@ -358,26 +360,26 @@ def add_io(io_params=None):
     # Add attributes to robots
     # Parent Attrubute
     parent_attribute = 'io_{}'.format(io_name)
-    pm.addAttr(target_CTRL,
+    cmds.addAttr(target_CTRL,
                longName=parent_attribute,
                niceName='IO: {}'.format(io_name),
                numberOfChildren=5,
                category='io',
                attributeType='compound')
     # Define 4 children of the IO parent attribute
-    pm.addAttr(target_CTRL,
+    cmds.addAttr(target_CTRL,
                longName=io_name + '_value',
                niceName=io_name,
                keyable=True,
                attributeType=attr_type,
                parent=parent_attribute)
-    pm.addAttr(target_CTRL,
+    cmds.addAttr(target_CTRL,
                longName=io_name + '_postprocID',
                niceName='Postproc ID',
                keyable=False,
                dataType='string',
                parent=parent_attribute)
-    pm.addAttr(target_CTRL,
+    cmds.addAttr(target_CTRL,
                longName=io_name + '_ioNumber',
                niceName='IO Number',
                keyable=False,
@@ -386,13 +388,13 @@ def add_io(io_params=None):
                maxValue=12,
                defaultValue=1,
                parent=parent_attribute)
-    pm.addAttr(target_CTRL,
+    cmds.addAttr(target_CTRL,
                longName=io_name + '_ioType',
                niceName='IO Type',
                keyable=False,
                dataType='string',
                parent=parent_attribute)
-    pm.addAttr(target_CTRL,
+    cmds.addAttr(target_CTRL,
                longName=io_name + '_ignore',
                niceName='Ignore',
                keyable=False,
@@ -402,29 +404,29 @@ def add_io(io_params=None):
     # Set all IO attributes accordingly
     io_parent_attribute = target_CTRL + '.' + io_name
     
-    pm.setAttr(io_parent_attribute + '_ioNumber', io_number)
+    cmds.setAttr(io_parent_attribute + '_ioNumber', io_number)
     
     # Try locking the io_number attribute
     try:
         # If the robot is referenced, Maya will throw an exception when it
         # tries to lock an attribute
-        pm.setAttr(io_parent_attribute + '_ioNumber', lock=True)
+        cmds.setAttr(io_parent_attribute + '_ioNumber', lock=True)
     except:
         pass
 
-    pm.setAttr(io_parent_attribute + '_postprocID', postproc_id)
-    pm.setAttr(io_parent_attribute + '_ioType', io_type, lock=True)
-    pm.setAttr(io_parent_attribute + '_ignore', ignore_in_postproc)
+    cmds.setAttr(io_parent_attribute + '_postprocID', postproc_id, type='string')
+    cmds.setAttr(io_parent_attribute + '_ioType', io_type, type='string', lock=True)
+    cmds.setAttr(io_parent_attribute + '_ignore', ignore_in_postproc)
 
     # Select the robot's target/tool controller
     tool_CTRL = mimic_utils.get_tool_ctrl_path(robot)
-    if pm.objExists(tool_CTRL):
-        pm.select(tool_CTRL)
+    if cmds.objExists(tool_CTRL):
+        cmds.select(tool_CTRL)
     else:
-        pm.select(target_CTRL)
+        cmds.select(target_CTRL)
 
     list_ios()
-    pm.headsUpMessage('IO \'{}\' added successfully to {}'
+    cmds.headsUpMessage('IO \'{}\' added successfully to {}'
                       .format(io_name, robot))
 
 
@@ -434,13 +436,13 @@ def update_io(*args):
     :param args: required by Maya to call a function from UI button
     """
     # Get the selected item from the Mimic UI
-    selection = pm.textScrollList('tsl_ios',
+    selection = cmds.textScrollList('tsl_ios',
                                   selectItem=True,
                                   query=True)[0]
 
     # Split the selection into the robot's name and the IO name
     robot_str, io_name = selection.split(': ')
-    pm.select(robot_str)
+    cmds.select(robot_str)
     robot = mimic_utils.get_robot_roots()[0]
 
     io_params = _get_io_params()
@@ -456,7 +458,7 @@ def update_io(*args):
     io_parent_attribute = target_CTRL + '.' + io_name
 
     # Check that the IO number is unique
-    if io_number == pm.getAttr(io_parent_attribute + '_ioNumber'):
+    if io_number == cmds.getAttr(io_parent_attribute + '_ioNumber'):
         pass
     else:
         _check_io_number(robot, io_number)
@@ -465,24 +467,24 @@ def update_io(*args):
     # If the robot is referenced, Maya will throw an exceptrion when it
     # tries to lock an attribute
     try:
-        pm.setAttr(io_parent_attribute + '_ioNumber', lock=False)
+        cmds.setAttr(io_parent_attribute + '_ioNumber', lock=False)
     except:
         pass
 
-    pm.setAttr(io_parent_attribute + '_ioNumber', io_number)
+    cmds.setAttr(io_parent_attribute + '_ioNumber', io_number)
     
     try:
-        pm.setAttr(io_parent_attribute + '_ioNumber', lock=True)
+        cmds.setAttr(io_parent_attribute + '_ioNumber', lock=True)
     except:
         pass
 
-    pm.setAttr(io_parent_attribute + '_postprocID', postproc_id)
-    pm.setAttr(io_parent_attribute + '_ignore', ignore_in_postproc)
+    cmds.setAttr(io_parent_attribute + '_postprocID', postproc_id, type='string')
+    cmds.setAttr(io_parent_attribute + '_ignore', ignore_in_postproc)
 
-    pm.headsUpMessage('{}: IO \'{}\' successfully updated'
+    cmds.headsUpMessage('{}: IO \'{}\' successfully updated'
                       .format(robot, io_name))
 
-    pm.select(target_CTRL)
+    cmds.select(target_CTRL)
 
 
 def clear_io_list(*args):
@@ -491,7 +493,7 @@ def clear_io_list(*args):
     :param args: required by Maya to call a function from UI button
     :return:
     """
-    pm.textScrollList('tsl_ios', edit=True, removeAll=True)
+    cmds.textScrollList('tsl_ios', edit=True, removeAll=True)
     reset_io_UI()
 
 
@@ -501,7 +503,7 @@ def deselect_io(*args):
     :param args: required by Maya to call a function from UI button
     :return:
     """
-    pm.textScrollList('tsl_ios', edit=True, deselectAll=True)
+    cmds.textScrollList('tsl_ios', edit=True, deselectAll=True)
     reset_io_UI()
 
 
@@ -516,13 +518,13 @@ def remove_io(*args):
     """
 
     # Get the selected item from the Mimic UI
-    selection = pm.textScrollList('tsl_ios',
+    selection = cmds.textScrollList('tsl_ios',
                                   selectItem=True,
                                   query=True)[0]
 
     # Split the selection into the robot's name and the IO name
     robot_str, io_name = selection.split(': ')
-    pm.select(robot_str)
+    cmds.select(robot_str)
     robot = mimic_utils.get_robot_roots()[0]
 
     target_CTRL = mimic_utils.get_target_ctrl_path(robot)
@@ -530,19 +532,19 @@ def remove_io(*args):
     parent_attribute = '{}.io_{}'.format(target_CTRL, io_name)
 
     # Delete IO attribute on the robot controller
-    pm.deleteAttr(parent_attribute)
+    cmds.deleteAttr(parent_attribute)
 
     # Clear the io from the Mimic UI selection and reset the UI
-    pm.textScrollList('tsl_ios',
+    cmds.textScrollList('tsl_ios',
                       edit=True,
                       removeItem=selection)
-    if not pm.textScrollList('tsl_ios',
+    if not cmds.textScrollList('tsl_ios',
                              query=True,
                              numberOfItems=True):
         reset_io_UI()
 
-    pm.select(target_CTRL)
-    pm.headsUpMessage('IO \'{}\' removed successfully from {}'
+    cmds.select(target_CTRL)
+    cmds.headsUpMessage('IO \'{}\' removed successfully from {}'
                       .format(io_name, robot))
 
 
@@ -587,7 +589,7 @@ def list_ios(*args):
         # Update Mimic UI with list of IOs
         for io in robots_ios:
             append_string = robot + ': ' + io
-            pm.textScrollList('tsl_ios',
+            cmds.textScrollList('tsl_ios',
                               edit=True,
                               append=append_string)
 
@@ -596,7 +598,7 @@ def list_ios(*args):
         for each in selected_robots_without_ios:
             robot_list_str += each + ', '
 
-        pm.headsUpMessage('{} has no IOs'
+        cmds.headsUpMessage('{} has no IOs'
                           .format(robot_list_str))
 
 
@@ -608,35 +610,35 @@ def update_io_UI(io_info):
     :return:
     """
     # Change frame name from "Add" to "Update"
-    pm.frameLayout('add_io_frame',
+    cmds.frameLayout('add_io_frame',
                    edit=True,
                    label="Update IO")
 
     # Update io parameters
-    pm.textField('t_ioNameText',
+    cmds.textField('t_ioNameText',
                  edit=True,
                  text=io_info['IO Name'],
                  editable=False)
-    pm.textField('t_ioPostprocIDText',
+    cmds.textField('t_ioPostprocIDText',
                  edit=True,
                  text=io_info['Postproc ID'])
-    pm.optionMenu('ioNumberMenu',
+    cmds.optionMenu('ioNumberMenu',
                   edit=True,
                   value=str(io_info['IO Number']))
-    pm.optionMenu('ioTypeMenu',
+    cmds.optionMenu('ioTypeMenu',
                   edit=True,
                   value=io_info['Type'],
                   enable=False)
-    pm.optionMenu('ioResolutionMenu',
+    cmds.optionMenu('ioResolutionMenu',
                   edit=True,
                   enable=False)
-    pm.checkBox('cb_ignoreIO',
+    cmds.checkBox('cb_ignoreIO',
                 edit=True,
                 value=io_info['Ignore'])
 
     # Change "Add IO" button to "Update IO"
     # Change background color of button
-    pm.button('b_add_io',
+    cmds.button('b_add_io',
               edit=True,
               label='Update IO',
               backgroundColor=[.7, .7, .7],
@@ -648,33 +650,33 @@ def reset_io_UI():
     Restores IO UI inputs in Mimic UI to defaults
     :return:
     """
-    pm.frameLayout('add_io_frame',
+    cmds.frameLayout('add_io_frame',
                    edit=True,
                    label="Add IO")
 
     # Update io parameters
-    pm.textField('t_ioNameText',
+    cmds.textField('t_ioNameText',
                  edit=True,
                  text='',
                  editable=True)
-    pm.textField('t_ioPostprocIDText',
+    cmds.textField('t_ioPostprocIDText',
                  edit=True,
                  text='',
                  editable=True)
-    pm.optionMenu('ioNumberMenu',
+    cmds.optionMenu('ioNumberMenu',
                   edit=True,
                   value='1')
-    pm.optionMenu('ioTypeMenu',
+    cmds.optionMenu('ioTypeMenu',
                   edit=True,
                   value='digital',
                   enable=True)
-    pm.checkBox('cb_ignoreIO',
+    cmds.checkBox('cb_ignoreIO',
                 edit=True,
                 value=0)
 
     # Change "Add IO" button to "Update IO"
     # Change background color of button
-    pm.button('b_add_io',
+    cmds.button('b_add_io',
               edit=True,
               label='Add IO',
               backgroundColor=[.361, .361, .361],
@@ -691,7 +693,7 @@ def io_selected(*args):
     :return:
     """
     # Get the selected item from the Mimic UI
-    selection = pm.textScrollList('tsl_ios',
+    selection = cmds.textScrollList('tsl_ios',
                                   selectItem=True,
                                   query=True)[0]
 
@@ -699,7 +701,7 @@ def io_selected(*args):
     robot_str, io_name = selection.split(': ')
 
     # Get selected io' settings
-    pm.select(robot_str)
+    cmds.select(robot_str)
     robot = mimic_utils.get_robot_roots()[0]
     io_info = get_io_info(robot, io_name)
 
@@ -709,7 +711,7 @@ def io_selected(*args):
 
     # Select the robot that the IO is assigned to
     target_CTRL = mimic_utils.get_target_ctrl_path(robot)
-    pm.select(target_CTRL)
+    cmds.select(target_CTRL)
 
 # ------------------
 
@@ -718,28 +720,28 @@ def add_mFIZ_node(*args):
     Connects mFIZ node to robot as Digital Outputs
     """
 
-    sel = pm.ls(selection=True, type='transform')
+    sel = cmds.ls(selection=True, type='transform')
     robots = mimic_utils.get_robot_roots()
 
     # Exception handling
     if not sel:
-        pm.warning('Nothing selected; ' \
+        cmds.warning('Nothing selected; ' \
                    'select a valid robot control and mFIZ controller')
         return
     if not robots:
-        pm.warning('No robot selected; ' \
+        cmds.warning('No robot selected; ' \
                    'select a valid robot')
         return
     if len(robots) > 1:
-        pm.warning('Too many robots selected; ' \
+        cmds.warning('Too many robots selected; ' \
                    'select a single robot')
         return
     if len(sel) > 2:
-        pm.warning('Too many selections; ' \
+        cmds.warning('Too many selections; ' \
                    'select a single robot control, and single mFIZ controller')
         return
     if len(sel) == 1:
-        pm.warning('Not enough selections; ' \
+        cmds.warning('Not enough selections; ' \
                    'select a single robot control, and single mFIZ controller')
         return
 
@@ -754,7 +756,7 @@ def add_mFIZ_node(*args):
 
     # Check if mFIZ_ctrl selection is actually an mFIZ controller
     if not mFIZ_utils.is_mFIZ_ctrl(mFIZ_ctrl):
-        pm.warning('No mFIZ controller selected; ' \
+        cmds.warning('No mFIZ controller selected; ' \
                    'select a valid mFIZ controller')
         return
 
@@ -783,7 +785,7 @@ def _add_mFIZ_attrs_as_outputs(robot):
     target_ctrl_path = mimic_utils.get_target_ctrl_path(robot)
     
     for io_name in robots_ios:
-        io_numbers.append(pm.getAttr('{}.{}_ioNumber'.format(target_ctrl_path, io_name)))
+        io_numbers.append(cmds.getAttr('{}.{}_ioNumber'.format(target_ctrl_path, io_name)))
 
     if io_numbers:
         io_number = max(io_numbers) + 1
@@ -811,13 +813,13 @@ def _add_mFIZ_attrs_as_outputs(robot):
         io_number += 1
         postproc_id += 16
     
-    pm.headsUpMessage('FIZ outputs added successfully to {}'.format(robot))
+    cmds.headsUpMessage('FIZ outputs added successfully to {}'.format(robot))
 
 
 def _add_mFIZ_remap_node():
     """
     """
-    node = pm.createNode('mFIZ_remap')
+    node = cmds.createNode('mFIZ_remap')
     
     return node
 
@@ -836,8 +838,8 @@ def _connect_remap_node(robot, mFIZ_ctrl, remap_node):
         remap_out_attr = '{}.{}Mapped'.format(remap_node, attr)
         robot_attr = '{}.{}_value'.format(target_ctrl_path, attr)
         
-        pm.connectAttr(mFIZ_attr, remap_in_attr)
-        pm.connectAttr(remap_out_attr, robot_attr)
+        cmds.connectAttr(mFIZ_attr, remap_in_attr)
+        cmds.connectAttr(remap_out_attr, robot_attr)
         
 # ------------------
 

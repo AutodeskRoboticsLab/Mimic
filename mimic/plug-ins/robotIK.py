@@ -8,7 +8,6 @@ It performs the Inverse Kinematic solve, along with handling IK-FK switching
 import sys
 import maya.api.OpenMaya as OpenMaya
 import math
-import maya.cmds as cmds
 
 # Import inverse_kinematics module for mimic/scripts/robotmath
 from robotmath import inverse_kinematics
