@@ -6,11 +6,11 @@ External Axis Utility Functions.
 """
 
 try:
-    import pymel.core as pm
+    import maya.cmds as cmds
 
     MAYA_IS_RUNNING = True
 except ImportError:  # Maya is not running
-    pm = None
+    cmds = None
     MAYA_IS_RUNNING = False
 import re
 
@@ -37,8 +37,11 @@ def get_external_axis_names(robot_name, only_active=False):
     target_ctrl_path = mimic_utils.get_target_ctrl_path(robot_name)
 
     # Find all attributes on the target_CTRL categorized as 'externalAxis'
-    robot_external_axis_names = pm.listAttr(target_ctrl_path,
+    robot_external_axis_names = cmds.listAttr(target_ctrl_path,
                                             category='externalAxis')
+
+    if not robot_external_axis_names:
+        return []
 
     # Remove parent attribute designation 'externalAxis_' from each axis name
     for i, axis_name in enumerate(robot_external_axis_names):
@@ -47,7 +50,7 @@ def get_external_axis_names(robot_name, only_active=False):
     # If only_active is True, remove axes marked as "Ignore"
     if only_active:
         active_external_axes = [x for x in robot_external_axis_names if
-                                not pm.getAttr(target_ctrl_path + '.' + x + '_ignore')]
+                                not cmds.getAttr(target_ctrl_path + '.' + x + '_ignore')]
 
         robot_external_axis_names = active_external_axes
 
@@ -125,7 +128,7 @@ def _get_external_axis_position(external_axis_path, frame=None):
 
     # If the axis' driving attribute is a translation, we need to convert from
     # Maya's units (cm) to millimeters
-    driving_attribute = pm.listConnections(attribute_path,
+    driving_attribute = cmds.listConnections(attribute_path,
                                            plugs=True,
                                            s=True)[0]
     driving_attr_ctrl, driving_attr_name = driving_attribute.split('.')
@@ -160,7 +163,7 @@ def _get_external_axis_connections(axis_attribute_name):
     """
 
     # Check the incomming connections on the external axis' position attribute
-    driving_attribute = pm.listConnections(axis_attribute_name
+    driving_attribute = cmds.listConnections(axis_attribute_name
                                            + '_position',
                                            plugs=True,
                                            s=True)[0]
@@ -175,7 +178,7 @@ def _get_external_axis_connections(axis_attribute_name):
     # position attribute, so we iterate once more to get the actual driving
     # controller and attribute
     if 'unitConversion' in driving_attr_ctrl:
-        driving_attribute = pm.listConnections(driving_attr_ctrl
+        driving_attribute = cmds.listConnections(driving_attr_ctrl
                                                + '.input',
                                                plugs=True,
                                                s=True)[0]
@@ -262,7 +265,7 @@ def _check_external_axis_number(robot_name, axis_number):
 
     target_ctrl_path = mimic_utils.get_target_ctrl_path(robot_name)
     for axis_name in robots_external_axes:
-        current_axis_number = pm.getAttr('{}.{}_axisNumber'.format(target_ctrl_path, axis_name))
+        current_axis_number = cmds.getAttr('{}.{}_axisNumber'.format(target_ctrl_path, axis_name))
         if current_axis_number == axis_number:
             raise MimicError('External axis number {} is taken; ' \
                              'axis number must be unique'.format(axis_number))
@@ -310,7 +313,7 @@ def _check_if_robot_is_attached_to_external_axis(robot_name):
     :return: bool, True if robot is attached
     to an external axis, False if otherwise
     """
-    if pm.objExists(mimic_utils.get_local_ctrl_path(robot_name) +
+    if cmds.objExists(mimic_utils.get_local_ctrl_path(robot_name) +
                     '|localCTRL_externalAxisCTRL_parentConstraint'):
         return True
     else:
@@ -351,35 +354,35 @@ def _get_external_axis_params():
 
     external_axis_param_dict = {}
 
-    external_axis_param_dict['Axis Name'] = pm.textField(
+    external_axis_param_dict['Axis Name'] = cmds.textField(
         't_externalAxisDescriptionText',
         query=True,
         text=True)
-    external_axis_param_dict['Axis Number'] = int(pm.optionMenu(
+    external_axis_param_dict['Axis Number'] = int(cmds.optionMenu(
         'axisNumberMenu',
         query=True,
         value=True))
-    external_axis_param_dict['Driving Attribute'] = pm.optionMenu(
+    external_axis_param_dict['Driving Attribute'] = cmds.optionMenu(
         'drivingAttributeMenu',
         query=True,
         value=True)
-    external_axis_param_dict['Position Limit Min'] = pm.textField(
+    external_axis_param_dict['Position Limit Min'] = cmds.textField(
         't_externalAxisLimitMin',
         query=True,
         text=True)
-    external_axis_param_dict['Position Limit Max'] = pm.textField(
+    external_axis_param_dict['Position Limit Max'] = cmds.textField(
         't_externalAxisLimitMax',
         query=True,
         text=True)
-    external_axis_param_dict['Velocity Limit'] = pm.textField(
+    external_axis_param_dict['Velocity Limit'] = cmds.textField(
         't_externalAxisVelocityLimit',
         query=True,
         text=True)
-    external_axis_param_dict['Attach'] = pm.checkBox(
+    external_axis_param_dict['Attach'] = cmds.checkBox(
         'cb_attachRobotToController',
         query=True,
         value=True)
-    external_axis_param_dict['Ignore'] = pm.checkBox(
+    external_axis_param_dict['Ignore'] = cmds.checkBox(
         'cb_ignoreExternalAxis',
         query=True,
         value=True)
@@ -401,7 +404,7 @@ def _get_selection_input():
     :return external_axis_CTRL: str, name of external axis controller
         selected in Maya's viewport
     """
-    sel = pm.ls(selection=True, type='transform')
+    sel = cmds.ls(selection=True, type='transform')
     robots = mimic_utils.get_robot_roots()
 
     # Exception handling
@@ -446,13 +449,13 @@ def _attach_robot_to_external_axis(robot, external_axis_CTRL):
     # Create parent constraint between robot base's local control and
     # external axis control
     local_ctrl_path = mimic_utils.get_local_ctrl_path(robot)
-    pm.parentConstraint(external_axis_CTRL,
+    cmds.parentConstraint(external_axis_CTRL,
                         local_ctrl_path,
                         maintainOffset=True,
                         name='localCTRL_externalAxisCTRL_parentConstraint')
 
     # Hide robot's local_CTRL
-    pm.setAttr(local_ctrl_path + '.v', 0)
+    cmds.setAttr(local_ctrl_path + '.v', 0)
 
 
 def _enable_external_axis_limits(external_axis_CTRL, driving_attribute_trunc, driving_axis, enable=True):
@@ -465,12 +468,12 @@ def _enable_external_axis_limits(external_axis_CTRL, driving_attribute_trunc, dr
     :param enable: bool, default True
     """
 
-    pm.setAttr('{}.min{}{}LimitEnable'.format(external_axis_CTRL,
+    cmds.setAttr('{}.min{}{}LimitEnable'.format(external_axis_CTRL,
                                               driving_attribute_trunc,
                                               driving_axis),
                enable)
 
-    pm.setAttr('{}.max{}{}LimitEnable'.format(external_axis_CTRL,
+    cmds.setAttr('{}.max{}{}LimitEnable'.format(external_axis_CTRL,
                                               driving_attribute_trunc,
                                               driving_axis),
                enable)
@@ -514,12 +517,12 @@ def _set_external_axis_CTRL_limits(robot_name, external_axis_CTRL, external_axis
                                  driving_axis,
                                  enable=True)
 
-    pm.connectAttr(external_axis_min_limit_path,
+    cmds.connectAttr(external_axis_min_limit_path,
                    '{}.min{}{}Limit'.format(external_axis_CTRL,
                                             driving_attribute_trunc,
                                             driving_axis))
 
-    pm.connectAttr(external_axis_max_limit_path,
+    cmds.connectAttr(external_axis_max_limit_path,
                    '{}.max{}{}Limit'.format(external_axis_CTRL,
                                             driving_attribute_trunc,
                                             driving_axis))
@@ -554,12 +557,12 @@ def _clear_external_axis_CTRL_limits(robot_name, external_axis_CTRL, driving_att
                                  driving_axis,
                                  enable=False)
 
-    pm.disconnectAttr(external_axis_min_limit_path,
+    cmds.disconnectAttr(external_axis_min_limit_path,
                       '{}.min{}{}Limit'.format(external_axis_CTRL,
                                                driving_attribute_trunc,
                                                driving_axis))
 
-    pm.disconnectAttr(external_axis_max_limit_path,
+    cmds.disconnectAttr(external_axis_max_limit_path,
                       '{}.max{}{}Limit'.format(external_axis_CTRL,
                                                driving_attribute_trunc,
                                                driving_axis))
@@ -604,19 +607,19 @@ def add_external_axis(*args):
     # Add attributes to robots
     # Parent Attrubute
     parent_attribute = 'externalAxis_{}'.format(axis_name)
-    pm.addAttr(target_CTRL,
+    cmds.addAttr(target_CTRL,
                longName=parent_attribute,
                niceName='External Axis: {}'.format(axis_name),
                numberOfChildren=6,
                category='externalAxis',
                attributeType='compound')
     # Define 6 children of the External Axis parent attribute
-    pm.addAttr(target_CTRL,
+    cmds.addAttr(target_CTRL,
                longName=axis_name + '_position',
                niceName='Position',
                keyable=False, attributeType='float',
                parent=parent_attribute)
-    pm.addAttr(target_CTRL,
+    cmds.addAttr(target_CTRL,
                longName=axis_name + '_axisNumber',
                niceName='Axis Number',
                keyable=False,
@@ -625,25 +628,25 @@ def add_external_axis(*args):
                maxValue=16,
                defaultValue=1,
                parent=parent_attribute)
-    pm.addAttr(target_CTRL,
+    cmds.addAttr(target_CTRL,
                longName=axis_name + '_axisMin',
                niceName='Min',
                keyable=False,
                attributeType='float',
                parent=parent_attribute)
-    pm.addAttr(target_CTRL,
+    cmds.addAttr(target_CTRL,
                longName=axis_name + '_axisMax',
                niceName='Max',
                keyable=False,
                attributeType='float',
                parent=parent_attribute)
-    pm.addAttr(target_CTRL,
+    cmds.addAttr(target_CTRL,
                longName=axis_name + '_maxVelocity',
                niceName='Max Velocity',
                keyable=False,
                attributeType='float',
                parent=parent_attribute)
-    pm.addAttr(target_CTRL,
+    cmds.addAttr(target_CTRL,
                longName=axis_name + '_ignore',
                niceName='Ignore',
                keyable=False,
@@ -659,25 +662,25 @@ def add_external_axis(*args):
     # Set all External Axis attributes accordingly
     axis_parent_attribute = target_CTRL + '.' + axis_name
     
-    pm.setAttr(axis_parent_attribute + '_axisNumber', axis_number)
+    cmds.setAttr(axis_parent_attribute + '_axisNumber', axis_number)
     
     # Try locking the axis_number attribute
     try:
-        # If the robot is referenced, Maya will throw an exceptrion when it
+        # If the robot is referenced, Maya will throw an exception when it
         # tries to lock an attribute
-        pm.setAttr(axis_parent_attribute + '_axisNumber', lock=True)
+        cmds.setAttr(axis_parent_attribute + '_axisNumber', lock=True)
     except:
         pass
 
-    pm.setAttr(axis_parent_attribute + '_axisMin', position_limit_min)
-    pm.setAttr(axis_parent_attribute + '_axisMax', position_limit_max)
-    pm.setAttr(axis_parent_attribute + '_maxVelocity', velocity_limit)
-    pm.setAttr(axis_parent_attribute + '_ignore', ignore_in_postproc)
+    cmds.setAttr(axis_parent_attribute + '_axisMin', position_limit_min)
+    cmds.setAttr(axis_parent_attribute + '_axisMax', position_limit_max)
+    cmds.setAttr(axis_parent_attribute + '_maxVelocity', velocity_limit)
+    cmds.setAttr(axis_parent_attribute + '_ignore', ignore_in_postproc)
 
     # Connect position attribute to driving attribute
     driving_attribute_name = external_axis_CTRL + '.' + driving_attribute
     destination_attribute_name = axis_parent_attribute + '_position'
-    pm.connectAttr(driving_attribute_name,
+    cmds.connectAttr(driving_attribute_name,
                    destination_attribute_name)
 
     # Set the External Axis control limits
@@ -687,13 +690,13 @@ def add_external_axis(*args):
 
     # Select the robot's target/tool controller
     tool_CTRL = mimic_utils.get_tool_ctrl_path(robot)
-    if pm.objExists(tool_CTRL):
-        pm.select(tool_CTRL)
+    if cmds.objExists(tool_CTRL):
+        cmds.select(tool_CTRL)
     else:
-        pm.select(target_CTRL)
+        cmds.select(target_CTRL)
 
     list_axes()
-    pm.headsUpMessage('External axis \'{}\' added successfully to {}'
+    cmds.headsUpMessage('External axis \'{}\' added successfully to {}'
                       .format(axis_name, robot))
 
 
@@ -703,13 +706,13 @@ def update_external_axis(*args):
     :param args: required by Maya to call a function from UI button
     """
     # Get the selected item from the Mimic UI
-    selection = pm.textScrollList('tsl_externalAxes',
+    selection = cmds.textScrollList('tsl_externalAxes',
                                   selectItem=True,
                                   query=True)[0]
 
     # Split the selection into the robot's name and the external axis name
     robot_str, axis_name = selection.split(': ')
-    pm.select(robot_str)
+    cmds.select(robot_str)
     robot = mimic_utils.get_robot_roots()[0]
 
     external_axis_params = _get_external_axis_params()
@@ -728,7 +731,7 @@ def update_external_axis(*args):
     axis_parent_attribute = target_CTRL + '.' + axis_name
 
     # Check that the external axis number is unique
-    if axis_number == pm.getAttr(axis_parent_attribute + '_axisNumber'):
+    if axis_number == cmds.getAttr(axis_parent_attribute + '_axisNumber'):
         pass
     else:
         _check_external_axis_number(robot, axis_number)
@@ -755,8 +758,8 @@ def update_external_axis(*args):
         old_driving_attribute_path = external_axis_CTRL + '.' + old_driving_attribute
         new_driving_attribute_path = external_axis_CTRL + '.' + driving_attribute
         destination_attribute_name = axis_parent_attribute + '_position'
-        pm.disconnectAttr(old_driving_attribute_path, destination_attribute_name)
-        pm.connectAttr(new_driving_attribute_path, destination_attribute_name)
+        cmds.disconnectAttr(old_driving_attribute_path, destination_attribute_name)
+        cmds.connectAttr(new_driving_attribute_path, destination_attribute_name)
 
         # Update the external axis' position/rotation limits
         # Find the original driving attribute and disable it's axis limits
@@ -780,26 +783,26 @@ def update_external_axis(*args):
     # tries to lock an attribute
     try:
 
-        pm.setAttr(axis_parent_attribute + '_axisNumber', lock=False)
+        cmds.setAttr(axis_parent_attribute + '_axisNumber', lock=False)
     except:
         pass
 
-    pm.setAttr(axis_parent_attribute + '_axisNumber', axis_number)
+    cmds.setAttr(axis_parent_attribute + '_axisNumber', axis_number)
     
     try:
-        pm.setAttr(axis_parent_attribute + '_axisNumber', lock=True)
+        cmds.setAttr(axis_parent_attribute + '_axisNumber', lock=True)
     except:
         pass
 
-    pm.setAttr(axis_parent_attribute + '_axisMin', position_limit_min)
-    pm.setAttr(axis_parent_attribute + '_axisMax', position_limit_max)
-    pm.setAttr(axis_parent_attribute + '_maxVelocity', velocity_limit)
-    pm.setAttr(axis_parent_attribute + '_ignore', ignore_in_postproc)
+    cmds.setAttr(axis_parent_attribute + '_axisMin', position_limit_min)
+    cmds.setAttr(axis_parent_attribute + '_axisMax', position_limit_max)
+    cmds.setAttr(axis_parent_attribute + '_maxVelocity', velocity_limit)
+    cmds.setAttr(axis_parent_attribute + '_ignore', ignore_in_postproc)
 
     # Select the external axis
-    pm.select(external_axis_CTRL)
+    cmds.select(external_axis_CTRL)
 
-    pm.headsUpMessage('{}: Axis \'{}\' successfully updated'
+    cmds.headsUpMessage('{}: Axis \'{}\' successfully updated'
                       .format(robot, axis_name))
 
 
@@ -809,7 +812,7 @@ def clear_external_axis_list(*args):
     :param args: required by Maya to call a function from UI button
     :return:
     """
-    pm.textScrollList('tsl_externalAxes', edit=True, removeAll=True)
+    cmds.textScrollList('tsl_externalAxes', edit=True, removeAll=True)
     reset_external_axis_UI()
 
 
@@ -819,7 +822,7 @@ def deselect_external_axis(*args):
     :param args: required by Maya to call a function from UI button
     :return:
     """
-    pm.textScrollList('tsl_externalAxes', edit=True, deselectAll=True)
+    cmds.textScrollList('tsl_externalAxes', edit=True, deselectAll=True)
     reset_external_axis_UI()
 
 
@@ -834,13 +837,13 @@ def remove_external_axis(*args):
     """
 
     # Get the selected item from the Mimic UI
-    selection = pm.textScrollList('tsl_externalAxes',
+    selection = cmds.textScrollList('tsl_externalAxes',
                                   selectItem=True,
                                   query=True)[0]
 
     # Split the selection into the robot's name and the external axis name
     robot_str, axis_name = selection.split(': ')
-    pm.select(robot_str)
+    cmds.select(robot_str)
     robot = mimic_utils.get_robot_roots()[0]
 
     target_CTRL = mimic_utils.get_target_ctrl_path(robot)
@@ -863,13 +866,13 @@ def remove_external_axis(*args):
                                  enable=False)
 
     # Delete External Axis attribute on the robot controller
-    pm.deleteAttr(parent_attribute)
+    cmds.deleteAttr(parent_attribute)
 
     # Clear the axis from the Mimic UI selection and reset the UI
-    pm.textScrollList('tsl_externalAxes',
+    cmds.textScrollList('tsl_externalAxes',
                       edit=True,
                       removeItem=selection)
-    if not pm.textScrollList('tsl_externalAxes',
+    if not cmds.textScrollList('tsl_externalAxes',
                              query=True,
                              numberOfItems=True):
         reset_external_axis_UI()
@@ -878,14 +881,14 @@ def remove_external_axis(*args):
     # NEEDS Attention. This deletes parent constraint even if the axis
     # being removed isn't the one the robot is attached to
     if _check_if_robot_is_attached_to_external_axis(robot):
-        pm.delete('{}|robot_GRP|local_CTRL|' \
+        cmds.delete('{}|robot_GRP|local_CTRL|' \
                   'localCTRL_externalAxisCTRL_parentConstraint'
                   .format(robot))
-        pm.setAttr('{}|robot_GRP|local_CTRL.visibility'.format(robot), 1)
+        cmds.setAttr('{}|robot_GRP|local_CTRL.visibility'.format(robot), 1)
     '''
 
-    pm.select(target_CTRL)
-    pm.headsUpMessage('External Axis \'{}\' removed successfully from {}'
+    cmds.select(target_CTRL)
+    cmds.headsUpMessage('External Axis \'{}\' removed successfully from {}'
                       .format(axis_name, robot))
 
 
@@ -930,7 +933,7 @@ def list_axes(*args):
         # Update Mimic UI with list of external axes
         for axis in robots_external_axes:
             append_string = robot + ': ' + axis
-            pm.textScrollList('tsl_externalAxes',
+            cmds.textScrollList('tsl_externalAxes',
                               edit=True,
                               append=append_string)
 
@@ -939,7 +942,7 @@ def list_axes(*args):
         for each in selected_robots_without_axes:
             robot_list_str += each + ', '
 
-        pm.headsUpMessage('{} has no External Axes'
+        cmds.headsUpMessage('{} has no External Axes'
                           .format(robot_list_str))
 
 
@@ -951,19 +954,19 @@ def update_external_axis_UI(axis_info):
     :return:
     """
     # Change frame name from "Add" to "Update"
-    pm.frameLayout('add_external_axis_frame',
+    cmds.frameLayout('add_external_axis_frame',
                    edit=True,
                    label="Update External Axis")
 
     # Update axis parameters
-    pm.textField('t_externalAxisDescriptionText',
+    cmds.textField('t_externalAxisDescriptionText',
                  edit=True,
                  text=axis_info['Axis Name'],
                  editable=False)
-    pm.optionMenu('axisNumberMenu',
+    cmds.optionMenu('axisNumberMenu',
                   edit=True,
                   value=str(axis_info['Axis Number']))
-    pm.optionMenu('drivingAttributeMenu',
+    cmds.optionMenu('drivingAttributeMenu',
                   edit=True,
                   value=axis_info['Driving Attribute'])
 
@@ -975,22 +978,22 @@ def update_external_axis_UI(axis_info):
         position_limit_min = position_limit_min * 10
         position_limit_max = position_limit_max * 10
 
-    pm.textField('t_externalAxisLimitMin',
+    cmds.textField('t_externalAxisLimitMin',
                  edit=True,
                  text=str(position_limit_min))
-    pm.textField('t_externalAxisLimitMax',
+    cmds.textField('t_externalAxisLimitMax',
                  edit=True,
                  text=str(position_limit_max))
-    pm.textField('t_externalAxisVelocityLimit',
+    cmds.textField('t_externalAxisVelocityLimit',
                  edit=True,
                  text=str(axis_info['Velocity Limit']))
-    pm.checkBox('cb_ignoreExternalAxis',
+    cmds.checkBox('cb_ignoreExternalAxis',
                 edit=True,
                 value=axis_info['Ignore'])
 
     # Change "Add Axis" button to "Update Axis"
     # Change background color of button
-    pm.button('b_add_Axis',
+    cmds.button('b_add_Axis',
               edit=True,
               label='Update Axis',
               backgroundColor=[.7, .7, .7],
@@ -999,41 +1002,41 @@ def update_external_axis_UI(axis_info):
 
 def reset_external_axis_UI():
     """
-    Restores externa axis UI inputs in Mimic UI to defaults
+    Restores external axis UI inputs in Mimic UI to defaults
     :return:
     """
-    pm.frameLayout('add_external_axis_frame',
+    cmds.frameLayout('add_external_axis_frame',
                    edit=True,
                    label="Add External Axis")
 
     # Update axis parameters
-    pm.textField('t_externalAxisDescriptionText',
+    cmds.textField('t_externalAxisDescriptionText',
                  edit=True,
                  text='',
                  editable=True)
-    pm.optionMenu('axisNumberMenu',
+    cmds.optionMenu('axisNumberMenu',
                   edit=True,
                   value='1')
-    pm.optionMenu('drivingAttributeMenu',
+    cmds.optionMenu('drivingAttributeMenu',
                   edit=True,
                   value='translateX')
 
-    pm.textField('t_externalAxisLimitMin',
+    cmds.textField('t_externalAxisLimitMin',
                  edit=True,
                  text='')
-    pm.textField('t_externalAxisLimitMax',
+    cmds.textField('t_externalAxisLimitMax',
                  edit=True,
                  text='')
-    pm.textField('t_externalAxisVelocityLimit',
+    cmds.textField('t_externalAxisVelocityLimit',
                  edit=True,
                  text='')
-    pm.checkBox('cb_ignoreExternalAxis',
+    cmds.checkBox('cb_ignoreExternalAxis',
                 edit=True,
                 value=0)
 
     # Change "Add Axis" button to "Update Axis"
     # Change background color of button
-    pm.button('b_add_Axis',
+    cmds.button('b_add_Axis',
               edit=True,
               label='Add Axis',
               backgroundColor=[.361, .361, .361],
@@ -1050,7 +1053,7 @@ def axis_selected(*args):
     :return:
     """
     # Get the selected item from the Mimic UI
-    selection = pm.textScrollList('tsl_externalAxes',
+    selection = cmds.textScrollList('tsl_externalAxes',
                                   selectItem=True,
                                   query=True)[0]
 
@@ -1058,7 +1061,7 @@ def axis_selected(*args):
     robot_str, axis_name = selection.split(': ')
 
     # Get selected axis' settings
-    pm.select(robot_str)
+    cmds.select(robot_str)
     robot = mimic_utils.get_robot_roots()[0]
     axis_info = get_external_axis_info(robot, axis_name)
 
@@ -1068,7 +1071,7 @@ def axis_selected(*args):
 
     # Select the external axis controller in the viewport
     axis_CTRL = axis_info['Driving Controller']
-    pm.select(axis_CTRL)
+    cmds.select(axis_CTRL)
 
 
 class MimicError(Exception):

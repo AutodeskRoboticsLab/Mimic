@@ -8,16 +8,17 @@ be integrated by all processor subclasses.
 import sys
 import mimic_config
 import importlib
+import functools
 importlib.reload(mimic_config)
 
 sys.dont_write_bytecode = True
 
 try:
-    import pymel.core as pm
+    import maya.cmds as cmds
 
     MAYA_IS_RUNNING = True
 except ImportError:  # Maya is not running
-    pm = None
+    cmds = None
     MAYA_IS_RUNNING = False
 
 from collections import namedtuple
@@ -159,7 +160,7 @@ def get_user_selected_options(field_namespace=''):
     for i in range(len(_fields)):
         field = _fields[i]
         checkbox_name = field_namespace + format_field_name_for_checkbox(field)
-        checkbox_value = pm.checkBox(checkbox_name,
+        checkbox_value = cmds.checkBox(checkbox_name,
                                      value=True,
                                      query=True)
         values.append(checkbox_value)
@@ -173,7 +174,7 @@ def get_processor_supported_options(postproc_list='postProcessorList'):
     a complete UserOptions tuple.
     :return:
     """
-    processor_type = pm.optionMenu(postproc_list,
+    processor_type = cmds.optionMenu(postproc_list,
                                    query=True,
                                    value=True)
     processor = postproc_setup.POST_PROCESSORS[processor_type]()
@@ -235,7 +236,7 @@ def build_options_columns(name, options_dict, parent_tab_layout):
     :return: 
     """
     # Create two options columns
-    pm.rowLayout(name,
+    cmds.rowLayout(name,
                  numberOfColumns=1,
                  adjustableColumn=1,
                  columnAttach=(1, 'left', 3),
@@ -243,22 +244,22 @@ def build_options_columns(name, options_dict, parent_tab_layout):
     # Rename the columns
     global _OPTS_COLUMN_NAME
     _OPTS_COLUMN_NAME = _OPTS_COLUMN_NAME.format(name)
-    pm.columnLayout(_OPTS_COLUMN_NAME,
+    cmds.columnLayout(_OPTS_COLUMN_NAME,
                     parent=name,
                     adj=True,
                     width=200)
     for i, option in enumerate(options_dict):
-        pm.checkBox(options_dict[option][__name],  # cb_...
+        cmds.checkBox(options_dict[option][__name],  # cb_...
                     label=option,  # _checkbox_name_pretty
                     value=options_dict[option][__value],
                     enable=options_dict[option][__enable],
                     visible=options_dict[option][__visible],
                     parent=_OPTS_COLUMN_NAME,
-                    changeCommand=pm.CallbackWithArgs(mimic_config.Prefs.update_postproc_options,
+                    changeCommand=functools.partial(mimic_config.Prefs.update_postproc_options,
                                                       mimic_config.FILE,
                                                       option))
     # Return to parent
-    pm.setParent(parent_tab_layout)
+    cmds.setParent(parent_tab_layout)
 
 
 def _overwrite_options(post_proc, postproc_list, field_namespace, pref_level, all_visible):
@@ -291,7 +292,7 @@ def _overwrite_options(post_proc, postproc_list, field_namespace, pref_level, al
     # Fill both columns with User-Options
     for i, option in enumerate(options_dict):
 
-        pm.checkBox(field_namespace + options_dict[option][__name],  # cb_...
+        cmds.checkBox(field_namespace + options_dict[option][__name],  # cb_...
                     edit=True,
                     value=options_dict[option][__value],
                     enable=options_dict[option][__enable],

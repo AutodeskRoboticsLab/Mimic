@@ -1,10 +1,10 @@
 #!usr/bin/env python
 # -*- coding: utf-8 -*-
 try:
-    import pymel.core as pm
+    import maya.cmds as cmds
     MAYA_IS_RUNNING = True
 except ImportError:  # Maya is not running
-    pm = None
+    cmds = None
     MAYA_IS_RUNNING = False
 
 from analysis import analysis_ui

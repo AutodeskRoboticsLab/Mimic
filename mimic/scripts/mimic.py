@@ -6,11 +6,11 @@ The main module.
 """
 
 try:
-    import pymel.core as pm
+    import maya.cmds as cmds
 
     MAYA_IS_RUNNING = True
 except ImportError:  # Maya is not running
-    pm = None
+    cmds = None
     MAYA_IS_RUNNING = False
 import os
 
@@ -40,11 +40,11 @@ def load_mimic_plugins():
     # Check to see if each plug-in is loaded
     for plugin in required_plugins:
         # If the plug-in is not loaded:
-        if not pm.pluginInfo(plugin, query=True, loaded=True):
+        if not cmds.pluginInfo(plugin, query=True, loaded=True):
             try:
                 # Try loading it (and turn on autoload)
-                pm.loadPlugin(plugin)
-                pm.pluginInfo(plugin, autoload=True)
+                cmds.loadPlugin(plugin)
+                cmds.pluginInfo(plugin, autoload=True, edit=True)
                 print('{} Plug-in loaded'.format(plugin))
             except Exception:  # Unknown error
                 pass
@@ -64,7 +64,7 @@ def confirm_requirements_exist():
         'shelves',
         'scripts',
         'docs/LICENSE.md',
-        'mimic3.mod',
+        'mimic.mod',
     ]
     dir_mimic = general_utils.get_mimic_dir()
     for requirement in requirements:
@@ -77,9 +77,9 @@ def confirm_requirements_exist():
             assert os.path.exists(path)
         except AssertionError:
             if 'LICENSE.md' in path:  # Missing license!
-                warning = 'Exception: We noticed that you don\'t have a copy of our LICENSE! ' \
-                          'It needs to be in your maya/modules directory at all times! ' \
-                          'Download the latest release or clone our GitHub repository!'
+                warning = 'Exception: We noticed that you\'re missing the requirement: {}! ' \
+                          'Download the latest release or clone our GitHub repository! ' \
+                    .format(requirement)
                 raise Exception(warning)
             else:
                 warning = 'Exception: We noticed that you\'re missing the requirement: {}! ' \
@@ -109,7 +109,7 @@ def confirm_requirements_exist():
             warning = 'Warning: We noticed that you don\'t have any robot rigs! ' \
                       'Download the latest rigs from out GitHub repository ' \
                       'and add them to mimic/rigs!'
-            pm.warning(warning)
+            cmds.warning(warning)
 
 
 def run():

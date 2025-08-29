@@ -4,11 +4,10 @@
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 import importlib
 try:
-    import pymel.core as pm
-    from pymel import versions
+    import maya.cmds as cmds
     MAYA_IS_RUNNING = True
 except ImportError:  # Maya is not running
-    pm = None
+    cmds = None
     mel = None
     MAYA_IS_RUNNING = False
 
@@ -74,15 +73,11 @@ class MimicAnalysisWindow(MayaQWidgetDockableMixin, QtWidgets.QMainWindow):
         Deletes any instances of the window that already exist
         This is handles slightly differently from Maya 2016 and Maya 2017+
         """
-        if versions.current() <201700:
-            if pm.window(window_name, exists = True):
-                pm.deleteUI(window_name, wnd = True)
-        
-        if versions.current() >= 201700:
-            control = window_name + 'WorkspaceControl'
-            if pm.workspaceControl(control, q=True, exists=True):
-                pm.workspaceControl(control, e=True, close=True)
-                pm.deleteUI(control, control=True)
+
+        control = window_name + 'WorkspaceControl'
+        if cmds.workspaceControl(control, q=True, exists=True):
+            cmds.workspaceControl(control, e=True, close=True)
+            cmds.deleteUI(control, control=True)
         
 
     def __build_ui(self):

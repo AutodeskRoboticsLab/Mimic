@@ -4,14 +4,14 @@
 """
 Create the Mimic Preferences UI
 """
+from functools import partial
 
 try:
-    import pymel.core as pm
     import maya.cmds as cmds
 
     MAYA_IS_RUNNING = True
 except ImportError:  # Maya is not running
-    pm = None
+    cmds = None
     MAYA_IS_RUNNING = False
 
 import general_utils
@@ -252,7 +252,7 @@ class MimicPreferencesWindow(Window):
         # Create list of robots
         cmds.rowLayout()
         cmds.text('Robot:')
-        cmds.optionMenu(changeCommand=pm.CallbackWithArgs(Prefs.set_user_pref, 'DEFAULT_ROBOT'))
+        cmds.optionMenu(changeCommand=partial(Prefs.set_user_pref, 'DEFAULT_ROBOT'))
         rigs = general_utils.get_rigs_dict()
         default_rig = Prefs.get_user_pref('DEFAULT_ROBOT')
         rig_names = general_utils.get_rigs_names(rigs, default_rig)
@@ -272,17 +272,17 @@ class MimicPreferencesWindow(Window):
         cmds.rowLayout()
         cmds.text(label='Velocity:')
         cmds.floatField(min=0, pre=1, value=Prefs.get_user_pref('NOMINAL_VELOCITY_LIMIT'),
-                        changeCommand=pm.CallbackWithArgs(Prefs.set_user_pref, 'NOMINAL_VELOCITY_LIMIT'))
+                        changeCommand=partial(Prefs.set_user_pref, 'NOMINAL_VELOCITY_LIMIT'))
         cmds.setParent('..')
         cmds.rowLayout()
         cmds.text(label='Acceleration:')
         cmds.floatField(min=0, pre=1, value=Prefs.get_user_pref('NOMINAL_ACCELERATION_LIMIT'),
-                        changeCommand=pm.CallbackWithArgs(Prefs.set_user_pref, 'NOMINAL_ACCELERATION_LIMIT'))
+                        changeCommand=partial(Prefs.set_user_pref, 'NOMINAL_ACCELERATION_LIMIT'))
         cmds.setParent('..')
         cmds.rowLayout()
         cmds.text(label='Jerk:')
         cmds.floatField(min=0, pre=1, value=Prefs.get_user_pref('NOMINAL_JERK_LIMIT'),
-                        changeCommand=pm.CallbackWithArgs(Prefs.set_user_pref, 'NOMINAL_JERK_LIMIT'))
+                        changeCommand=partial(Prefs.set_user_pref, 'NOMINAL_JERK_LIMIT'))
 
         cmds.setParent('..')
 
@@ -303,7 +303,7 @@ class MimicPreferencesWindow(Window):
         cmds.floatField(min=0,
                         pre=0,
                         value=Prefs.get_user_pref('SHADER_RANGE'),
-                        changeCommand=pm.CallbackWithArgs(
+                        changeCommand=partial(
                             Prefs.set_user_pref,
                             'SHADER_RANGE'))
 
@@ -326,7 +326,7 @@ class MimicPreferencesWindow(Window):
         cmds.symbolButton(image="setDirectory_icon.png",
                           width=32,
                           height=20,
-                          command=pm.Callback(mimic_utils.set_dir,
+                          command=partial(mimic_utils.set_dir,
                                               'pref_programDirectoryText',
                                               'DEFAULT_PROGRAM_DIRECTORY',
                                               Prefs.get_user_pref,
@@ -336,14 +336,14 @@ class MimicPreferencesWindow(Window):
         cmds.rowLayout()
         cmds.text(label='Output name:')
         cmds.textField(text=Prefs.get_user_pref('DEFAULT_OUTPUT_NAME'),
-                       changeCommand=pm.CallbackWithArgs(Prefs.set_user_pref,
+                       changeCommand=partial(Prefs.set_user_pref,
                                                          'DEFAULT_OUTPUT_NAME'))
         cmds.setParent('..')  # End of rowLayout
 
         cmds.rowLayout()
         cmds.text(label='Template name:')
         cmds.textField(text=Prefs.get_user_pref('DEFAULT_TEMPLATE_NAME'),
-                       changeCommand=pm.CallbackWithArgs(Prefs.set_user_pref,
+                       changeCommand=partial(Prefs.set_user_pref,
                                                          'DEFAULT_TEMPLATE_NAME'))
         cmds.setParent('..')  # End of rowLayout
 
@@ -363,7 +363,7 @@ class MimicPreferencesWindow(Window):
                          select=not Prefs.get_user_pref('SAMPLE_KEYFRAMES_ONLY'))
         cmds.floatField(minValue=0,
                         value=selected_value,
-                        changeCommand=pm.CallbackWithArgs(Prefs.set_user_pref,
+                        changeCommand=partial(Prefs.set_user_pref,
                                                           'DEFAULT_SAMPLE_RATE_VALUE'))
         cmds.radioButtonGrp('time_unit_radio_group',
                             labelArray2=['s', 'f'],
@@ -372,10 +372,10 @@ class MimicPreferencesWindow(Window):
                             columnWidth2=[32, 30],
                             select=1 if selected_units == 'seconds' else 2,
                             # 1-based int
-                            onCommand1=pm.CallbackWithArgs(
+                            onCommand1=partial(
                                 Prefs.set_user_pref,
                                 'DEFAULT_SAMPLE_RATE_UNITS', 'seconds'),
-                            onCommand2=pm.CallbackWithArgs(
+                            onCommand2=partial(
                                 Prefs.set_user_pref,
                                 'DEFAULT_SAMPLE_RATE_UNITS', 'frames'))
 
@@ -388,10 +388,10 @@ class MimicPreferencesWindow(Window):
                          label='Sample keyframes only',
                          enable=True,
                          select=Prefs.get_user_pref('SAMPLE_KEYFRAMES_ONLY'),
-                         onCommand=pm.CallbackWithArgs(
+                         onCommand=partial(
                              Prefs.set_user_pref,
                              'SAMPLE_KEYFRAMES_ONLY', True),
-                         offCommand=pm.CallbackWithArgs(
+                         offCommand=partial(
                              Prefs.set_user_pref,
                              'SAMPLE_KEYFRAMES_ONLY', False)
                          )
@@ -404,13 +404,13 @@ class MimicPreferencesWindow(Window):
                       value=Prefs.get_user_pref('OPTS_OVERWRITE_EXISTING_FILE'),
                       annotation='If checked, an existing file with the input '
                                  'output name will be overwritten',
-                      changeCommand=pm.CallbackWithArgs(Prefs.set_user_pref,
+                      changeCommand=partial(Prefs.set_user_pref,
                                                         'OPTS_OVERWRITE_EXISTING_FILE'))
         cmds.checkBox(label="Ignore warnings",
                       value=Prefs.get_user_pref('OPTS_IGNORE_WARNINGS'),
                       annotation='If checked, all warnings will be ignored and '
                                  'a program will be written',
-                      changeCommand=pm.CallbackWithArgs(Prefs.set_user_pref,
+                      changeCommand=partial(Prefs.set_user_pref,
                                                         'OPTS_IGNORE_WARNINGS'))
 
         # Preview Options
@@ -418,14 +418,14 @@ class MimicPreferencesWindow(Window):
                       value=Prefs.get_user_pref('OPTS_PREVIEW_IN_VIEWPORT'),
                       annotation='If checked, program will play in viewport during '
                                  'post-process. Leave unchecked for faster results.',
-                      changeCommand=pm.CallbackWithArgs(Prefs.set_user_pref,
+                      changeCommand=partial(Prefs.set_user_pref,
                                                         'OPTS_PREVIEW_IN_VIEWPORT'))
         cmds.checkBox(label="Prompt on redundant solutions",
                       value=Prefs.get_user_pref(
                           'OPTS_REDUNDANT_SOLUTIONS_USER_PROMPT'),
                       annotation='If checked, Maya will as the user to select between '
                                  'redundant solutions on axes where they occur.',
-                      changeCommand=pm.CallbackWithArgs(Prefs.set_user_pref,
+                      changeCommand=partial(Prefs.set_user_pref,
                                                         'OPTS_REDUNDANT_SOLUTIONS_USER_PROMPT'))
 
         cmds.setParent('..')  # End of columnLayout
@@ -443,7 +443,7 @@ class MimicPreferencesWindow(Window):
         cmds.text(label='Processor:')
         cmds.optionMenu('prefs_postProcessorList',
                         height=20,
-                        changeCommand=pm.CallbackWithArgs(
+                        changeCommand=partial(
                             postproc_options.update_prefs_ui_postroc_options))
         cmds.setParent('..')  # End of rowLayout
 
@@ -474,7 +474,7 @@ class MimicPreferencesWindow(Window):
                           value=option_val['value'],
                           enable=option_val['enable'],
                           visible=True,
-                          changeCommand=pm.CallbackWithArgs(
+                          changeCommand=partial(
                               Prefs.update_postproc_options,
                               mimic_config.USER,
                               option_name))
@@ -488,7 +488,7 @@ class MimicPreferencesWindow(Window):
         cmds.columnLayout()
         cmds.separator()
         cmds.button('Save Preferences',
-                    command=pm.Callback(Prefs.save_user_prefs_to_json),
+                    command=partial(Prefs.save_user_prefs_to_json),
                     annotation='Save Preferences')
         cmds.separator()
         cmds.setParent('..')  # End of columnLayout
@@ -520,7 +520,7 @@ class MimicPreferencesWindow(Window):
         cmds.button(label='Create',
                     width=45,
                     height=20,
-                    command=pm.Callback(mimic_utils.assign_hotkey,
+                    command=partial(mimic_utils.assign_hotkey,
                                         toggle_mode_cmd_name,
                                         toggle_mode_annotation_str,
                                         toggle_mode_command_str))
@@ -528,7 +528,7 @@ class MimicPreferencesWindow(Window):
         cmds.button(label='Remove',
                     width=50,
                     height=20,
-                    command=pm.Callback(mimic_utils.remove_hotkey,
+                    command=partial(mimic_utils.remove_hotkey,
                                         toggle_mode_cmd_name))
 
         cmds.setParent('..')  # End of rowLayout
@@ -556,7 +556,7 @@ class MimicPreferencesWindow(Window):
         cmds.button(label='Create',
                     width=45,
                     height=20,
-                    command=pm.Callback(mimic_utils.assign_hotkey,
+                    command=partial(mimic_utils.assign_hotkey,
                                         key_ik_fk_cmd_name,
                                         key_ik_fk_annotation_str,
                                         key_ik_fk_command_str))
@@ -564,7 +564,7 @@ class MimicPreferencesWindow(Window):
         cmds.button(label='Remove',
                     width=50,
                     height=20,
-                    command=pm.Callback(mimic_utils.remove_hotkey,
+                    command=partial(mimic_utils.remove_hotkey,
                                         key_ik_fk_cmd_name))
 
         cmds.setParent('..')  # End of rowLayout
@@ -657,7 +657,7 @@ class MimicPreferencesWindow(Window):
 
         if confirmed:
             Prefs.copy_prefs(mimic_config.DEFAULT, mimic_config.FILE)
-            cmds.saveFile(force=True)
+            cmds.file(save=True, force=True)
             if cmds.window("mimic_win", exists=True):
                 mimic_config.reload_mimic()
 
@@ -670,7 +670,7 @@ class MimicPreferencesWindow(Window):
 
         if confirmed:
             Prefs.copy_prefs(mimic_config.USER_JSON, mimic_config.FILE)
-            cmds.saveFile(force=True)
+            cmds.file(save=True, force=True)
             if cmds.window("mimic_win", exists=True):
                 mimic_config.reload_mimic()
 
@@ -683,4 +683,4 @@ class MimicPreferencesWindow(Window):
 
         if confirmed:
             Prefs.delete_prefs(mimic_config.FILE)
-            cmds.saveFile(force=True)
+            cmds.file(save=True, force=True)

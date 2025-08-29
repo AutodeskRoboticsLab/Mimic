@@ -3,10 +3,10 @@
 
 """
 try:
-    import pymel.core as pm
+    import maya.cmds as cmds
     MAYA_IS_RUNNING = True
 except ImportError:  # Maya is not running
-    pm = None
+    cmds = None
     MAYA_IS_RUNNING = False
 
 __TARGET_CTRL_NAME = 'target_CTRL'
@@ -33,9 +33,9 @@ def get_robot_geometry(solver_type):
 
     for each in geom_fields:
         try:
-            robot_geometry[each] = float(pm.textField('t_{}'.format(each), q=True, text=True))
+            robot_geometry[each] = float(cmds.textField('t_{}'.format(each), q=True, text=True))
         except ValueError:
-            pm.error('Field {} input must be a float value'.format(each))
+            cmds.error('Field {} input must be a float value'.format(each))
 
     return robot_geometry
 
@@ -73,16 +73,16 @@ def get_position_limits():
 
     for i in range(6):
         try:
-            position_limits['a{}Min'.format(i+1)] = float(pm.textField(
+            position_limits['a{}Min'.format(i+1)] = float(cmds.textField(
                                                        't_A{}Min'.format(i+1),
                                                         q=True,
                                                         text=True))
-            position_limits['a{}Max'.format(i+1)] = float(pm.textField(
+            position_limits['a{}Max'.format(i+1)] = float(cmds.textField(
                                                        't_A{}Max'.format(i+1),
                                                         q=True,
                                                         text=True))
         except ValueError:
-            pm.error('Robot position limits must be floats')        
+            cmds.error('Robot position limits must be floats')        
 
     return position_limits
 
@@ -94,12 +94,12 @@ def get_velocity_limits():
 
     for i in range(6):
         try:
-            velocity_limits['a{}'.format(i+1)] = float(pm.textField(
+            velocity_limits['a{}'.format(i+1)] = float(cmds.textField(
                                                        't_A{}vel'.format(i+1),
                                                        q=True,
                                                        text=True))
         except ValueError:
-            pm.error('Robot velocity limits must be floats')
+            cmds.error('Robot velocity limits must be floats')
 
     return velocity_limits
 
@@ -216,7 +216,7 @@ def _get_axis_pivots_HK(robot_geometry, units='cm'):
 
 
 def get_robot_model():
-    robot_model = pm.textField('t_robotModel', q=True, text=True)
+    robot_model = cmds.textField('t_robotModel', q=True, text=True)
 
     return robot_model
 
@@ -230,8 +230,8 @@ def get_solver_type():
     # Defaults to 0 if attr doesn't exist, representing the standard
     # spherical wrist solver
     try:
-        target_ctrl = pm.ls(__TARGET_CTRL_NAME, type='transform')[0]
-        solver_type = target_ctrl.getAttr('solverType')
+        target_ctrl = cmds.ls(__TARGET_CTRL_NAME, type='transform')[0]
+        solver_type = cmds.getAttr(target_ctrl + '.solverType')
     except:
         solver_type = 0
     
@@ -242,10 +242,10 @@ def set_position_limits(position_limits):
     """
     """
     for i in range(6):
-        pm.setAttr('target_CTRL.axis{}Max'.format(i+1),
+        cmds.setAttr('target_CTRL.axis{}Max'.format(i+1),
                    position_limits['a{}Max'.format(i+1)])
 
-        pm.setAttr('target_CTRL.axis{}Min'.format(i+1),
+        cmds.setAttr('target_CTRL.axis{}Min'.format(i+1),
                    position_limits['a{}Min'.format(i+1)])
 
 
@@ -253,7 +253,7 @@ def set_velocity_limits(velocity_limits):
     """
     """
     for i in range(6):
-        pm.setAttr('target_CTRL.axis{}VelocityLimit'.format(i+1),
+        cmds.setAttr('target_CTRL.axis{}VelocityLimit'.format(i+1),
                    velocity_limits['a{}'.format(i+1)])
 
 
@@ -265,7 +265,7 @@ def set_axis_pivots(axis_pivots):
         a_x = axis_pivot[0]
         a_y = axis_pivot[1]
         a_z = axis_pivot[2]
-        pm.xform('axis{}'.format(i+1), pivots=[a_x, a_y, a_z], ws=True)
+        cmds.xform('axis{}'.format(i+1), pivots=[a_x, a_y, a_z], ws=True)
 
 
 def set_robot_definition(robot_definition, units='cm'):
@@ -276,39 +276,39 @@ def set_robot_definition(robot_definition, units='cm'):
     else:
         unit = 1
 
-    pm.setAttr('target_CTRL.a1', robot_definition['a1']/unit, lock=True)
-    pm.setAttr('target_CTRL.a2', robot_definition['a2']/unit, lock=True)
-    pm.setAttr('target_CTRL.b', robot_definition['b']/unit, lock=True)
-    pm.setAttr('target_CTRL.c1', robot_definition['c1']/unit, lock=True)
-    pm.setAttr('target_CTRL.c2', robot_definition['c2']/unit, lock=True)
-    pm.setAttr('target_CTRL.c3', robot_definition['c3']/unit, lock=True)
-    pm.setAttr('target_CTRL.c4', robot_definition['c4']/unit, lock=True)
+    cmds.setAttr('target_CTRL.a1', robot_definition['a1']/unit, lock=True)
+    cmds.setAttr('target_CTRL.a2', robot_definition['a2']/unit, lock=True)
+    cmds.setAttr('target_CTRL.b', robot_definition['b']/unit, lock=True)
+    cmds.setAttr('target_CTRL.c1', robot_definition['c1']/unit, lock=True)
+    cmds.setAttr('target_CTRL.c2', robot_definition['c2']/unit, lock=True)
+    cmds.setAttr('target_CTRL.c3', robot_definition['c3']/unit, lock=True)
+    cmds.setAttr('target_CTRL.c4', robot_definition['c4']/unit, lock=True)
 
 
 def set_robot_model(robot_model):
-    pm.setAttr('target_CTRL.robotSubtype', robot_model, type='string')
-    pm.setAttr('target_CTRL.robotSubtype', lock=True)
+    cmds.setAttr('target_CTRL.robotSubtype', robot_model, type='string')
+    cmds.setAttr('target_CTRL.robotSubtype', lock=True)
 
 
 def set_tcp_grp(flange_loc):
     """
     """
-    pm.xform('tcp_GRP', t=flange_loc, os=True)
+    cmds.xform('tcp_GRP', t=flange_loc, os=True)
 
     # Freeze translate attribute
-    pm.makeIdentity('tcp_GRP', apply=True, translate=True)
+    cmds.makeIdentity('tcp_GRP', apply=True, translate=True)
 
     # Lock tX, tY, tZ attributes
-    pm.setAttr('tcp_GRP.translate', lock=True)
+    cmds.setAttr('tcp_GRP.translate', lock=True)
 
 
 def set_target_ctrl(flange_loc):
     """
     """
-    pm.xform('target_CTRL', t=flange_loc, ws=True)
+    cmds.xform('target_CTRL', t=flange_loc, ws=True)
 
     # Freeze translate attribute
-    pm.makeIdentity('target_CTRL', apply=True, translate=True)
+    cmds.makeIdentity('target_CTRL', apply=True, translate=True)
 
 
 def print_axis_pivots(*args):
@@ -324,7 +324,7 @@ def print_axis_pivots(*args):
 
 def zero_axis_pivots(*args):
     for i in range(6):
-        pm.xform('axis{}'.format(i+1), pivots=[0,0,0], ws=True)
+        cmds.xform('axis{}'.format(i+1), pivots=[0,0,0], ws=True)
 
 
 def rig(*args):
@@ -351,6 +351,6 @@ def rig(*args):
     set_tcp_grp(flange_loc)
     set_target_ctrl(flange_loc)
 
-    pm.setAttr('target_CTRL.ik', 1)
+    cmds.setAttr('target_CTRL.ik', 1)
 
 

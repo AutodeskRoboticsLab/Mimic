@@ -6,13 +6,13 @@ Check and save program functionality used by Mimic.
 """
 
 try:
-    import pymel.core as pm
+    import maya.cmds as cmds
     import maya.mel as mel
     import numpy as np
 
     MAYA_IS_RUNNING = True
 except ImportError:  # Maya is not running
-    pm = None
+    cmds = None
     mel = None
     MAYA_IS_RUNNING = False
 import math
@@ -49,14 +49,14 @@ def analyze_program(*args):
 
     animation_settings = program_settings[1]
     start_frame = animation_settings['Start Frame']
-    pm.currentTime(start_frame)
+    cmds.currentTime(start_frame)
 
     # Create progress window and analyze program
     _initialize_export_progress_window('Analyzing')
     try:
         command_dicts = _get_command_dicts(*program_settings)
     except mimic_utils.MimicError:
-        pm.headsUpMessage('Program analysis canceled.')
+        cmds.headsUpMessage('Program analysis canceled.')
         return
 
     violation_exception, violation_warning = _check_command_dicts(command_dicts, *program_settings)
@@ -68,7 +68,7 @@ def analyze_program(*args):
     try:
         import pyqtgraph as pg
     except ImportError:
-        pm.warning('MIMIC: Analysis module did not load successfully; ' \
+        cmds.warning('MIMIC: Analysis module did not load successfully; ' \
                    'analysis graphing feature disabled. ' \
                    'Check that you have numPy installed properly; ' \
                    'see Mimic installation instructions for more details')
@@ -101,14 +101,14 @@ def save_program(*args):
     animation_settings = program_settings[1]
     start_frame = animation_settings['Start Frame']
 
-    pm.currentTime(start_frame)
+    cmds.currentTime(start_frame)
 
     # Create progress window and save program
     _initialize_export_progress_window('Saving')
     try:
         command_dicts = _get_command_dicts(*program_settings)
     except mimic_utils.MimicError:
-        pm.headsUpMessage('Program save canceled.')
+        cmds.headsUpMessage('Program save canceled.')
         return
 
     violation_exception, violation_warning = _check_command_dicts(command_dicts, *program_settings)
@@ -123,11 +123,11 @@ def save_program(*args):
         if violation_exception:
             _destroy_progress_window()
 
-            pm.scrollField(OUTPUT_WINDOW_NAME,
+            cmds.scrollField(OUTPUT_WINDOW_NAME,
                    insertText='\n\nNO PROGRAM EXPORTED!',
                    edit=True)
 
-            pm.headsUpMessage('WARNINGS: No Program Exported; ' \
+            cmds.headsUpMessage('WARNINGS: No Program Exported; ' \
                               'See Mimic output window for details')
             
             raise mimic_utils.MimicError('Limit violations found. ' \
@@ -138,7 +138,7 @@ def save_program(*args):
     # Modify A3 accordingly before post-processing
     # Note: we need to do this after limit checking to get accurate derivatives
     robot_name = program_settings[0]
-    robot = pm.ls(robot_name)[0]
+    robot = cmds.ls(robot_name)[0]
 
     if mimic_utils.axes_coupled(robot):
         command_dicts = _couple_axes(command_dicts)
@@ -148,13 +148,13 @@ def save_program(*args):
 
     if violation_warning:
         if not using_keyframes_only:
-            pm.headsUpMessage('Program exported with warnings; ' \
+            cmds.headsUpMessage('Program exported with warnings; ' \
                               'See Mimic output window for details')
         else:
-            pm.headsUpMessage('Program exported successfuly; ' \
+            cmds.headsUpMessage('Program exported successfuly; ' \
                               'See Mimic output window for details')
     else:
-        pm.headsUpMessage('Program exported successfuly; ' \
+        cmds.headsUpMessage('Program exported successfuly; ' \
                           'See Mimic output window for details')
 
     _destroy_progress_window()
@@ -201,7 +201,7 @@ def _clear_output_window():
     Clear the output window
     :return:
     """
-    pm.scrollField(OUTPUT_WINDOW_NAME, clear=True, edit=True)
+    cmds.scrollField(OUTPUT_WINDOW_NAME, clear=True, edit=True)
 
 
 def _show_program_in_output_window(robot, processor, program):
@@ -232,11 +232,11 @@ def _show_program_in_output_window(robot, processor, program):
         postproc.confirm_path_exists(processor.get_program_output_path())
     )
 
-    pm.scrollField(OUTPUT_WINDOW_NAME,
+    cmds.scrollField(OUTPUT_WINDOW_NAME,
                    insertText=filled_details,
                    edit=True)
 
-    pm.scrollField(OUTPUT_WINDOW_NAME,
+    cmds.scrollField(OUTPUT_WINDOW_NAME,
                    insertText=program + '\n',
                    edit=True)
 
@@ -261,8 +261,8 @@ def _get_settings_for_animation(robot):
     in seconds from Maya.
     :return:
     """
-    start_frame = pm.intField("i_programStartFrame", query=True, value=True)
-    end_frame = pm.intField("i_programEndFrame", query=True, value=True)
+    start_frame = cmds.intField("i_programStartFrame", query=True, value=True)
+    end_frame = cmds.intField("i_programEndFrame", query=True, value=True)
     framerate = mimic_utils.get_maya_framerate()
 
     # Define the animation time in seconds.
@@ -287,19 +287,19 @@ def _get_settings_for_postproc(robot):
     :return program_settings: dictionary
     """
     # Get all important settings
-    using_time_interval = pm.radioCollection('sample_rate_radio_collection', query=True, select=True) == 'rb_timeInterval'
+    using_time_interval = cmds.radioCollection('sample_rate_radio_collection', query=True, select=True) == 'rb_timeInterval'
     using_keyframes_only = not using_time_interval  # TODO: Clever, but not expandable
-    time_interval_value = pm.floatField('f_timeBetweenSamples', query=True, value=True)
+    time_interval_value = cmds.floatField('f_timeBetweenSamples', query=True, value=True)
     time_interval_units = 'seconds' \
-        if pm.radioButtonGrp('time_unit_radio_group', query=True, sl=True) == 1 \
+        if cmds.radioButtonGrp('time_unit_radio_group', query=True, sl=True) == 1 \
         else 'frames'
-    ignore_warnings = pm.checkBox('cb_ignoreWarnings', value=True, query=True)
-    processor_type = pm.optionMenu('postProcessorList', query=True, value=True)
-    output_directory = pm.textField('t_programDirectoryText', text=True, query=True)
-    output_filename = pm.textField('t_outputFileName', text=True, query=True)
-    template_filename = pm.textField('t_templateFileName', text=True, query=True)
-    overwrite_option = pm.checkBox('cb_overwriteFile', value=True, query=True)
-    preview_in_viewport_option = pm.checkBox('cb_previewInViewport', value=True, query=True)
+    ignore_warnings = cmds.checkBox('cb_ignoreWarnings', value=True, query=True)
+    processor_type = cmds.optionMenu('postProcessorList', query=True, value=True)
+    output_directory = cmds.textField('t_programDirectoryText', text=True, query=True)
+    output_filename = cmds.textField('t_outputFileName', text=True, query=True)
+    template_filename = cmds.textField('t_templateFileName', text=True, query=True)
+    overwrite_option = cmds.checkBox('cb_overwriteFile', value=True, query=True)
+    preview_in_viewport_option = cmds.checkBox('cb_previewInViewport', value=True, query=True)
 
     # Check for warnings
     if using_time_interval:
@@ -329,7 +329,7 @@ def _get_settings_for_postproc(robot):
             raise mimic_utils.MimicError(warning)
         else:
             warning += '\n'
-            pm.scrollField(OUTPUT_WINDOW_NAME, insertText=warning, edit=True)
+            cmds.scrollField(OUTPUT_WINDOW_NAME, insertText=warning, edit=True)
 
     # Assign values to output dict
     postproc_settings = {
@@ -415,7 +415,7 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
         position_limits = mimic_utils.get_axis_limits(robot)
         if position_limits['Axis 1']['Min Limit'] is None:
             position_warning = 'Unable to check position limits. Robot rig does not contain position data.\n'
-            pm.scrollField(OUTPUT_WINDOW_NAME, insertText=position_warning, edit=True)
+            cmds.scrollField(OUTPUT_WINDOW_NAME, insertText=position_warning, edit=True)
         position_violations, position_stats = _check_command_dicts_limits(command_dicts, limits=position_limits, get_min=True, get_max=True, get_average=True)
 
 
@@ -424,7 +424,7 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
         velocity_dicts = analysis_utils._generate_derivative_dicts(command_dicts, 1)
         if velocity_limits['Axis 1']['Min Limit'] is None:
             velocity_warning = 'Unable to check velocity limits. Robot rig does not contain velocity data.\n'
-            pm.scrollField(OUTPUT_WINDOW_NAME, insertText=velocity_warning, edit=True)
+            cmds.scrollField(OUTPUT_WINDOW_NAME, insertText=velocity_warning, edit=True)
         velocity_violations, velocity_stats = _check_command_dicts_limits(velocity_dicts, limits=velocity_limits, get_min=True, get_max=True, get_average=True)
 
         # Check acceleration limits
@@ -432,7 +432,7 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
         acceleration_dicts = analysis_utils._generate_derivative_dicts(velocity_dicts, 2)
         if acceleration_limits['Axis 1']['Min Limit'] is None:
             acceleration_warning = 'Unable to check acceleration limits. Robot rig does not contain acceleration data.\n'
-            pm.scrollField(OUTPUT_WINDOW_NAME, insertText=acceleration_warning, edit=True)
+            cmds.scrollField(OUTPUT_WINDOW_NAME, insertText=acceleration_warning, edit=True)
         acceleration_violations, acceleration_stats = _check_command_dicts_limits(acceleration_dicts, limits=acceleration_limits, get_min=True, get_max=True, get_average=True)
 
         # Check jerk limits
@@ -440,7 +440,7 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
         jerk_dicts = analysis_utils._generate_derivative_dicts(acceleration_dicts, 3)
         if jerk_limits['Axis 1']['Min Limit'] is None:
             jerk_warning = 'Unable to check jerk limits. Robot rig does not contain jerk data.\n'
-            pm.scrollField(OUTPUT_WINDOW_NAME, insertText=jerk_warning, edit=True)
+            cmds.scrollField(OUTPUT_WINDOW_NAME, insertText=jerk_warning, edit=True)
         jerk_violations, jerk_stats = _check_command_dicts_limits(jerk_dicts, limits=jerk_limits, get_min=True, get_max=True, get_average=True)
 
         # Format and print axis statistics
@@ -456,7 +456,7 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
         # if warning != '':
         #     # Print this one always
         #     warning += '\n'
-        #     pm.scrollField(OUTPUT_WINDOW_NAME, insertText=warning, edit=True)
+        #     cmds.scrollField(OUTPUT_WINDOW_NAME, insertText=warning, edit=True)
         #     if not ignore_warnings:
         #         raise mimic_utils.MimicError(warning)
         pass
@@ -467,7 +467,7 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
         # if warning != '':
         #     # Print this one always
         #     warning += '\n'
-        #     pm.scrollField(OUTPUT_WINDOW_NAME, insertText=warning, edit=True)
+        #     cmds.scrollField(OUTPUT_WINDOW_NAME, insertText=warning, edit=True)
         #     if not ignore_warnings:
         #         raise mimic_utils.MimicError(warning)
         pass
@@ -478,7 +478,7 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
     violation_warning = False
     if position_violations or velocity_violations or acceleration_violations or jerk_violations:
         # Print this one always
-        pm.headsUpMessage('WARNINGS: See Mimic output window for details')
+        cmds.headsUpMessage('WARNINGS: See Mimic output window for details')
         if position_violations:
             _print_violations(position_violations, position_limits, "Position")
         if velocity_violations:
@@ -492,8 +492,8 @@ def _check_command_dicts(command_dicts, robot, animation_settings, postproc_sett
         violation_warning = True
     else:
         no_warning = 'All checks passed!\n'
-        pm.scrollField(OUTPUT_WINDOW_NAME, insertText=no_warning, edit=True)
-        pm.headsUpMessage('All Checks Passed!')
+        cmds.scrollField(OUTPUT_WINDOW_NAME, insertText=no_warning, edit=True)
+        cmds.headsUpMessage('All Checks Passed!')
         violation_warning = False
 
     return violation_exception, violation_warning 
@@ -528,7 +528,7 @@ def _print_violations(violation_dicts, limits, limit_type):
                 general_utils.num_to_str(violation[postproc.AXES][axis_num], precision=3),
                 **padding)
 
-    pm.scrollField(OUTPUT_WINDOW_NAME, insertText=warning, edit=True)
+    cmds.scrollField(OUTPUT_WINDOW_NAME, insertText=warning, edit=True)
 
 
 def _print_axis_stats(axis_stats, limit_type):
@@ -585,7 +585,7 @@ def _print_axis_stats(axis_stats, limit_type):
 
     # Formatting
     stats_str = '{} Stats:\n'.format(limit_type) + '\n'.join(res) + '\n'
-    pm.scrollField(OUTPUT_WINDOW_NAME, insertText=stats_str, edit=True)
+    cmds.scrollField(OUTPUT_WINDOW_NAME, insertText=stats_str, edit=True)
 
 
 def _check_command_dicts_limits(command_dicts, limits=None, get_min=False, get_max=False, get_average=False):
@@ -800,7 +800,7 @@ def _bound_accumulated_rotations(robot_name, command_dicts):
                 # first solution
                 else:
                     # print 'Two valid solutions -> user choice'
-                    prompt_opt = pm.checkBox('cb_promptOnRedundantSolutions', value=True, query=True)
+                    prompt_opt = cmds.checkBox('cb_promptOnRedundantSolutions', value=True, query=True)
 
                     # If the user option for this feature is selected, prompt the user
                     if prompt_opt:
@@ -855,8 +855,7 @@ def _get_bounded_solution_user_input(valid_solutions, axis_number):
     sol_0_str = str(int(round(sol_0_init)))
     sol_1_str = str(int(round(sol_1_init)))
 
-
-    result = pm.confirmDialog(
+    result = cmds.confirmDialog(
         title='Select Axis Solution',
         message='Axis {0} has multiple valid solutions.\n\nWould you like Axis {0} to start at:'.format(axis_number),
         button=[sol_0_str, sol_1_str],
@@ -949,51 +948,51 @@ def _get_frames_using_keyframes_only(robot, animation_settings):
 
     # Get list of keyframes on robots IK attribute for the given range on target_CTRL
     target_ctrl_path = mimic_utils.get_target_ctrl_path(robot)
-    ik_keyframes_target = pm.keyframe(
+    ik_keyframes_target = cmds.keyframe(
         target_ctrl_path,
         query=True,
         time='{}:{}'.format(start_frame, end_frame))
 
     # Get list of keyframes on robots IK attribute for the given range on tool_CTRL
     tool_ctrl_path = mimic_utils.get_tool_ctrl_path(robot)
-    ik_keyframes_tool = pm.keyframe(
+    ik_keyframes_tool = cmds.keyframe(
         tool_ctrl_path,
         query=True,
         time='{}:{}'.format(start_frame, end_frame))
     
     # Get all FK keyframes set per each individual joints
     fk_1_path = mimic_utils.format_path('{0}|{1}robot_GRP|{1}FK_CTRLS|{1}a1FK_CTRL.rotateY', robot)
-    fk_1_keyframes = pm.keyframe(
+    fk_1_keyframes = cmds.keyframe(
         fk_1_path,
         query=True,
         time='{}:{}'.format(start_frame, end_frame))
     
     fk_2_path = mimic_utils.format_path('{0}|{1}robot_GRP|{1}FK_CTRLS|{1}a2FK_CTRL.rotateX', robot)
-    fk_2_keyframes = pm.keyframe(
+    fk_2_keyframes = cmds.keyframe(
         fk_2_path,
         query=True,
         time='{}:{}'.format(start_frame, end_frame))
     
     fk_3_path = mimic_utils.format_path('{0}|{1}robot_GRP|{1}FK_CTRLS|{1}a3FK_CTRL.rotateX', robot)
-    fk_3_keyframes = pm.keyframe(
+    fk_3_keyframes = cmds.keyframe(
         fk_3_path,
         query=True,
         time='{}:{}'.format(start_frame, end_frame))
     
     fk_4_path = mimic_utils.format_path('{0}|{1}robot_GRP|{1}FK_CTRLS|{1}a4FK_CTRL.rotateY', robot)
-    fk_4_keyframes = pm.keyframe(
+    fk_4_keyframes = cmds.keyframe(
         fk_4_path,
         query=True,
         time='{}:{}'.format(start_frame, end_frame))
     
     fk_5_path = mimic_utils.format_path('{0}|{1}robot_GRP|{1}FK_CTRLS|{1}a5FK_CTRL.rotateX', robot)
-    fk_5_keyframes = pm.keyframe(
+    fk_5_keyframes = cmds.keyframe(
         fk_5_path,
         query=True,
         time='{}:{}'.format(start_frame, end_frame))
     
     fk_6_path = mimic_utils.format_path('{0}|{1}robot_GRP|{1}FK_CTRLS|{1}a6FK_CTRL.rotateZ', robot)
-    fk_6_keyframes = pm.keyframe(
+    fk_6_keyframes = cmds.keyframe(
         fk_6_path,
         query=True,
         time='{}:{}'.format(start_frame, end_frame))
@@ -1025,7 +1024,7 @@ def _sample_frames_get_command_dicts(robot_name, frames, animation_settings, use
 
         if preview_in_viewport:
             # Set the background to the current frame
-            pm.currentTime(frame)
+            cmds.currentTime(frame)
 
         # Create a dict of datatypes per frame
         command_dict = {}
@@ -1067,10 +1066,10 @@ def _sample_frames_get_command_dicts(robot_name, frames, animation_settings, use
                 # command_dict[postproc.ANALOG_INPUT] = postproc.DigitalOutput(*analog_input)
                 pass
         command_dicts.append(command_dict)
-        pm.refresh()
+        cmds.refresh()
         export_progress = _update_export_progress_window(start_frame, end_frame, frame, export_progress)
     # Reset current frame (just in case)
-    pm.currentTime(frames[0])
+    cmds.currentTime(frames[0])
 
     return command_dicts
 
@@ -1089,7 +1088,7 @@ def _sample_frame_get_axes(robot_name, frame):
     for i in range(6):
         axis_number = i + 1  # Axis numbers are 1-indexed
         axis_path = target_ctrl_path + '.axis{}'.format(axis_number)
-        axis = pm.getAttr(axis_path, time=frame)
+        axis = cmds.getAttr(axis_path, time=frame)
 
         axes.append(axis)
         
@@ -1106,17 +1105,17 @@ def _sample_frame_get_pose(robot_name, frame):
     # Set the time
     # TODO: Implement this in parent function
     # Need to figure out how to query xform at specific frame (like with getAttr)
-    pm.currentTime(frame)
+    cmds.currentTime(frame)
 
     # tool_name = get_tool_name(robot_name)
     tool_name = mimic_utils.get_tool_ctrl_path(robot_name)
     try:  # Try to grab the named tool
-        tool_object = pm.ls(tool_name)[0]  # Try to get tool, may raise an exception
+        tool_object = cmds.ls(tool_name)[0]  # Try to get tool, may raise an exception
     except IndexError:  # No tool attached, use flange
         tool_name = mimic_utils.get_tcp_hdl_path(robot_name)
 
     # Local Base Frame controller (circle control at base of the robot).
-    base_name = pm.ls(mimic_utils.get_local_ctrl_path(robot_name))[0]
+    base_name = cmds.ls(mimic_utils.get_local_ctrl_path(robot_name))[0]
 
     # Get name of the tcp and base
     world_matrix = '.worldMatrix'
@@ -1126,17 +1125,17 @@ def _sample_frame_get_pose(robot_name, frame):
     # TRANSLATIONS
 
     # Get translation with respect to Maya's world frame
-    tcp_translation = pm.xform(tool_name, query=True, rp=True, ws=True)
-    base_translation = pm.xform(base_name, query=True, rp=True, ws=True)
+    tcp_translation = cmds.xform(tool_name, query=True, rp=True, ws=True)
+    base_translation = cmds.xform(base_name, query=True, rp=True, ws=True)
 
     # ROTATIONS
 
     # Get TCP rotation with respect to Maya's world frame
-    _tcp_matrix = pm.getAttr(tcp_name_world_matrix, time=frame)
+    _tcp_matrix = cmds.getAttr(tcp_name_world_matrix, time=frame)
     tcp_rotation = general_utils.matrix_get_rotations(_tcp_matrix)
 
     # Get Base rotation with respect to Maya's world frame
-    _base_matrix = pm.getAttr(base_name_world_matrix, time=frame)
+    _base_matrix = cmds.getAttr(base_name_world_matrix, time=frame)
     base_rotation = general_utils.matrix_get_rotations(_base_matrix)
 
     # TRANSFORMATIONS
@@ -1300,7 +1299,7 @@ def _initialize_export_progress_window(title):
     _destroy_progress_window()
 
     #  Create our progress window
-    pm.progressWindow(title=title,
+    cmds.progressWindow(title=title,
                       status='Progress:',
                       progress=0,
                       maxValue=100,
@@ -1311,7 +1310,7 @@ def _destroy_progress_window():
     """ Destroy any extant progress windows. Only one progress window can exist
     at a time.
     """
-    pm.progressWindow(endProgress=True)
+    cmds.progressWindow(endProgress=True)
 
 
 def _update_export_progress_window(start_frame, end_frame, frame_index, prev_progress):
@@ -1327,7 +1326,7 @@ def _update_export_progress_window(start_frame, end_frame, frame_index, prev_pro
     """
 
     # Check if the user pressed 'Esc'
-    if pm.progressWindow(query=True, isCancelled=True):
+    if cmds.progressWindow(query=True, isCancelled=True):
         _destroy_progress_window()
         raise mimic_utils.MimicError('Path export canceled by user.')
 
@@ -1341,7 +1340,7 @@ def _update_export_progress_window(start_frame, end_frame, frame_index, prev_pro
 
         # Updating the Maya UI is slow, so we only make updates if we need to.
         if export_progress != prev_progress:
-            pm.progressWindow(edit=True,
+            cmds.progressWindow(edit=True,
                               progress=export_progress,
                               status='Progress:')
 
