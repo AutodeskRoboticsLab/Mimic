@@ -100,8 +100,7 @@ def get_rigs_names(rigs):
     :param rigs: rigs dictionary.
     :return:
     """
-    names = rigs.keys()
-    names.sort()
+    names = sorted(rigs.keys())
     # Get default from config
     default = mimic_config.DEFAULT_ROBOT
     if default in names:
@@ -331,7 +330,7 @@ def matrix_print(m, name=None):
     col_string = '\n'.join(col_params)
     if name is not None:
         col_string = '{}:\n{}\n'.format(name, col_string)
-    print col_string
+    print(col_string)
 
 
 def matrix_transpose(m):
@@ -426,7 +425,7 @@ def list_as_range_strings(values):
     :param values:
     :return:
     """
-    values.sort()  # make sure numbers are consecutive
+    values = sorted(values)
     value_groups = itertools.groupby(values, lambda n, c=itertools.count(): n - next(c))
     return [list_as_range_string(group) for i, group in value_groups]
 

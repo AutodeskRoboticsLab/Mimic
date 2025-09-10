@@ -22,8 +22,10 @@ import mimic_external_axes
 
 from analysis import analysis
 from analysis import analysis_utils
-reload(analysis)
-reload(analysis_utils)
+
+import importlib
+importlib.reload(analysis)
+importlib.reload(analysis_utils)
 
 from postproc import postproc
 from postproc import postproc_setup

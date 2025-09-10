@@ -7,13 +7,15 @@ except ImportError:  # Maya is not running
     pm = None
     MAYA_IS_RUNNING = False
 
-import analysis_ui
-import analysis_utils
+from analysis import analysis_ui
+from analysis import analysis_utils
 import ui_utils
 
-reload(analysis_ui)
-reload(analysis_utils)
-reload(ui_utils)
+import importlib
+
+importlib.reload(analysis_ui)
+importlib.reload(analysis_utils)
+importlib.reload(ui_utils)
 
 
 def run(robot_name, command_dicts, limit_data):

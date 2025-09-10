@@ -19,10 +19,11 @@ import mimic_config
 import mimic_program
 import mimic_utils
 
-reload(mimic_utils)
-reload(mimic_config)
-reload(mimic_program)
-reload(general_utils)
+import importlib
+importlib.reload(mimic_utils)
+importlib.reload(mimic_config)
+importlib.reload(mimic_program)
+importlib.reload(general_utils)
 
 
 def get_external_axis_names(robot_name, only_active=False):

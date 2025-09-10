@@ -3,10 +3,10 @@
 Configuration for post processors
 """
 
-import postproc_config
+from postproc import postproc_config
 
 # Import your processor as private here:
-from KUKA.EntertainTech.entertaintech \
+from .KUKA.EntertainTech.entertaintech \
     import SimpleEntertainTechProcessor \
     as __SimpleEntertainTechProcessor
 
@@ -41,8 +41,7 @@ def get_processor_names():
     Sorts names alphabetically by default. User-accessible function.
     :return: 'ROBOT_TYPE POSTPROCESSOR_TYPE'
     """
-    names = POST_PROCESSORS.keys()
-    names.sort()
+    names = sorted(POST_PROCESSORS.keys())
     # Get default from config
     default = postproc_config.DEFAULT_POST_PROCESSOR
     if default in names:

@@ -18,12 +18,14 @@ except ImportError:
     PYQTGRAPH_LOADED = False
 
 import ui_utils
-import analysis_ui_utils
-import analysis_ui_config
+from analysis import analysis_ui_utils
+from analysis import analysis_ui_config
 
-reload(ui_utils)
-reload(analysis_ui_utils)
-reload(analysis_ui_config)
+import importlib
+
+importlib.reload(ui_utils)
+importlib.reload(analysis_ui_utils)
+importlib.reload(analysis_ui_config)
 
 # Use Qt.py to provide for back-compatibility from PySide2 to PySide
 from Qt import QtWidgets

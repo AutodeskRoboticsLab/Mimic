@@ -12,8 +12,10 @@ except ImportError:  # Maya is not running
 import general_utils
 import ui_utils
 
-reload(general_utils)
-reload(ui_utils)
+import importlib
+
+importlib.reload(general_utils)
+importlib.reload(ui_utils)
 
 # Use Qt.py to provide for back-compatibility from PySide2 to PySide
 from Qt import QtWidgets
@@ -283,7 +285,7 @@ class DataControlWidget(QtWidgets.QWidget):
         main_layout.addWidget(toggle_widget)
 
         # Add a spacing character
-        main_layout.addWidget(QtWidgets.QLabel(unichr(0x2022)), alignment=4)
+        main_layout.addWidget(QtWidgets.QLabel(chr(0x2022)), alignment=QtCore.Qt.AlignCenter)
 
         # Create and add "isolate" toggle
         isolate_widget = self.__build_isolate_toggle_widget()

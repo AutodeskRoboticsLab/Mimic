@@ -7,7 +7,7 @@ import binascii
 import string
 from collections import namedtuple
 
-import entertaintech_config
+from . import entertaintech_config
 import general_utils
 from postproc import postproc
 from postproc import postproc_options

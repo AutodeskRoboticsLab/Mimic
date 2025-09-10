@@ -18,9 +18,10 @@ import general_utils
 import mimic_config
 import mimic_ui
 
-reload(general_utils)
-reload(mimic_config)
-reload(mimic_ui)
+import importlib
+importlib.reload(general_utils)
+importlib.reload(mimic_config)
+importlib.reload(mimic_ui)
 
 
 def load_mimic_plugins():
@@ -45,7 +46,7 @@ def load_mimic_plugins():
                 # Try loading it (and turn on autoload)
                 pm.loadPlugin(plugin)
                 pm.pluginInfo(plugin, autoload=True)
-                print '{} Plug-in loaded'.format(plugin)
+                print('{} Plug-in loaded'.format(plugin))
             except Exception:  # Unknown error
                 pass
 

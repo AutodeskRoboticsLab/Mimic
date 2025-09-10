@@ -163,7 +163,7 @@ def print_axis_pivots(*args):
     axis_pivots = get_axis_pivots()
 
     for i, axis in enumerate(axis_pivots):
-        print 'Axis {}:'.format(i+1), axis
+        print('Axis {}:'.format(i+1), axis)
 
 
 def zero_axis_pivots(*args):

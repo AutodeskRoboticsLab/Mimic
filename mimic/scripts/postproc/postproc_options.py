@@ -18,7 +18,7 @@ except ImportError:  # Maya is not running
 
 from collections import namedtuple
 from collections import OrderedDict
-import postproc_setup
+from . import postproc_setup
 
 
 # USER OPTIONS

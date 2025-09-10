@@ -8,8 +8,12 @@ Generic post processor object.
 import os
 from collections import namedtuple
 
-import postproc_config
+from postproc import postproc_config
 import general_utils
+
+import importlib
+
+importlib.reload(general_utils)
 
 # PARAMS
 __axis_1 = 'axis_1'

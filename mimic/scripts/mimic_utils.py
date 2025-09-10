@@ -22,9 +22,11 @@ import general_utils
 import mimic_config
 from robotmath import inverse_kinematics
 
-reload(mimic_config)
-reload(general_utils)
-reload(inverse_kinematics)
+import importlib
+
+importlib.reload(mimic_config)
+importlib.reload(general_utils)
+importlib.reload(inverse_kinematics)
 
 OUTPUT_WINDOW_NAME = 'programOutputScrollField'
 
@@ -557,9 +559,9 @@ def mimic_script_jobs():
     pm.cycleCheck(evaluation=0)
 
     # pm.scriptJob(event=['timeChanged', reconcile_rotation], killWithScene=True)
-    print "Robot scriptJobs Initialized"
+    # print("Robot scriptJobs Initialized")
     # print 'Reconcile Rotation script job running'
-    print 'cycleCheck OFF'
+    print('cycleCheck OFF')
 
 
 def add_mimic_script_node(*args):
@@ -590,7 +592,7 @@ def add_mimic_script_node(*args):
     # scene session.
     mimic_script_jobs()
 
-    print 'Robot Script Node Added'
+    print('Robot Script Node Added')
 
 
 def add_hud_script_node(*args):
@@ -615,7 +617,7 @@ def add_hud_script_node(*args):
                   afterScript=script_str,
                   name='mimicHudScriptNode')
 
-    print 'HUD Script Node Added'
+    print('HUD Script Node Added')
 
 
 def find_ik_solutions(robot):
@@ -1101,7 +1103,7 @@ def axis_val_hud(*args):
     robots = get_robot_roots(1)
 
     if not robots:
-        print 'No Robots in Scene'
+        print('No Robots in Scene')
         if pm.headsUpDisplay('a1_hud', exists=True):
             for i in range(__NUM_AXES):
                 pm.headsUpDisplay('a{}_hud'.format(i + 1), remove=True)
@@ -2370,7 +2372,7 @@ def _create_hotkey_set():
         hotkey_set_name = pm.promptDialog(query=True, text=True)
         hotkey_set_name_filtered = _filter_hotkey_set_name(hotkey_set_name)
         pm.hotkeySet(hotkey_set_name_filtered, current=True)
-        print 'New Hotkey Set created: {}'.format(hotkey_set_name_filtered)
+        print('New Hotkey Set created: {}'.format(hotkey_set_name_filtered))
         return True
 
 
@@ -2398,7 +2400,7 @@ def assign_hotkey(command_name, annotation_str, command_string):
         # If so, try switching to the default Mimic Hotkey Set
         if pm.hotkeySet('Mimic_Hotkeys', exists=True):
             pm.hotkeySet('Mimic_Hotkeys', current=True, edit=True)
-            print 'Hotkey Set changed to Mimic Hotkeys'
+            print('Hotkey Set changed to Mimic Hotkeys')
         # If Mimic Hotkey set doesn't exist, propt the user to create a custom
         # Hotkey set and switch to it.
         else:
@@ -2423,10 +2425,10 @@ def assign_hotkey(command_name, annotation_str, command_string):
 
         if pm.hotkey(key_str, query=True):
             if pm.hotkey(key_str, query=True, name=True) == hotkey_name:
-                print 'Hotkey ' \
+                print('Hotkey ' \
                       '\'{}\' ' \
                       'already set to ' \
-                      '\'{}\''.format(key_str, hotkey_name)
+                      '\'{}\''.format(key_str, hotkey_name))
 
             else:
                 pm.warning('Hotkey ' \
@@ -2441,7 +2443,7 @@ def assign_hotkey(command_name, annotation_str, command_string):
             pm.hotkey(keyShortcut=key_str,
                       name=hotkey_name)
 
-            print '{} hotkey set to \'{}\' key'.format(command_name, key_str)
+            print('{} hotkey set to \'{}\' key'.format(command_name, key_str))
     else:
         pm.warning('No key string input; ' \
                    'input a key string in Mimic UI')
@@ -2469,7 +2471,7 @@ def remove_hotkey(command_name):
         if pm.hotkey(key_str, query=True, name=True) == command_name + 'Hotkey':
             pm.runTimeCommand(command_name, edit=True, delete=True)
             pm.hotkey(keyShortcut=key_str, name=None)
-            print 'Hotkey {} removed from \'{}\' key'.format(command_name, key_str)
+            print('Hotkey {} removed from \'{}\' key'.format(command_name, key_str))
         else:
             pm.warning('\'{}\' key is not assigned to the {} function in ' \
                        'the current Hotkey Set; no hotkey was removed' \
@@ -2491,7 +2493,7 @@ def find_hotkey(hotkey_name):
         # If so, try switching to the default Mimic Hotkey Set
         if pm.hotkeySet('Mimic_Hotkeys', exists=True):
             pm.hotkeySet('Mimic_Hotkeys', current=True, edit=True)
-            print 'Hotkey Set changed to Mimic Hotkeys'
+            print('Hotkey Set changed to Mimic Hotkeys')
 
     count = pm.assignCommand(query=True, numElements=True)
 
@@ -2563,7 +2565,8 @@ def save_pose_to_shelf(*args):
     target_shelf = mel.eval('tabLayout -q -selectTab $gShelfTopLevel;')
     store_cmds = 'import pymel.core as pm \n' \
                  'import mimic_utils \n' \
-                 'reload(mimic_utils) \n\n' \
+                 'import importlib \n' \
+                 'importlib.reload(mimic_utils) \n\n' \
         # 'if not check_robot_selection(1): \n' \
     # '    robot = \'\' \n\n'
 

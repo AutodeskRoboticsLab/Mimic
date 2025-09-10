@@ -23,15 +23,16 @@ from postproc import postproc_setup
 from postproc import postproc_options
 from analysis import analysis
 
-reload(mimic_utils)
-reload(mimic_config)
-reload(mimic_program)
-reload(mimic_external_axes)
-reload(general_utils)
-reload(postproc_setup)
-reload(postproc_config)
-reload(postproc_options)
-reload(analysis)
+import importlib
+importlib.reload(mimic_utils)
+importlib.reload(mimic_config)
+importlib.reload(mimic_program)
+importlib.reload(mimic_external_axes)
+importlib.reload(general_utils)
+importlib.reload(postproc_setup)
+importlib.reload(postproc_config)
+importlib.reload(postproc_options)
+importlib.reload(analysis)
 
 FONT = 'smallObliqueLabelFont'
 
@@ -80,7 +81,7 @@ def build_mimic_ui():
     pm.setParent(mimic_win)
     pm.columnLayout('outputBarColumn', width=7)
     pm.separator(height=1, style='none')
-    bullets = '\n'.join([unichr(0x2022) for _ in range(3)])
+    bullets = '\n'.join([chr(0x2022) for _ in range(3)])
     pm.text(bullets,
             align='left',
             annotation='Drag edge to view Output Window!')
@@ -93,8 +94,8 @@ def build_mimic_ui():
 # MIMIC WINDOW
 def create_mimic_window(window_name):
     # If the window already exists, delete the window
-    if pm.window("mimic_win", exists=True):
-        pm.deleteUI("mimic_win", window=True)
+    if pm.window(window_name, q=True, exists=True):
+        pm.deleteUI(window_name)
 
     # Initialize window and Layout
     mimic_version = general_utils.get_mimic_version()
@@ -698,7 +699,7 @@ def _build_add_robot_frame(parent_layout):
     dir_mimic = general_utils.get_mimic_dir()
     dir_rigs = dir_mimic + '/rigs'
     add_robot_command_string = \
-        'import mimic_utils; reload(mimic_utils); ' \
+        'import mimic_utils; import importlib; importlib.reload(mimic_utils); ' \
         'mimic_utils.import_robot("{}"); ' \
         'mimic_utils.add_mimic_script_node(); ' \
         'mimic_utils.add_hud_script_node()' \
